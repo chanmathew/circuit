@@ -1,0 +1,14 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/shared" },
+    { "path": "./packages/workflow" },
+    { "path": "./packages/db" },
+    { "path": "./packages/agent-adapters" },
+    { "path": "./packages/workspace-manager" },
+    { "path": "./packages/git" },
+    { "path": "./packages/prompts" },
+    { "path": "./packages/ui" },
+    { "path": "./apps/desktop" }
+  ]
+}

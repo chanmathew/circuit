@@ -1,0 +1,21 @@
+{
+  "name": "circuit",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prepare": "vp config",
+    "ready": "vp check && vp run -r typecheck && vp run -r build",
+    "dev": "vp run desktop#dev",
+    "build": "vp run -r build",
+    "check": "vp check",
+    "typecheck": "vp run -r typecheck"
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "vite-plus": "catalog:"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "packageManager": "pnpm@11.8.0"
+}
