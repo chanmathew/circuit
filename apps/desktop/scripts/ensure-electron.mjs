@@ -26,9 +26,7 @@ async function main() {
     return
   }
 
-  const { downloadArtifact } = require(
-    require.resolve('@electron/get', { paths: [electronRoot] }),
-  )
+  const { downloadArtifact } = require(require.resolve('@electron/get', { paths: [electronRoot] }))
   const { version } = require(path.join(electronRoot, 'package.json'))
 
   rmSync(distDir, { recursive: true, force: true })
