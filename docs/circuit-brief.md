@@ -674,13 +674,14 @@ The app should be designed so future adapters can be added:
 
 ## Prompt/Workflow System
 
-Prompts should live in the repo as versioned templates.
+Prompts should live in the repo as versioned, inspectable product assets — not hidden runtime text.
 
 Suggested structure:
 
 ```txt
-packages/prompts/
+packages/prompts/src/
   structured-change/
+    using-circuit.md
     01-questions.md
     02-research.md
     03-design.md
@@ -688,6 +689,7 @@ packages/prompts/
     05-plan.md
     06-implement-slice.md
     07-review.md
+    08-replan.md
 
   quick-fix/
     01-plan.md
@@ -704,14 +706,48 @@ packages/prompts/
     07-review.md
 ```
 
-Each prompt should specify:
+Eventually, users should be able to inspect and edit these from the app:
 
-- phase goal
-- allowed actions
-- prohibited actions
-- required inputs
-- required output artifact
-- stop condition
+```txt
+Settings → Workflow Templates → Structured Change → Edit Prompt
+```
+
+### Prompt and Skill Design
+
+Circuit should use a root workflow prompt plus phase-specific prompts.
+
+Root prompt:
+
+- `using-circuit.md`
+
+Phase prompts:
+
+- `01-questions.md`
+- `02-research.md`
+- `03-design.md`
+- `04-structure.md`
+- `05-plan.md`
+- `06-implement-slice.md`
+- `07-review.md`
+- `08-replan.md`
+
+Each phase prompt should follow the same structure:
+
+1. Inputs
+2. Mission
+3. Rules
+4. Output Format
+5. Stop Condition
+
+Each phase run should also follow the same behavioral loop:
+
+1. Announce phase
+2. Verify required inputs exist
+3. State allowed/prohibited actions
+4. Perform the phase work
+5. Write one artifact
+6. Self-review the artifact
+7. Stop for human approval or mark ready for next phase
 
 Prompts should produce structured markdown artifacts with consistent sections.
 
@@ -866,9 +902,11 @@ packages/
     auto-select-workflow.ts
 
   prompts/
-    structured-change/
-    quick-fix/
-    investigation/
+    src/
+      index.ts
+      structured-change/
+      quick-fix/
+      investigation/
 
   agent-adapters/
     types.ts
