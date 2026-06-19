@@ -7,7 +7,7 @@ See the [project brief](docs/circuit-brief.md) for product goals, architecture, 
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org/) 22.12+
+- [Node.js](https://nodejs.org/) 22.13+
 - [Vite+](https://viteplus.dev/) (`vp`) — install with `curl -fsSL https://vite.plus | bash`
 - [pnpm](https://pnpm.io/) 11.8+ (via Corepack: `corepack enable`)
 
