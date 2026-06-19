@@ -713,6 +713,26 @@ Each prompt should specify:
 - required output artifact
 - stop condition
 
+Prompts should produce structured markdown artifacts with consistent sections.
+
+Research artifacts should emphasize objective codebase facts, file paths, symbols, current behavior,
+tests, risks, and unknowns.
+
+Design artifacts should include current state, desired end state, recommended approach, options
+considered, tradeoffs, key decisions, risks, assumptions, and Mermaid diagrams when useful.
+
+Structure artifacts should include file maps, proposed interfaces, data flow, vertical slices,
+dependency diagrams, and validation points.
+
+Plan artifacts should include implementation slices, files changed, steps, automated verification,
+manual verification, testing strategy, migration notes, rollback notes, and references.
+
+Implementation artifacts should include files changed, commands run, validation results, deviations
+from plan, and follow-up notes.
+
+Review artifacts should include plan alignment, diff summary, validation results, risks, potential
+issues, rollback notes, PR summary, and human review checklist.
+
 Example phase rules:
 
 Questions:

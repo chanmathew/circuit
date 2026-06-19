@@ -1,7 +1,12 @@
 import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+import { closeDb, initDb } from './db.js'
+import { registerIpcHandlers } from './ipc/handlers.js'
 
 const isDev = !app.isPackaged
+const mainDir = fileURLToPath(new URL('.', import.meta.url))
 
 ipcMain.handle('circuit:ping', () => 'pong')
 
@@ -14,7 +19,7 @@ function createWindow(): void {
     show: false,
     title: 'Circuit',
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
+      preload: join(mainDir, '../preload/index.mjs'),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
@@ -33,11 +38,13 @@ function createWindow(): void {
   if (isDev && process.env.ELECTRON_RENDERER_URL) {
     void mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL)
   } else {
-    void mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+    void mainWindow.loadFile(join(mainDir, '../renderer/index.html'))
   }
 }
 
 void app.whenReady().then(() => {
+  initDb()
+  registerIpcHandlers()
   createWindow()
 
   app.on('activate', () => {
@@ -47,4 +54,8 @@ void app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
+})
+
+app.on('will-quit', () => {
+  closeDb()
 })

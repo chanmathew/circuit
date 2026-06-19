@@ -5,9 +5,15 @@ packages:
 catalogMode: prefer
 
 catalog:
-  '@types/node': ^22
+  '@electron/rebuild': ^4.0.4
+  '@types/better-sqlite3': ^7.6.13
+  '@types/node': ^22.19.21
+  better-sqlite3: ^12.11.1
+  drizzle-kit: ^0.31.10
+  simple-git: ^3.36.0
   typescript: npm:typescript@rc
   vite-plus: latest
+  vitest: ^4.1.9
 
 minimumReleaseAgeExclude:
   - typescript@7.0.1-rc
@@ -42,6 +48,7 @@ blockExoticSubdeps: true
 strictDepBuilds: true
 
 allowBuilds:
+  better-sqlite3: true
   electron: true
   esbuild: true
 

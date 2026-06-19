@@ -8,6 +8,8 @@ out
 .vite
 coverage
 *.tsbuildinfo
+packages/db/.data
+.Circuit/
 
 # Electron build artifacts
 release

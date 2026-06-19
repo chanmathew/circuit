@@ -1,8 +1,6 @@
 /// <reference types="vite-plus/client" />
 
-export interface CircuitApi {
-  ping: () => Promise<string>
-}
+import type { CircuitApi } from '../../shared/api.js'
 
 declare global {
   interface Window {

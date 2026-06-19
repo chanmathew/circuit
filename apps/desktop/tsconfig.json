@@ -10,6 +10,8 @@
   "include": [
     "src/main/**/*.ts",
     "src/preload/**/*.ts",
+    "src/shared/**/*.ts",
+    "plugins/**/*.ts",
     "src/renderer/src/**/*.ts",
     "src/renderer/src/**/*.tsx",
     "electron.vite.config.ts"

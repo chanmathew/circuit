@@ -12,7 +12,12 @@
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "@circuit/shared": "workspace:*",
+    "simple-git": "catalog:"
+  },
   "devDependencies": {
+    "@types/node": "catalog:",
     "typescript": "catalog:"
   }
 }

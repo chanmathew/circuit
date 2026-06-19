@@ -16,7 +16,18 @@ See the [project brief](docs/circuit-brief.md) for product goals, architecture, 
 ```bash
 corepack enable
 vp install
-vp dev          # runs desktop#dev via vp run
+pnpm dev        # starts the Electron desktop app
+```
+
+Do **not** use `vp dev` alone — that starts the Vite+ web dev server, not Electron. Use `pnpm dev`
+from the repo root (runs `electron-vite dev` in `apps/desktop`).
+
+First install also downloads the Electron binary and rebuilds `better-sqlite3` for Electron (via the
+desktop `postinstall` script). If the app fails to open after install, run:
+
+```bash
+node apps/desktop/scripts/ensure-electron.mjs
+pnpm dev
 ```
 
 The Electron desktop app opens with placeholder Dashboard and New Task screens.
@@ -43,7 +54,7 @@ apps/desktop/          Electron + React shell (package name: desktop)
 packages/ui/           Shared shadcn-style components
 packages/workflow/     Workflow types and definitions
 packages/shared/       IDs, paths, errors, events
-packages/db/           Drizzle schema (stub)
+packages/db/           Drizzle schema, migrations, SQLite client
 packages/agent-adapters/  Agent adapter interfaces
 packages/workspace-manager/
 packages/git/
@@ -52,13 +63,15 @@ packages/prompts/
 
 ## Scripts
 
-| Command               | Description                                  |
-| --------------------- | -------------------------------------------- |
-| `vp dev`              | Start desktop app (`vp run desktop#dev`)     |
-| `vp run ready`        | Full quality gate: check + typecheck + build |
-| `vp build`            | Build all packages                           |
-| `vp check`            | Lint, format, and typecheck                  |
-| `vp run -r typecheck` | Typecheck all workspace packages             |
+| Command                                 | Description                                  |
+| --------------------------------------- | -------------------------------------------- |
+| `pnpm dev`                              | Start desktop app (`electron-vite dev`)      |
+| `vp run ready`                          | Full quality gate: check + typecheck + build |
+| `vp build`                              | Build all packages                           |
+| `vp check`                              | Lint, format, and typecheck                  |
+| `vp run -r typecheck`                   | Typecheck all workspace packages             |
+| `pnpm --filter @circuit/db db:generate` | Generate SQL migration from schema changes   |
+| `pnpm --filter @circuit/db db:migrate`  | Apply migrations to dev DB (`.data/`)        |
 
 ## Supply-chain policy
 
@@ -80,15 +93,22 @@ For urgent security patches, use `minimumReleaseAgeExclude` or run `vp pm audit 
 
 ## Scaffold status
 
-The current bootstrap is a **scaffold only**. Not yet implemented:
+Milestone 1 (**Local shell**) is implemented:
 
-- SQLite persistence and repo registration
-- Task creation and `.Circuit/tasks/` artifact writing
-- Workflow phase rail and agent runs
+- SQLite persistence in `app.getPath('userData')/circuit.db` via `@circuit/db`
+- Add local git repo from the dashboard
+- Create task from description with auto-generated title, slug, and branch
+- Writes `.Circuit/tasks/<slug>/00-ticket.md` in the target repo
+- Minimal task detail view showing ticket content
+
+Not yet implemented:
+
+- Workflow phase rail and phase state in SQLite
+- Mock agent runs and artifact approval loop
 - OpenCode integration
 - Git worktrees and diff review
 
-Next milestone: **Local shell** — add repo, create task, write `00-ticket.md`.
+Next milestone: **Workflow state** — phase rail, artifact tree, empty phase artifact files.
 
 ## License
 

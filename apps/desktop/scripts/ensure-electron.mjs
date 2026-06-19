@@ -5,12 +5,7 @@ import path from 'node:path'
 
 const require = createRequire(import.meta.url)
 
-async function main() {
-  // CI only runs lint/typecheck — no Electron binary needed.
-  if (process.env.CI === 'true') {
-    return
-  }
-
+async function ensureElectronBinary() {
   const electronRoot = path.dirname(require.resolve('electron/package.json'))
   const distDir = path.join(electronRoot, 'dist')
   const platformPath =
@@ -43,6 +38,22 @@ async function main() {
 
   execFileSync('unzip', ['-q', zipPath, '-d', distDir], { stdio: 'inherit' })
   writeFileSync(path.join(electronRoot, 'path.txt'), platformPath)
+}
+
+function rebuildNativeModules() {
+  execFileSync('electron-rebuild', ['-f', '-w', 'better-sqlite3'], {
+    stdio: 'inherit',
+  })
+}
+
+async function main() {
+  // CI only runs lint/typecheck — no Electron binary or native modules needed.
+  if (process.env.CI === 'true') {
+    return
+  }
+
+  await ensureElectronBinary()
+  rebuildNativeModules()
 }
 
 main().catch((error) => {

@@ -12,17 +12,21 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@circuit/db": "workspace:*",
+    "@circuit/git": "workspace:*",
     "@circuit/shared": "workspace:*",
     "@circuit/ui": "workspace:*",
     "@circuit/workflow": "workspace:*",
     "@tanstack/react-query": "^5.101.0",
     "@tanstack/react-router": "^1.170.16",
+    "better-sqlite3": "catalog:",
     "electron": "^42.4.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },
   "devDependencies": {
     "@electron/get": "^5.0.0",
+    "@electron/rebuild": "catalog:",
     "@tailwindcss/vite": "^4.3.1",
     "@types/node": "catalog:",
     "@types/react": "^19.2.17",
