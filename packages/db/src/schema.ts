@@ -35,6 +35,9 @@ export const phases = sqliteTable('phases', {
   name: text('name').notNull(),
   status: text('status').notNull(),
   order: integer('order').notNull(),
+  currentArtifactId: text('current_artifact_id'),
+  dependsOnArtifactIds: text('depends_on_artifact_ids').notNull().default('[]'),
+  staleReason: text('stale_reason'),
 })
 
 export const artifacts = sqliteTable('artifacts', {

@@ -4,7 +4,10 @@ export type CircuitEventType =
   | 'phase:started'
   | 'phase:completed'
   | 'phase:failed'
+  | 'phase:revisited'
+  | 'phase:stale'
   | 'artifact:updated'
+  | 'artifact:revised'
   | 'agent:activity'
 
 export interface CircuitEvent<T = unknown> {

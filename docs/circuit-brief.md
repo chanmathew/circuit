@@ -220,6 +220,17 @@ Phase names for Structured Change:
 - implement
 - review
 
+Fields:
+
+- id
+- taskId
+- name
+- status
+- order
+- currentArtifactId
+- dependsOnArtifactIds
+- staleReason
+
 Phase statuses:
 
 - locked
@@ -228,6 +239,7 @@ Phase statuses:
 - needs_review
 - approved
 - needs_revision
+- stale
 - failed
 - skipped
 
@@ -254,6 +266,7 @@ Artifact statuses:
 - needs_review
 - approved
 - rejected
+- stale
 
 Standard artifacts:
 
@@ -285,6 +298,87 @@ Fields:
 - commandsRun
 - startedAt
 - completedAt
+
+### Iteration and Revisiting Phases
+
+The workflow is linear by default but must support revisiting earlier phases.
+
+Approving a phase does not make it immutable. It marks the current artifact version as approved and
+allows downstream phases to proceed.
+
+If an upstream artifact is materially revised, downstream artifacts that depend on the previous
+version should be marked as stale.
+
+Example:
+
+- Design v1 approved
+- Structure v1 generated from Design v1
+- Plan v1 generated from Structure v1
+- User revises Design to v2
+- Structure v1 and Plan v1 become stale
+- Implementation is locked until Structure and Plan are refreshed
+
+Phase status should include:
+
+- locked
+- ready
+- running
+- needs_review
+- approved
+- needs_revision
+- stale
+- failed
+- skipped
+
+The app should distinguish between three kinds of revision:
+
+1. Minor revision  
+   Use when wording or small details change but downstream work is still valid. This should not mark
+   downstream phases stale.
+
+2. Material revision  
+   Use when the design, architecture, scope, or implementation direction changes. This should create
+   a new artifact version and mark downstream phases stale.
+
+3. Alternate path  
+   Use when the user wants to explore a second design or implementation path without replacing the
+   currently approved path. This can be added after MVP.
+
+The UX should provide actions:
+
+- Revisit this phase
+- Revise without invalidating downstream
+- Revise and refresh downstream
+- Regenerate next phase
+- View stale artifact
+- Compare artifact versions
+
+Each phase should track which artifact versions it depends on.
+
+Example:
+
+```json
+{
+  "name": "plan",
+  "status": "stale",
+  "currentArtifactId": "plan-v1",
+  "dependsOnArtifactIds": ["design-v1", "structure-v1"],
+  "staleReason": "Design was revised from v1 to v2"
+}
+```
+
+If implementation has already started, revisiting Design, Structure, or Plan should show a warning
+because existing code may no longer match the approved workflow.
+
+For MVP, support:
+
+artifact versions stale phase status downstream invalidation Revisit phase action warning if
+implementation has started
+
+Defer until later:
+
+alternate design branches visual artifact comparison automatic reconciliation of already-written
+code
 
 ### Workspace
 
@@ -425,7 +519,10 @@ Each phase should show:
 - running
 - needs review
 - approved
+- needs revision
+- stale
 - failed
+- skipped
 
 ### 5. Artifact Review
 
@@ -437,12 +534,21 @@ Features:
 - markdown preview
 - approve button
 - request revision button
+- revisit this phase
+- revise without invalidating downstream (minor revision)
+- revise and refresh downstream (material revision)
+- regenerate next phase
+- view stale artifact
 - scoped feedback box
 - activity transcript
 - files read
 - commands run
 
 The user should be able to edit artifacts manually before approving.
+
+Artifacts can be revisited after approval. If a material revision changes an upstream artifact,
+downstream artifacts should be marked stale and implementation should lock until the affected phases
+are refreshed.
 
 ### 6. Implementation
 

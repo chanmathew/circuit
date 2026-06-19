@@ -1,5 +1,19 @@
 export { autoSelectWorkflow, type WorkflowSelection } from './auto-select-workflow.js'
-export { type PhaseMachine, type PhaseTransition, PHASE_TRANSITIONS } from './phase-machine.js'
+export {
+  applyPhaseRevision,
+  getDownstreamPhaseNames,
+  getRevisitWarning,
+  invalidateDownstreamPhases,
+  isImplementationLocked,
+  type DownstreamInvalidation,
+  type RevisitWarning,
+} from './phase-revisit.js'
+export {
+  canTransition,
+  type PhaseMachine,
+  type PhaseTransition,
+  PHASE_TRANSITIONS,
+} from './phase-machine.js'
 export {
   getWorkflowDefinition,
   INVESTIGATION,
@@ -15,6 +29,7 @@ export type {
   PhaseRun,
   PhaseRunStatus,
   PhaseStatus,
+  RevisionKind,
   Task,
   TaskStatus,
   WorkflowType,

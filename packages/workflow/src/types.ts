@@ -25,10 +25,14 @@ export type PhaseStatus =
   | 'needs_review'
   | 'approved'
   | 'needs_revision'
+  | 'stale'
   | 'failed'
   | 'skipped'
 
-export type ArtifactStatus = 'draft' | 'needs_review' | 'approved' | 'rejected'
+/** How an artifact revision affects downstream phases. */
+export type RevisionKind = 'minor' | 'material' | 'alternate'
+
+export type ArtifactStatus = 'draft' | 'needs_review' | 'approved' | 'rejected' | 'stale'
 
 export type PhaseRunStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
 
@@ -54,6 +58,12 @@ export interface Phase {
   name: string
   status: PhaseStatus
   order: number
+  /** Artifact currently associated with this phase. */
+  currentArtifactId: string | null
+  /** Upstream artifact versions this phase was generated from. */
+  dependsOnArtifactIds: string[]
+  /** Set when status is stale — why downstream work needs refresh. */
+  staleReason: string | null
 }
 
 export interface Artifact {
