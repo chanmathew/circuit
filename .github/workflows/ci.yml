@@ -38,4 +38,4 @@ jobs:
         run: vp check
 
       - name: Audit dependencies
-        run: vp pm audit --audit-level=high
+        run: vp pm audit -- --audit-level=high
