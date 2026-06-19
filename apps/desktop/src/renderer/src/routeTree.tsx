@@ -1,4 +1,4 @@
-import { createRootRoute, createRoute, Outlet, useNavigate } from '@tanstack/react-router'
+import { createRootRoute, createRoute, Outlet, useNavigate, useRouterState } from '@tanstack/react-router'
 import { Link } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
@@ -19,9 +19,17 @@ import { autoSelectWorkflow, getWorkflowDefinition } from '@circuit/workflow'
 
 import type { RepoDto, TaskDto } from '../../shared/api.js'
 import type { WorkflowType } from '@circuit/workflow'
+import {
+  WorkbenchPrototypePage,
+  parseScenario,
+  type WorkbenchPrototypeSearch,
+} from './prototype/workbench/WorkbenchPrototypePage.js'
 
 function AppShell(): React.ReactElement {
   const [pingResult, setPingResult] = useState<string>('…')
+  const isPrototype = useRouterState({
+    select: (s) => s.location.pathname.startsWith('/prototype/'),
+  })
 
   useEffect(() => {
     window.circuit
@@ -29,6 +37,14 @@ function AppShell(): React.ReactElement {
       .then(setPingResult)
       .catch(() => setPingResult('error'))
   }, [])
+
+  if (isPrototype) {
+    return (
+      <div className="flex h-screen overflow-hidden bg-background text-foreground">
+        <Outlet />
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
@@ -51,6 +67,15 @@ function AppShell(): React.ReactElement {
             >
               New Task
             </Link>
+            {import.meta.env.DEV && (
+              <Link
+                to="/prototype/workbench"
+                search={{ scenario: 'early' }}
+                className="rounded-md px-3 py-2 text-sm text-amber-700 dark:text-amber-300 hover:bg-amber-500/10 [&.active]:bg-amber-500/15"
+              >
+                UX Prototype
+              </Link>
+            )}
           </nav>
         </ScrollArea>
         <div className="border-t border-border px-4 py-3">
@@ -85,6 +110,20 @@ const taskDetailRoute = createRoute({
   path: '/tasks/$taskId',
   component: TaskDetailPage,
 })
+
+const workbenchPrototypeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/prototype/workbench',
+  validateSearch: (search: Record<string, unknown>): WorkbenchPrototypeSearch => ({
+    scenario: parseScenario(search.scenario),
+  }),
+  component: WorkbenchPrototypeRoutePage,
+})
+
+function WorkbenchPrototypeRoutePage(): React.ReactElement {
+  const { scenario } = workbenchPrototypeRoute.useSearch()
+  return <WorkbenchPrototypePage scenario={scenario} />
+}
 
 function DashboardPage(): React.ReactElement {
   const queryClient = useQueryClient()
@@ -423,4 +462,9 @@ function TaskDetailPage(): React.ReactElement {
   )
 }
 
-export const routeTree = rootRoute.addChildren([indexRoute, newTaskRoute, taskDetailRoute])
+export const routeTree = rootRoute.addChildren([
+  indexRoute,
+  newTaskRoute,
+  taskDetailRoute,
+  workbenchPrototypeRoute,
+])
