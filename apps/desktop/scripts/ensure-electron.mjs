@@ -6,6 +6,11 @@ import path from 'node:path'
 const require = createRequire(import.meta.url)
 
 async function main() {
+  // CI only runs lint/typecheck — no Electron binary needed.
+  if (process.env.CI === 'true') {
+    return
+  }
+
   const electronRoot = path.dirname(require.resolve('electron/package.json'))
   const distDir = path.join(electronRoot, 'dist')
   const platformPath =
@@ -21,7 +26,9 @@ async function main() {
     return
   }
 
-  const { downloadArtifact } = require('@electron/get')
+  const { downloadArtifact } = require(
+    require.resolve('@electron/get', { paths: [electronRoot] }),
+  )
   const { version } = require(path.join(electronRoot, 'package.json'))
 
   rmSync(distDir, { recursive: true, force: true })
