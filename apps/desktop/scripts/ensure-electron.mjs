@@ -2,8 +2,10 @@ import { execFileSync } from 'node:child_process'
 import { createRequire } from 'node:module'
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const require = createRequire(import.meta.url)
+const desktopRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 
 async function ensureElectronBinary() {
   const electronRoot = path.dirname(require.resolve('electron/package.json'))
@@ -41,8 +43,10 @@ async function ensureElectronBinary() {
 }
 
 function rebuildNativeModules() {
-  execFileSync('electron-rebuild', ['-f', '-w', 'better-sqlite3'], {
+  const rebuildBin = path.join(desktopRoot, 'node_modules', '.bin', 'electron-rebuild')
+  execFileSync(rebuildBin, ['-f', '-w', 'better-sqlite3'], {
     stdio: 'inherit',
+    cwd: desktopRoot,
   })
 }
 

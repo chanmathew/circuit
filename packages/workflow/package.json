@@ -7,6 +7,10 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./context-pack": {
+      "types": "./src/context-pack.ts",
+      "default": "./src/context-pack.ts"
     }
   },
   "scripts": {

@@ -12,8 +12,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:migrate": "node scripts/migrate.mjs",
+    "db:studio": "pnpm rebuild better-sqlite3 && drizzle-kit studio"
   },
   "dependencies": {
     "better-sqlite3": "catalog:",

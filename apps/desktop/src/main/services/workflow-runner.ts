@@ -20,14 +20,16 @@ import { createId, NotFoundError, ValidationError } from '@circuit/shared'
 import {
   approveBlockedReason,
   BALANCED_AUTO_RUN_AFTER_APPROVE,
-  buildContextPack,
-  buildPhasePrompt,
   canTransition,
   getWorkflowDefinition,
-  serializeContextPackForPrompt,
   type PhaseStatus,
   type WorkflowType,
 } from '@circuit/workflow'
+import {
+  buildContextPack,
+  buildPhasePrompt,
+  serializeContextPackForPrompt,
+} from '@circuit/workflow/context-pack'
 
 import { getDb } from '../db.js'
 import { requiredDecisionsForPhaseFromRuns } from './feed-decisions.js'

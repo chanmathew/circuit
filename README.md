@@ -21,13 +21,8 @@ pnpm dev        # starts the Electron desktop app
 Do **not** use `vp dev` alone — that starts the Vite+ web dev server, not Electron. Use `pnpm dev`
 from the repo root (runs `electron-vite dev` in `apps/desktop`).
 
-First install also downloads the Electron binary and rebuilds `better-sqlite3` for Electron (via the
-desktop `postinstall` script). If the app fails to open after install, run:
-
-```bash
-node apps/desktop/scripts/ensure-electron.mjs
-pnpm dev
-```
+First install also downloads the Electron binary and compiles native dependencies for Electron.
+If the app fails to open, see [Troubleshooting](#troubleshooting).
 
 The Electron desktop app opens with placeholder Dashboard and New Task screens.
 
@@ -71,7 +66,66 @@ packages/prompts/
 | `vp check`                              | Lint, format, and typecheck                  |
 | `vp run -r typecheck`                   | Typecheck all workspace packages             |
 | `pnpm --filter @circuit/db db:generate` | Generate SQL migration from schema changes   |
-| `pnpm --filter @circuit/db db:migrate`  | Apply migrations to dev DB (`.data/`)        |
+| `pnpm --filter @circuit/db db:migrate`  | Apply migrations to the optional dev DB only |
+| `pnpm --filter @circuit/db db:studio`   | Drizzle Studio (dev DB)                      |
+
+## Database migrations
+
+Schema: `packages/db/src/schema.ts`. Migrations: `packages/db/migrations/`.
+
+**The app does not use `db:migrate`.** It has its own SQLite file and migrates itself every time it
+starts. `db:migrate` only updates a separate file in the repo that the desktop app never opens.
+
+| Database | Location | Who uses it | How schema updates apply |
+| -------- | -------- | ----------- | ------------------------ |
+| **App** | `~/Library/Application Support/Circuit/circuit.db` (macOS) | Electron desktop app | **`pnpm dev`** — `createDb()` runs pending migrations on launch |
+| **CLI dev** | `packages/db/.data/circuit-dev.db` | `db:migrate`, Drizzle Studio only | `pnpm --filter @circuit/db db:migrate` |
+
+### Workflow (app schema stays current)
+
+1. Edit `packages/db/src/schema.ts`
+2. `pnpm --filter @circuit/db db:generate`
+3. Commit new files under `packages/db/migrations/`
+4. **`pnpm dev`** — this is when the app DB gets the new schema. No `db:migrate` required.
+
+After step 4, your running app matches the latest migrations. You only run `db:migrate` if you
+deliberately want to update the **CLI dev** copy (e.g. browsing tables in Drizzle Studio).
+
+## Troubleshooting
+
+### App won't start: `ERR_DLOPEN_FAILED` / `NODE_MODULE_VERSION` on `better_sqlite3`
+
+**Why this happens:** Circuit uses [`better-sqlite3`](https://github.com/WiseLibs/better-sqlite3), a
+**native** SQLite driver (C++ compiled to a `.node` binary). It is not pure JavaScript — the binary
+must match the exact runtime that loads it. Electron embeds its own Node (different ABI than the Node
+on your PATH). We compile one copy in `node_modules`; whichever runtime built it last wins.
+
+- **`pnpm dev`** → needs the **Electron** build (`desktop` postinstall runs `electron-rebuild`)
+- **`db:migrate` / `db:studio`** → need the **Node** build (may run `pnpm rebuild better-sqlite3`)
+
+If you run CLI DB tools and then the app breaks (or the reverse), restore the build for the runtime
+you care about:
+
+```bash
+# App won't open after CLI DB work
+pnpm --filter desktop postinstall
+pnpm dev
+
+# db:migrate fails with ERR_DLOPEN_FAILED
+pnpm rebuild better-sqlite3
+pnpm --filter @circuit/db db:migrate
+pnpm --filter desktop postinstall   # before opening the app again
+```
+
+This is unrelated to creating migrations — `db:generate` does not load SQLite. Normal schema work
+(`db:generate` → commit → `pnpm dev`) never requires `postinstall`.
+
+### Fresh install: Electron binary missing
+
+```bash
+node apps/desktop/scripts/ensure-electron.mjs
+pnpm dev
+```
 
 ## Supply-chain policy
 
