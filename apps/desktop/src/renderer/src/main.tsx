@@ -3,6 +3,8 @@ import { RouterProvider, createRouter } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
+import { TooltipProvider } from '@circuit/ui'
+
 import { routeTree } from './routeTree'
 import { applyTheme, getTheme } from './lib/theme.js'
 import '@circuit/ui/styles.css'
@@ -28,8 +30,10 @@ if (!root) throw new Error('Root element not found')
 
 createRoot(root).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
+    <TooltipProvider>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </TooltipProvider>
   </StrictMode>,
 )
