@@ -6,7 +6,7 @@ import { createRoot } from 'react-dom/client'
 import { TooltipProvider } from '@circuit/ui'
 
 import { routeTree } from './routeTree'
-import { applyTheme, getTheme } from './lib/theme.js'
+import { applyTheme, getTheme } from './app/theme.js'
 import '@circuit/ui/styles.css'
 import './index.css'
 
@@ -16,7 +16,6 @@ const queryClient = new QueryClient()
 
 const router = createRouter({
   routeTree,
-  context: { queryClient },
 })
 
 declare module '@tanstack/react-router' {

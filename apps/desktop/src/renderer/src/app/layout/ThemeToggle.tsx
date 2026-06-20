@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 import { Button } from '@circuit/ui'
 
-import { getTheme, setTheme, type Theme } from '../lib/theme.js'
+import { getTheme, setTheme, type Theme } from '../theme.js'
 
 function SunIcon(): React.ReactElement {
   return (

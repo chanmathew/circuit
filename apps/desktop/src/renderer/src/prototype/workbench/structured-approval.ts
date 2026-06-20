@@ -1,18 +1,8 @@
 import type { PhaseStructuredData, WorkbenchState } from './types.js'
 
-import { PHASE_ORDER } from './fixtures.js'
+import { getPhaseLabel, getProceedLabel as workflowProceedLabel } from '@circuit/workflow'
 
-const PHASE_LABELS: Record<string, string> = {
-  questions: 'Questions',
-  research: 'Research',
-  design: 'Design',
-  structure: 'Structure',
-  plan: 'Plan',
-  implement: 'Implement',
-  review: 'Review',
-}
-
-export function getApproveBlockedReason(state: WorkbenchState): string | null {
+export function getPrototypeApproveBlockedReason(state: WorkbenchState): string | null {
   const needsReview = state.phases.find((p) => p.status === 'needs_review')
   if (!needsReview) return null
 
@@ -74,8 +64,8 @@ export function getApproveBlockedReason(state: WorkbenchState): string | null {
   }
 }
 
-export function canApprovePhase(state: WorkbenchState): boolean {
-  return getApproveBlockedReason(state) === null
+export function canApprovePrototypeState(state: WorkbenchState): boolean {
+  return getPrototypeApproveBlockedReason(state) === null
 }
 
 /** Phase is in human review on an artifact (questions, research, etc.). */
@@ -84,19 +74,11 @@ export function isInPhaseReview(state: WorkbenchState): boolean {
 }
 
 /** Primary action label — e.g. "Proceed to research". */
-export function getProceedLabel(state: WorkbenchState): string {
+export function getPrototypeProceedLabel(state: WorkbenchState): string {
   const current = state.phases.find((p) => p.status === 'needs_review')
   if (!current) return 'Proceed'
 
-  if (current.name === 'plan') return 'Unlock implementation'
-  if (current.name === 'review') return 'Approve review'
-
-  const idx = PHASE_ORDER.indexOf(current.name as (typeof PHASE_ORDER)[number])
-  const next = idx >= 0 ? PHASE_ORDER[idx + 1] : undefined
-  if (!next) return `Approve ${current.label.toLowerCase()}`
-
-  const nextLabel = PHASE_LABELS[next] ?? next
-  return `Proceed to ${nextLabel.toLowerCase()}`
+  return workflowProceedLabel(current.name, getPhaseLabel)
 }
 
 export function shouldShowStructuredPanel(

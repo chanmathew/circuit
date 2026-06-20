@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import { createScenarioState, PHASE_ORDER } from './fixtures.js'
-import { canApprovePhase } from './phase-approval.js'
+import { canApprovePrototypeState } from './structured-approval.js'
 import type {
   FindingStatus,
   MainMode,
@@ -87,7 +87,7 @@ export function useWorkbenchState(scenario: ScenarioId): {
 
   const approveCurrentPhase = useCallback(() => {
     setState((prev) => {
-      if (!canApprovePhase(prev)) return prev
+      if (!canApprovePrototypeState(prev)) return prev
 
       const current = prev.phases.find((p) => p.status === 'needs_review')
       if (!current) return prev

@@ -1,11 +1,11 @@
 import { Badge, Button, cn, ScrollArea, Separator, Textarea } from '@circuit/ui'
 
 import {
-  canApprovePhase,
-  getApproveBlockedReason,
-  getProceedLabel,
+  canApprovePrototypeState,
+  getPrototypeApproveBlockedReason,
+  getPrototypeProceedLabel,
   isInPhaseReview,
-} from './phase-approval.js'
+} from './structured-approval.js'
 
 import { PhaseStatusBadge } from './PhaseStatusBadge.js'
 import type {
@@ -410,9 +410,9 @@ export function ActionBar({
       (p.status === 'running' || p.status === 'approved' || state.slices.length > 0),
   )
   const inPhaseReview = isInPhaseReview(state)
-  const canApprove = canApprovePhase(state)
-  const blockedReason = getApproveBlockedReason(state)
-  const proceedLabel = getProceedLabel(state)
+  const canApprove = canApprovePrototypeState(state)
+  const blockedReason = getPrototypeApproveBlockedReason(state)
+  const proceedLabel = getPrototypeProceedLabel(state)
 
   const hasBarContent =
     inPhaseReview ||

@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 import { Button, cn } from '@circuit/ui'
 
-import { structuredPanelTitle } from '../phase-approval.js'
+import { structuredPanelTitle } from '../structured-approval.js'
 import type { PhaseStructuredData, RevisionDraft, WorkbenchActions } from '../types.js'
 import { HumanQaCards } from './HumanQaCards.js'
 import { RevisionForm } from './RevisionDrawer.js'

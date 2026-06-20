@@ -2,9 +2,9 @@ import { useState } from 'react'
 
 import { Badge, Button, ScrollArea } from '@circuit/ui'
 
-import { PhaseRail } from '../../components/PhaseRail.js'
+import { PhaseRail } from '../../features/workbench/PhaseRail.js'
 import { ActionBar, ActivityFeed, MainPanelContent, RightSidebarTabs } from './content-panels.js'
-import { shouldShowStructuredPanel } from './phase-approval.js'
+import { shouldShowStructuredPanel } from './structured-approval.js'
 import { PhaseStructuredPanel } from './structured/PhaseStructuredPanel.js'
 import type { WorkbenchLayoutProps } from './types.js'
 

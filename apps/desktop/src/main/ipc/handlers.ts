@@ -21,7 +21,7 @@ import {
   autoRunOnTaskCreate,
   requestPhaseRevision,
   runPhase,
-} from '../services/workflow-runner.js'
+} from '../features/workflow/index.js'
 
 function toIpcError(error: unknown): Error {
   if (error instanceof CircuitError) {

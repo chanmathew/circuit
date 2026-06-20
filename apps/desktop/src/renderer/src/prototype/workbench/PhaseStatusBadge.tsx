@@ -1,6 +1,6 @@
 import { Badge } from '@circuit/ui'
 
-import { phaseStatusLabel } from '../../lib/phase-styles.js'
+import { phaseStatusLabel } from '../../features/workbench/lib/phase-styles.js'
 import type { PhaseStatus } from './types.js'
 
 export function PhaseStatusBadge({

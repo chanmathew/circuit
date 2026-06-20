@@ -1,10 +1,11 @@
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 
 import { Button, cn, ScrollArea } from '@circuit/ui'
 
-import type { RepoDto, TaskSummaryDto } from '../../../shared/api.js'
+import type { RepoDto, TaskSummaryDto } from '../../../../shared/api.js'
+import { useAddRepo, useRepos } from '../../features/repos/hooks/useRepos.js'
+import { useTasks } from '../../features/tasks/hooks/useTasks.js'
 import { ThemeToggle } from './ThemeToggle.js'
 
 function ChevronIcon({ open }: { open: boolean }): React.ReactElement {
@@ -45,7 +46,6 @@ export function ProjectTreeSidebar({
   selectedTaskId: selectedTaskIdProp,
 }: ProjectTreeSidebarProps): React.ReactElement {
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
 
   const selectedTaskId = useMemo(() => {
@@ -54,24 +54,9 @@ export function ProjectTreeSidebar({
     return match?.[1]
   }, [selectedTaskIdProp, pathname])
 
-  const reposQuery = useQuery({
-    queryKey: ['repos'],
-    queryFn: () => window.circuit.listRepos(),
-  })
-
-  const tasksQuery = useQuery({
-    queryKey: ['tasks'],
-    queryFn: () => window.circuit.listTasks(),
-  })
-
-  const addRepoMutation = useMutation({
-    mutationFn: () => window.circuit.addRepo(),
-    onSuccess: (repo) => {
-      if (repo) {
-        void queryClient.invalidateQueries({ queryKey: ['repos'] })
-      }
-    },
-  })
+  const reposQuery = useRepos()
+  const tasksQuery = useTasks()
+  const addRepoMutation = useAddRepo()
 
   const repos = reposQuery.data ?? []
   const tasks = tasksQuery.data ?? []
