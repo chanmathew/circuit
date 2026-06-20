@@ -399,10 +399,37 @@ function NewTaskPage(): React.ReactElement {
 
 function TaskDetailPage(): React.ReactElement {
   const { taskId } = taskDetailRoute.useParams()
+  const queryClient = useQueryClient()
 
   const taskQuery = useQuery({
     queryKey: ['tasks', taskId],
     queryFn: () => window.circuit.getTask(taskId),
+  })
+
+  const invalidate = (): void => {
+    void queryClient.invalidateQueries({ queryKey: ['tasks', taskId] })
+    void queryClient.invalidateQueries({ queryKey: ['tasks'] })
+  }
+
+  const workflowMutation = useMutation({
+    mutationFn: async (action: {
+      type: 'run' | 'approve' | 'revise'
+      phaseName: string
+      note?: string
+    }) => {
+      if (action.type === 'run') {
+        return window.circuit.runPhase({ taskId, phaseName: action.phaseName })
+      }
+      if (action.type === 'approve') {
+        return window.circuit.approvePhase({ taskId, phaseName: action.phaseName })
+      }
+      return window.circuit.requestPhaseRevision({
+        taskId,
+        phaseName: action.phaseName,
+        note: action.note ?? '',
+      })
+    },
+    onSuccess: invalidate,
   })
 
   if (taskQuery.isLoading) {
@@ -438,11 +465,23 @@ function TaskDetailPage(): React.ReactElement {
         </p>
       </div>
 
-      <TaskWorkbench task={task} />
+      {workflowMutation.isError && (
+        <p className="text-sm text-destructive">
+          {workflowMutation.error instanceof Error
+            ? workflowMutation.error.message
+            : 'Workflow action failed'}
+        </p>
+      )}
 
-      <p className="shrink-0 text-xs text-muted-foreground">
-        Mock agent runs and structured event feed arrive in Milestone 3.
-      </p>
+      <TaskWorkbench
+        task={task}
+        isRunning={workflowMutation.isPending}
+        onRunPhase={(phaseName) => workflowMutation.mutate({ type: 'run', phaseName })}
+        onApprovePhase={(phaseName) => workflowMutation.mutate({ type: 'approve', phaseName })}
+        onRequestRevision={(phaseName, note) =>
+          workflowMutation.mutate({ type: 'revise', phaseName, note })
+        }
+      />
     </div>
   )
 }

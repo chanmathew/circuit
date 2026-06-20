@@ -1,4 +1,5 @@
 import type { ArtifactRow, PhaseRow, RepoRow, TaskRow } from '@circuit/db'
+import type { CircuitEvent } from '@circuit/protocol'
 import { getPhaseLabel } from '@circuit/workflow'
 import type { PhaseStatus } from '@circuit/workflow'
 
@@ -36,6 +37,10 @@ export interface ArtifactDto {
 }
 
 /** Lightweight row for dashboards — no artifact bodies or phase tree. */
+export interface FeedEventDto extends CircuitEvent {
+  id?: string
+}
+
 export interface TaskSummaryDto extends TaskRow {
   repoName: string
 }
@@ -47,6 +52,23 @@ export interface TaskDto extends TaskRow {
   ticketContent: string
   phases: PhaseDto[]
   artifacts: ArtifactDto[]
+  feedEvents: FeedEventDto[]
+}
+
+export interface RunPhaseRequest {
+  taskId: string
+  phaseName?: string
+}
+
+export interface ApprovePhaseRequest {
+  taskId: string
+  phaseName: string
+}
+
+export interface RequestPhaseRevisionRequest {
+  taskId: string
+  phaseName: string
+  note: string
 }
 
 export interface CreateTaskRequest {
@@ -108,12 +130,14 @@ export function toTaskDto(
     ticketContent: string
     phases: PhaseRow[]
     artifacts: ArtifactRow[]
+    feedEvents: CircuitEvent[]
   },
 ): TaskDto {
   return {
     ...task,
     phases: task.phases.map(toPhaseDto),
     artifacts: task.artifacts.map(toArtifactDto),
+    feedEvents: task.feedEvents,
   }
 }
 
@@ -124,4 +148,7 @@ export interface CircuitApi {
   listTasks: (request?: ListTasksRequest) => Promise<TaskSummaryDto[]>
   createTask: (request: CreateTaskRequest) => Promise<TaskDto>
   getTask: (taskId: string) => Promise<TaskDto>
+  runPhase: (request: RunPhaseRequest) => Promise<TaskDto>
+  approvePhase: (request: ApprovePhaseRequest) => Promise<TaskDto>
+  requestPhaseRevision: (request: RequestPhaseRevisionRequest) => Promise<TaskDto>
 }

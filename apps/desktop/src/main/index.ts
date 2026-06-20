@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, shell } from 'electron'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -7,8 +7,6 @@ import { registerIpcHandlers } from './ipc/handlers.js'
 
 const isDev = !app.isPackaged
 const mainDir = fileURLToPath(new URL('.', import.meta.url))
-
-ipcMain.handle('circuit:ping', () => 'pong')
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({

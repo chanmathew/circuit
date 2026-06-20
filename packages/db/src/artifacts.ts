@@ -19,6 +19,27 @@ export function getArtifactById(db: CircuitDb, id: string): ArtifactRow | undefi
   return db.select().from(artifacts).where(eq(artifacts.id, id)).get()
 }
 
+export function getArtifactByTaskAndPhase(
+  db: CircuitDb,
+  taskId: string,
+  phase: string,
+): ArtifactRow | undefined {
+  return db
+    .select()
+    .from(artifacts)
+    .where(and(eq(artifacts.taskId, taskId), eq(artifacts.phase, phase)))
+    .get()
+}
+
+export function updateArtifact(
+  db: CircuitDb,
+  artifactId: string,
+  patch: Partial<Pick<ArtifactRow, 'content' | 'status' | 'version' | 'updatedAt'>>,
+): ArtifactRow | undefined {
+  db.update(artifacts).set(patch).where(eq(artifacts.id, artifactId)).run()
+  return getArtifactById(db, artifactId)
+}
+
 export function getTicketArtifactForTask(db: CircuitDb, taskId: string): ArtifactRow | undefined {
   return db
     .select()

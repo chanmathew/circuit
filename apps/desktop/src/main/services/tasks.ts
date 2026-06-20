@@ -8,6 +8,7 @@ import {
   insertPhases,
   insertTask,
   listArtifactsForTask,
+  listPhaseRunsForTask,
   listPhasesForTask,
   listSlugsForRepo,
   listTasks,
@@ -16,6 +17,7 @@ import {
   type PhaseRow,
   type TaskRow,
 } from '@circuit/db'
+import type { CircuitEvent } from '@circuit/protocol'
 import {
   artifactPath,
   createId,
@@ -39,6 +41,7 @@ import {
 } from '@circuit/workflow'
 
 import { getDb } from '../db.js'
+import { buildFeedEvents } from './feed-events.js'
 
 export interface CreateTaskInput {
   repoId: string
@@ -55,6 +58,7 @@ export interface TaskDetail extends TaskRow {
   ticketContent: string
   phases: PhaseRow[]
   artifacts: ArtifactRow[]
+  feedEvents: CircuitEvent[]
 }
 
 export function createTask(input: CreateTaskInput): TaskDetail {
@@ -248,6 +252,15 @@ function loadTaskDetail(taskId: string): TaskDetail | undefined {
   const ticket = getTicketArtifactForTask(db, task.id)
   const phases = listPhasesForTask(db, task.id)
   const artifacts = listArtifactsForTask(db, task.id)
+  const phaseRuns = listPhaseRunsForTask(db, task.id)
+  const feedEvents = buildFeedEvents(
+    task.id,
+    phaseRuns.map((run) => ({
+      id: run.id,
+      transcript: run.transcript,
+      startedAt: run.startedAt,
+    })),
+  )
 
   return toTaskDetail(
     task,
@@ -256,6 +269,7 @@ function loadTaskDetail(taskId: string): TaskDetail | undefined {
     ticket?.content ?? '',
     phases,
     artifacts,
+    feedEvents,
   )
 }
 
@@ -270,6 +284,7 @@ function toTaskDetail(
   ticketContent: string,
   phases: PhaseRow[],
   artifacts: ArtifactRow[],
+  feedEvents: CircuitEvent[],
 ): TaskDetail {
   return {
     ...task,
@@ -278,6 +293,7 @@ function toTaskDetail(
     ticketContent,
     phases,
     artifacts,
+    feedEvents,
   }
 }
 

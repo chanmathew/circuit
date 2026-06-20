@@ -12,8 +12,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@circuit/agent-adapters": "workspace:*",
     "@circuit/db": "workspace:*",
     "@circuit/git": "workspace:*",
+    "@circuit/protocol": "workspace:*",
     "@circuit/shared": "workspace:*",
     "@circuit/ui": "workspace:*",
     "@circuit/workflow": "workspace:*",

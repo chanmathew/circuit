@@ -47,12 +47,18 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@circuit/agent-adapters':
+        specifier: workspace:*
+        version: link:../../packages/agent-adapters
       '@circuit/db':
         specifier: workspace:*
         version: link:../../packages/db
       '@circuit/git':
         specifier: workspace:*
         version: link:../../packages/git
+      '@circuit/protocol':
+        specifier: workspace:*
+        version: link:../../packages/protocol
       '@circuit/shared':
         specifier: workspace:*
         version: link:../../packages/shared

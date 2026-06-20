@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
-import { Badge, cn, ScrollArea } from '@circuit/ui'
+import { Badge, Button, cn, ScrollArea, Textarea } from '@circuit/ui'
 import type { PhaseStatus } from '@circuit/workflow'
 
-import type { ArtifactDto, PhaseDto, TaskDto } from '../../../shared/api.js'
+import type { ArtifactDto, FeedEventDto, PhaseDto, TaskDto } from '../../../shared/api.js'
 
 const PHASE_STATUS_DOT: Record<PhaseStatus, string> = {
   locked: 'bg-muted-foreground/30',
@@ -89,23 +89,139 @@ function ArtifactTree({
   )
 }
 
-export interface TaskWorkbenchProps {
-  task: TaskDto
+function formatEventLabel(event: FeedEventDto): string {
+  switch (event.type) {
+    case 'phase:started':
+      return 'Phase started'
+    case 'phase:completed':
+      return 'Phase completed'
+    case 'artifact:written':
+      return 'Artifact written'
+    case 'decision:required':
+      return 'Decision required'
+    case 'validation:passed':
+      return 'Validation passed'
+    case 'validation:failed':
+      return 'Validation failed'
+    case 'diff:ready':
+      return 'Diff ready'
+    case 'blocker:raised':
+      return 'Blocker'
+    default:
+      return event.type
+  }
 }
 
-export function TaskWorkbench({ task }: TaskWorkbenchProps): React.ReactElement {
+function EventFeed({
+  events,
+  showRaw,
+}: {
+  events: FeedEventDto[]
+  showRaw: boolean
+}): React.ReactElement {
+  const visible = showRaw
+    ? events
+    : events.filter((e) => e.type !== 'phase:started' && e.type !== 'phase:completed')
+
+  return (
+    <ScrollArea className="flex-1">
+      <ul className="space-y-2 p-3">
+        {visible.length === 0 && (
+          <li className="text-xs text-muted-foreground">No activity yet.</li>
+        )}
+        {visible.map((event, i) => (
+          <li
+            key={event.id ?? `${event.type}-${i}`}
+            className="rounded-md border border-border p-2"
+          >
+            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              {formatEventLabel(event)}
+            </p>
+            {event.type === 'decision:required' && isDecisionPayload(event.payload) && (
+              <div className="mt-1 space-y-1">
+                <p className="text-xs font-medium">{event.payload.title}</p>
+                <div className="flex flex-wrap gap-1">
+                  {event.payload.options.map((opt) => (
+                    <Badge
+                      key={opt.id}
+                      variant={opt.recommended ? 'default' : 'outline'}
+                      className="text-[10px]"
+                    >
+                      {opt.label}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+            {showRaw && (
+              <pre className="mt-1 whitespace-pre-wrap font-mono text-[10px] text-muted-foreground">
+                {JSON.stringify(event.payload, null, 2)}
+              </pre>
+            )}
+          </li>
+        ))}
+      </ul>
+    </ScrollArea>
+  )
+}
+
+function isDecisionPayload(
+  payload: unknown,
+): payload is { title: string; options: { id: string; label: string; recommended?: boolean }[] } {
+  if (typeof payload !== 'object' || payload === null) return false
+  const p = payload as Record<string, unknown>
+  return typeof p.title === 'string' && Array.isArray(p.options)
+}
+
+export interface TaskWorkbenchProps {
+  task: TaskDto
+  isRunning?: boolean
+  onRunPhase: (phaseName: string) => void
+  onApprovePhase: (phaseName: string) => void
+  onRequestRevision: (phaseName: string, note: string) => void
+}
+
+export function TaskWorkbench({
+  task,
+  isRunning = false,
+  onRunPhase,
+  onApprovePhase,
+  onRequestRevision,
+}: TaskWorkbenchProps): React.ReactElement {
+  const activePhase = task.phases.find((p) => p.name === task.currentPhase)
+  const needsReviewPhase = task.phases.find((p) => p.status === 'needs_review')
+
   const defaultArtifactId = useMemo(() => {
-    const current = task.artifacts.find((a) => a.phase === task.currentPhase)
+    const phaseForArtifact = needsReviewPhase ?? activePhase
+    const fromPhase = task.artifacts.find((a) => a.phase === phaseForArtifact?.name)
     return (
-      current?.id ??
+      fromPhase?.id ??
+      task.artifacts.find((a) => a.phase === task.currentPhase)?.id ??
       task.artifacts.find((a) => a.phase === 'ticket')?.id ??
       task.artifacts[0]?.id ??
       ''
     )
-  }, [task])
+  }, [task, activePhase, needsReviewPhase])
 
   const [selectedArtifactId, setSelectedArtifactId] = useState(defaultArtifactId)
+  const [showRawFeed, setShowRawFeed] = useState(false)
+  const [revisionOpen, setRevisionOpen] = useState(false)
+  const [revisionNote, setRevisionNote] = useState('')
+
+  useEffect(() => {
+    setSelectedArtifactId(defaultArtifactId)
+  }, [defaultArtifactId])
+
   const selectedArtifact = task.artifacts.find((a) => a.id === selectedArtifactId)
+  const actionPhase = needsReviewPhase ?? activePhase
+
+  const canRun =
+    actionPhase &&
+    (actionPhase.status === 'ready' || actionPhase.status === 'needs_revision') &&
+    !isRunning
+
+  const canApprove = actionPhase?.status === 'needs_review' && !isRunning
+  const canRevise = actionPhase?.status === 'needs_review' && !isRunning
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-card">
@@ -160,7 +276,93 @@ export function TaskWorkbench({ task }: TaskWorkbenchProps): React.ReactElement 
               Select an artifact
             </div>
           )}
+
+          <div className="shrink-0 border-t border-border px-4 py-2 flex flex-wrap items-center gap-2">
+            {canRun && actionPhase && (
+              <Button
+                type="button"
+                size="sm"
+                disabled={isRunning}
+                onClick={() => onRunPhase(actionPhase.name)}
+              >
+                {isRunning ? 'Running…' : `Run ${actionPhase.label}`}
+              </Button>
+            )}
+            {canApprove && actionPhase && (
+              <Button
+                type="button"
+                size="sm"
+                variant="default"
+                disabled={isRunning}
+                onClick={() => onApprovePhase(actionPhase.name)}
+              >
+                Approve {actionPhase.label}
+              </Button>
+            )}
+            {canRevise && actionPhase && !revisionOpen && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={isRunning}
+                onClick={() => setRevisionOpen(true)}
+              >
+                Request revision
+              </Button>
+            )}
+            {revisionOpen && actionPhase && (
+              <div className="flex w-full flex-col gap-2">
+                <Textarea
+                  value={revisionNote}
+                  onChange={(e) => setRevisionNote(e.target.value)}
+                  placeholder="What should change?"
+                  className="min-h-16 text-sm"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={!revisionNote.trim() || isRunning}
+                    onClick={() => {
+                      onRequestRevision(actionPhase.name, revisionNote.trim())
+                      setRevisionNote('')
+                      setRevisionOpen(false)
+                    }}
+                  >
+                    Submit revision
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setRevisionOpen(false)
+                      setRevisionNote('')
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
+
+        <aside className="flex w-64 shrink-0 flex-col border-l border-border">
+          <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-2">
+            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              Activity
+            </p>
+            <button
+              type="button"
+              className="text-[10px] text-primary hover:underline"
+              onClick={() => setShowRawFeed((v) => !v)}
+            >
+              {showRawFeed ? 'Structured' : 'Raw'}
+            </button>
+          </div>
+          <EventFeed events={task.feedEvents} showRaw={showRawFeed} />
+        </aside>
       </div>
     </div>
   )

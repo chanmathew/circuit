@@ -105,14 +105,15 @@ Milestone 1 (**Local shell**) and Milestone 2b (**Workflow state**) are implemen
 Also done: **Circuit protocol** (`@circuit/protocol`) — event schemas, structured block types,
 parsers.
 
+Also done: **Mock agent loop** — mock adapter phase runs, structured activity feed, approve/revise.
+
 Not yet implemented:
 
-- Mock agent runs and structured event feed
 - Context packs and fresh sessions
 - OpenCode integration
 - Git worktrees and diff review
 
-Next milestone: **Mock agent loop** — simulate phase runs, structured feed, approve/revise.
+Next milestone: **OpenCode integration** — real agent runs after mock loop validation.
 
 ## License
 
