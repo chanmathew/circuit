@@ -1,4 +1,10 @@
-import { createRootRoute, createRoute, Outlet, useNavigate, useRouterState } from '@tanstack/react-router'
+import {
+  createRootRoute,
+  createRoute,
+  Outlet,
+  useNavigate,
+  useRouterState,
+} from '@tanstack/react-router'
 import { Link } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
@@ -17,8 +23,9 @@ import {
 } from '@circuit/ui'
 import { autoSelectWorkflow, getWorkflowDefinition } from '@circuit/workflow'
 
-import type { RepoDto, TaskDto } from '../../shared/api.js'
+import type { RepoDto, TaskSummaryDto } from '../../shared/api.js'
 import type { WorkflowType } from '@circuit/workflow'
+import { TaskWorkbench } from './components/TaskWorkbench.js'
 import {
   WorkbenchPrototypePage,
   parseScenario,
@@ -82,7 +89,7 @@ function AppShell(): React.ReactElement {
           <Badge variant="secondary">IPC: {pingResult}</Badge>
         </div>
       </aside>
-      <main className="flex flex-1 flex-col">
+      <main className="flex flex-1 flex-col min-h-0 overflow-hidden">
         <Outlet />
       </main>
     </div>
@@ -248,7 +255,7 @@ function RepoCard({ repo }: { repo: RepoDto }): React.ReactElement {
   )
 }
 
-function TaskCard({ task }: { task: TaskDto }): React.ReactElement {
+function TaskCard({ task }: { task: TaskSummaryDto }): React.ReactElement {
   const workflow = getWorkflowDefinition(task.workflowType as WorkflowType)
 
   return (
@@ -421,42 +428,20 @@ function TaskDetailPage(): React.ReactElement {
   const workflow = getWorkflowDefinition(task.workflowType as WorkflowType)
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-8">
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-2">
-          <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">
-            ← Dashboard
-          </Link>
-          <h1 className="text-2xl font-semibold tracking-tight">{task.title}</h1>
-          <p className="text-sm text-muted-foreground">
-            {task.repoName} · {workflow?.label ?? task.workflowType} · {task.branchName}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="outline">{task.status}</Badge>
-            <Badge variant="secondary">phase: {task.currentPhase}</Badge>
-          </div>
-        </div>
+    <div className="flex flex-1 flex-col gap-4 p-6 min-h-0">
+      <div className="shrink-0 space-y-1">
+        <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">
+          ← Dashboard
+        </Link>
+        <p className="text-sm text-muted-foreground">
+          {task.repoName} · {workflow?.label ?? task.workflowType}
+        </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>00-ticket.md</CardTitle>
-          <CardDescription>
-            Written to{' '}
-            <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">
-              .Circuit/tasks/{task.slug}/00-ticket.md
-            </code>
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <pre className="overflow-x-auto whitespace-pre-wrap rounded-md border border-border bg-muted/30 p-4 font-mono text-sm">
-            {task.ticketContent}
-          </pre>
-        </CardContent>
-      </Card>
+      <TaskWorkbench task={task} />
 
-      <p className="text-xs text-muted-foreground">
-        Phase rail and agent runs arrive in Milestone 2–3. This task is ready for workflow state.
+      <p className="shrink-0 text-xs text-muted-foreground">
+        Mock agent runs and structured event feed arrive in Milestone 3.
       </p>
     </div>
   )

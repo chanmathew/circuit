@@ -1,14 +1,19 @@
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 
 import {
   getRepoById,
   getTaskById,
   getTicketArtifactForTask,
   insertArtifact,
+  insertPhases,
   insertTask,
+  listArtifactsForTask,
+  listPhasesForTask,
   listSlugsForRepo,
   listTasks,
+  updatePhaseArtifactId,
   type ArtifactRow,
+  type PhaseRow,
   type TaskRow,
 } from '@circuit/db'
 import {
@@ -23,7 +28,15 @@ import {
   taskDir,
   ValidationError,
 } from '@circuit/shared'
-import { autoSelectWorkflow, getWorkflowDefinition } from '@circuit/workflow'
+import {
+  autoSelectWorkflow,
+  buildInitialPhases,
+  emptyArtifactMarkdown,
+  getPhaseLabel,
+  getWorkflowDefinition,
+  getWorkflowPhaseArtifacts,
+  type WorkflowType,
+} from '@circuit/workflow'
 
 import { getDb } from '../db.js'
 
@@ -32,10 +45,16 @@ export interface CreateTaskInput {
   description: string
 }
 
+export interface TaskSummary extends TaskRow {
+  repoName: string
+}
+
 export interface TaskDetail extends TaskRow {
   repoName: string
   repoPath: string
   ticketContent: string
+  phases: PhaseRow[]
+  artifacts: ArtifactRow[]
 }
 
 export function createTask(input: CreateTaskInput): TaskDetail {
@@ -74,7 +93,7 @@ export function createTask(input: CreateTaskInput): TaskDetail {
   mkdirSync(taskDir(repo.path, slug), { recursive: true })
   writeFileSync(ticketPath, ticketContent, 'utf8')
 
-  const task = insertTask(db, {
+  insertTask(db, {
     id: taskId,
     repoId: repo.id,
     title,
@@ -103,17 +122,145 @@ export function createTask(input: CreateTaskInput): TaskDetail {
     updatedAt: now,
   })
 
-  return toTaskDetail(task, repo.name, repo.path, ticketContent)
+  ensureWorkflowState(taskId, now)
+
+  return getTaskDetail(taskId)
 }
 
-export function listAllTasks(repoId?: string): TaskDetail[] {
+/** Idempotent: create phases and phase artifacts when missing (backfills Milestone 1 tasks). */
+export function ensureWorkflowState(taskId: string, now = new Date().toISOString()): void {
+  const db = getDb()
+  const task = getTaskById(db, taskId)
+  if (!task) return
+
+  const repo = getRepoById(db, task.repoId)
+  if (!repo) return
+
+  const workflowType = task.workflowType as WorkflowType
+  const existingPhases = listPhasesForTask(db, taskId)
+
+  if (existingPhases.length === 0) {
+    insertInitialPhases(db, taskId, workflowType)
+  }
+
+  backfillPhaseArtifacts(db, {
+    taskId,
+    repoPath: repo.path,
+    slug: task.slug,
+    workflowType,
+    now,
+  })
+}
+
+function insertInitialPhases(
+  db: ReturnType<typeof getDb>,
+  taskId: string,
+  workflowType: WorkflowType,
+): void {
+  const initialPhases = buildInitialPhases(workflowType)
+  if (initialPhases.length === 0) return
+
+  insertPhases(
+    db,
+    initialPhases.map((phase) => ({
+      id: createId(),
+      taskId,
+      name: phase.name,
+      status: phase.status,
+      order: phase.order,
+      currentArtifactId: null,
+      dependsOnArtifactIds: '[]',
+      staleReason: null,
+    })),
+  )
+}
+
+function backfillPhaseArtifacts(
+  db: ReturnType<typeof getDb>,
+  input: {
+    taskId: string
+    repoPath: string
+    slug: string
+    workflowType: WorkflowType
+    now: string
+  },
+): void {
+  const phases = listPhasesForTask(db, input.taskId)
+  const phaseByName = new Map(phases.map((phase) => [phase.name, phase]))
+  const artifacts = listArtifactsForTask(db, input.taskId)
+  const artifactByPhase = new Map(artifacts.map((artifact) => [artifact.phase, artifact]))
+
+  mkdirSync(taskDir(input.repoPath, input.slug), { recursive: true })
+
+  for (const { phase, filename } of getWorkflowPhaseArtifacts(input.workflowType)) {
+    const filePath = artifactPath(input.repoPath, input.slug, filename)
+    const label = getPhaseLabel(phase)
+    const placeholder = emptyArtifactMarkdown(label)
+
+    let content = placeholder
+    if (existsSync(filePath)) {
+      content = readFileSync(filePath, 'utf8')
+    } else {
+      writeFileSync(filePath, placeholder, 'utf8')
+    }
+
+    let artifact = artifactByPhase.get(phase)
+    if (!artifact) {
+      artifact = insertArtifact(db, {
+        id: createId(),
+        taskId: input.taskId,
+        phase,
+        path: filePath,
+        title: filename,
+        content,
+        version: 1,
+        status: 'draft',
+        createdAt: input.now,
+        updatedAt: input.now,
+      })
+      artifactByPhase.set(phase, artifact)
+    }
+
+    const phaseRow = phaseByName.get(phase)
+    if (phaseRow && !phaseRow.currentArtifactId) {
+      updatePhaseArtifactId(db, phaseRow.id, artifact.id)
+    }
+  }
+}
+
+export function listAllTasks(repoId?: string): TaskSummary[] {
   const db = getDb()
 
   return listTasks(db, repoId).map((task) => {
     const repo = getRepoById(db, task.repoId)
-    const ticket = getTicketArtifactForTask(db, task.id)
-    return toTaskDetail(task, repo?.name ?? 'Unknown repo', repo?.path ?? '', ticket?.content ?? '')
+    return toTaskSummary(task, repo?.name ?? 'Unknown repo')
   })
+}
+
+function loadTaskDetail(taskId: string): TaskDetail | undefined {
+  const db = getDb()
+  const task = getTaskById(db, taskId)
+  if (!task) return undefined
+
+  ensureWorkflowState(taskId)
+
+  const repo = getRepoById(db, task.repoId)
+  const ticket = getTicketArtifactForTask(db, task.id)
+  const phases = listPhasesForTask(db, task.id)
+  const artifacts = listArtifactsForTask(db, task.id)
+
+  return toTaskDetail(
+    task,
+    repo?.name ?? 'Unknown repo',
+    repo?.path ?? '',
+    ticket?.content ?? '',
+    phases,
+    artifacts,
+  )
+}
+
+function toTaskSummary(task: TaskRow, repoName: string): TaskSummary {
+  return { ...task, repoName }
 }
 
 function toTaskDetail(
@@ -121,26 +268,25 @@ function toTaskDetail(
   repoName: string,
   repoPath: string,
   ticketContent: string,
+  phases: PhaseRow[],
+  artifacts: ArtifactRow[],
 ): TaskDetail {
   return {
     ...task,
     repoName,
     repoPath,
     ticketContent,
+    phases,
+    artifacts,
   }
 }
 
 export function getTaskDetail(taskId: string): TaskDetail {
-  const db = getDb()
-  const task = getTaskById(db, taskId)
-  if (!task) {
+  const detail = loadTaskDetail(taskId)
+  if (!detail) {
     throw new NotFoundError('Task', taskId)
   }
-
-  const repo = getRepoById(db, task.repoId)
-  const ticket = getTicketArtifactForTask(db, task.id)
-
-  return toTaskDetail(task, repo?.name ?? 'Unknown repo', repo?.path ?? '', ticket?.content ?? '')
+  return detail
 }
 
 export function getTicketArtifact(taskId: string): ArtifactRow | undefined {

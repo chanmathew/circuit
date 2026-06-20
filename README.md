@@ -1,7 +1,6 @@
 # Circuit
 
-Circuit is a local-first desktop app for running AI coding agents through structured, reviewable
-development workflows.
+Circuit is a local-first control plane / harness for governed coding-agent workflows.
 
 See the [project brief](docs/circuit-brief.md) for product goals, architecture, and milestones.
 
@@ -52,8 +51,9 @@ This repo follows [Vite+ monorepo conventions](https://viteplus.dev/guide/monore
 ```txt
 apps/desktop/          Electron + React shell (package name: desktop)
 packages/ui/           Shared shadcn-style components
+packages/protocol/     Canonical events, blocks, and parsers
 packages/workflow/     Workflow types and definitions
-packages/shared/       IDs, paths, errors, events
+packages/shared/       IDs, paths, errors, events (re-exports protocol)
 packages/db/           Drizzle schema, migrations, SQLite client
 packages/agent-adapters/  Agent adapter interfaces
 packages/workspace-manager/
@@ -93,22 +93,26 @@ For urgent security patches, use `minimumReleaseAgeExclude` or run `vp pm audit 
 
 ## Scaffold status
 
-Milestone 1 (**Local shell**) is implemented:
+Milestone 1 (**Local shell**) and Milestone 2b (**Workflow state**) are implemented:
 
 - SQLite persistence in `app.getPath('userData')/circuit.db` via `@circuit/db`
 - Add local git repo from the dashboard
 - Create task from description with auto-generated title, slug, and branch
-- Writes `.Circuit/tasks/<slug>/00-ticket.md` in the target repo
-- Minimal task detail view showing ticket content
+- Writes `.Circuit/tasks/<slug>/` artifacts in the target repo
+- Phase rail and phase rows in SQLite on task create
+- Empty phase artifact files on disk + artifact tree in task detail
+
+Also done: **Circuit protocol** (`@circuit/protocol`) — event schemas, structured block types,
+parsers.
 
 Not yet implemented:
 
-- Workflow phase rail and phase state in SQLite
-- Mock agent runs and artifact approval loop
+- Mock agent runs and structured event feed
+- Context packs and fresh sessions
 - OpenCode integration
 - Git worktrees and diff review
 
-Next milestone: **Workflow state** — phase rail, artifact tree, empty phase artifact files.
+Next milestone: **Mock agent loop** — simulate phase runs, structured feed, approve/revise.
 
 ## License
 

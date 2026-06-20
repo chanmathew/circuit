@@ -4,7 +4,8 @@
 
 1. Announce: Research phase.
 2. Verify inputs: `00-ticket.md` and `01-questions.md` are available.
-3. Allowed: read-only codebase inspection, citing files/symbols/tests. Prohibited: code edits, implementation recommendations, design proposals.
+3. Allowed: read-only codebase inspection, citing files/symbols/tests. Prohibited: code edits,
+   implementation recommendations, design proposals.
 4. Perform phase work: gather objective facts about the current codebase.
 5. Write artifact: `02-research.md`.
 6. Self-review: separate facts from assumptions; no recommendations or solution bias.

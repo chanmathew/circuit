@@ -4,9 +4,19 @@ export {
   getArtifactById,
   getTicketArtifactForTask,
   insertArtifact,
+  listArtifactsForTask,
   type ArtifactRow,
   type NewArtifactRow,
 } from './artifacts.js'
+export {
+  getPhaseById,
+  insertPhase,
+  insertPhases,
+  listPhasesForTask,
+  updatePhaseArtifactId,
+  type NewPhaseRow,
+  type PhaseRow,
+} from './phases.js'
 export {
   getRepoById,
   getRepoByPath,

@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm'
+import { and, asc, eq } from 'drizzle-orm'
 
 import type { CircuitDb } from './client.js'
 import { artifacts } from './schema.js'
@@ -25,4 +25,13 @@ export function getTicketArtifactForTask(db: CircuitDb, taskId: string): Artifac
     .from(artifacts)
     .where(and(eq(artifacts.taskId, taskId), eq(artifacts.phase, 'ticket')))
     .get()
+}
+
+export function listArtifactsForTask(db: CircuitDb, taskId: string): ArtifactRow[] {
+  return db
+    .select()
+    .from(artifacts)
+    .where(eq(artifacts.taskId, taskId))
+    .orderBy(asc(artifacts.title))
+    .all()
 }

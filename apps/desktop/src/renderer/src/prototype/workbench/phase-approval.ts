@@ -20,9 +20,7 @@ export function getApproveBlockedReason(state: WorkbenchState): string | null {
 
   switch (structured.mode) {
     case 'human_qa': {
-      const incomplete = structured.items.filter(
-        (i) => i.status === 'pending' && !i.answer.trim(),
-      )
+      const incomplete = structured.items.filter((i) => i.status === 'pending' && !i.answer.trim())
       if (incomplete.length > 0) {
         return `${incomplete.length} human question${incomplete.length === 1 ? '' : 's'} need an answer or defer`
       }
@@ -82,10 +80,7 @@ export function canApprovePhase(state: WorkbenchState): boolean {
 
 /** Phase is in human review on an artifact (questions, research, etc.). */
 export function isInPhaseReview(state: WorkbenchState): boolean {
-  return (
-    state.phases.some((p) => p.status === 'needs_review') &&
-    state.mainMode === 'artifact'
-  )
+  return state.phases.some((p) => p.status === 'needs_review') && state.mainMode === 'artifact'
 }
 
 /** Primary action label — e.g. "Proceed to research". */

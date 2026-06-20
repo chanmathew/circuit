@@ -1,4 +1,11 @@
 export { autoSelectWorkflow, type WorkflowSelection } from './auto-select-workflow.js'
+export { buildInitialPhases, type InitialPhase } from './phase-init.js'
+export { getPhaseLabel } from './phase-labels.js'
+export {
+  emptyArtifactMarkdown,
+  getWorkflowPhaseArtifacts,
+  type WorkflowPhaseArtifact,
+} from './workflow-artifacts.js'
 export {
   applyPhaseRevision,
   getDownstreamPhaseNames,

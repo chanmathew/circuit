@@ -6,8 +6,13 @@
 
 ## One-line Description
 
-Circuit is a local-first desktop app for running AI coding agents through structured, reviewable
-development workflows.
+Circuit is a local-first control plane / harness for governed coding-agent workflows.
+
+Shorter tagline:
+
+```txt
+Circuit keeps coding agents in a controlled loop from task to reviewed diff.
+```
 
 ## Product Thesis
 
@@ -15,46 +20,98 @@ Current AI coding tools make it very easy to ask an agent to build something, bu
 agent to jump straight into code, make broad changes, lose context, or produce plausible but
 low-quality implementation plans.
 
-Circuit solves this by turning agentic software development into a controlled workflow:
+Circuit solves this by turning agentic software development into a governed workflow harness:
 
-**Task → Questions → Research → Design → Structure → Plan → Implement → Review**
+```txt
+Simple UX surface
++ governed workflow engine
++ fresh sessions
++ artifacts as memory
++ parallel worktrees/slices
++ adapter-based agent runtimes
+```
+
+Internal flow for Structured Change:
+
+```txt
+Questions → Research → Design → Structure → Plan → Parallelize → Implement slices → Integrate → Review
+```
+
+User-facing simplification:
+
+```txt
+Understand → Design → Plan → Build → Review
+```
 
 The goal is not to replace Cursor, Codex, Claude Code, or OpenCode. The goal is to provide a better
-control plane around agentic coding: task state, workspaces, artifacts, approvals, diffs,
-validation, and PR-ready summaries.
+control plane around agentic coding: workflow state, artifacts, decisions, approvals, workspaces,
+validation, diffs, and PR-ready summaries.
+
+### What Circuit Is Not
+
+- Not a chat wrapper.
+- Not a full IDE.
+- Not only an OpenCode UI.
+- Not a prettier HumanLayer/QRSPI clone.
+
+Circuit is a workflow engine that keeps agents aligned across sessions, artifacts, worktrees,
+validation, and review.
 
 Circuit should feel closer to Cursor/Codex in simplicity, but with HumanLayer-style structure under
-the hood.
+the hood — exposed as **guided autonomy**, not visible harness complexity.
 
 ## Core User Experience Principles
 
 1. **Minimal setup friction**
    - Users should start with a task description and repo.
-   - Task name, slug, branch name, workflow, agent, effort, and workspace strategy should be
-     inferred automatically.
+   - Task name, slug, branch name, workflow, review level, and workspace strategy should be inferred
+     automatically.
    - Advanced configuration should be available but hidden by default.
 
-2. **Workflow over chat**
+2. **Guided autonomy — not wizard, not freeform chat**
    - The primary object is a task, not a conversation.
-   - The interaction model is phase → artifact → approval.
-   - Agent output should be shown as phase transcripts and artifacts, not endless chat logs.
+   - Structure answers: Where are we? What is allowed now? What evidence exists? What needs my
+     decision? What happens next?
+   - Chat answers: Steering, clarifying, revising, going backward, choosing options, asking why,
+     changing scope.
+   - The UX model is:
+     ```txt
+     Structured task workspace
+     + contextual agent chat/control surface
+     + artifact/diff/review panels
+     ```
+   - Avoid rigid per-stage approve-only wizards. Avoid unstructured chat-as-primary-navigation.
 
-3. **Progressive disclosure**
+3. **Structured feed over raw transcript**
+   - Default visible activity is a structured event stream with contextual cards — not endless chat
+     logs.
+   - Raw transcript remains available for audit and debugging (`Show raw transcript`).
+   - User messages should be able to affect workflow state and artifacts (e.g. a design decision in
+     chat triggers stale downstream phases).
+
+4. **Progressive disclosure**
    - Show only what matters now.
    - Hide model/provider/worktree details unless the user changes them or something needs approval.
    - Explain decisions only when useful.
 
-4. **Human control at judgment points**
+5. **Human control at judgment points**
    - The app should auto-advance through safe read-only phases when appropriate.
    - It should pause before design decisions, plan approval, implementation, and final merge/PR.
    - The user should feel the agent is fast but boxed in.
 
-5. **Artifacts as source of truth**
+6. **Artifacts as source of truth**
    - Each phase produces a durable artifact on disk.
    - Artifacts should be readable markdown files.
+   - Durable memory is artifacts, task state, workgraph, implementation logs, diffs, validation
+     output, and review results — not chat history.
    - Final PR summaries should be generated from artifacts, not from transient chat memory.
 
-6. **Local-first trust**
+7. **Fresh sessions by default**
+   - Prefer a fresh agent session per major phase, per implementation slice, and for final review.
+   - This reduces context rot, token bloat, and audit noise.
+   - Each session receives a generated, bounded context pack — not full prior transcripts.
+
+8. **Local-first trust**
    - The app should run locally against local repos.
    - It should be transparent about files read, files changed, commands run, and validations
      performed.
@@ -76,18 +133,19 @@ Secondary:
 
 ## MVP Goal
 
-Build a local desktop app that lets a user:
+Build a local desktop harness that lets a user:
 
 1. Add a local git repo.
 2. Create a new structured task from a single text prompt.
 3. Auto-generate task name, slug, branch name, and workspace.
-4. Run a structured workflow through OpenCode.
+4. Run a structured workflow through an agent runtime adapter (OpenCode first).
 5. Generate and review markdown artifacts for each phase.
-6. Approve or revise each phase.
-7. Implement one vertical slice at a time.
+6. Steer and approve via structured cards and contextual chat — not rigid wizard buttons alone.
+7. Implement vertical slices (serial first; parallel after core loop works).
 8. View changed files and diffs.
 9. Run validation commands.
-10. Generate a final review / PR summary.
+10. Pass an Oracle/no-ship final review gate.
+11. Generate a final review / PR summary.
 
 ## Initial Workflow Types
 
@@ -97,6 +155,7 @@ Default UX:
 
 ```txt
 Approach: Auto
+Review level: Standard
 ```
 
 Auto maps to one of:
@@ -118,7 +177,13 @@ For features, integrations, refactors, and multi-file changes.
 Internal flow:
 
 ```txt
-Questions → Research → Design → Structure → Plan → Implement → Review
+Questions → Research → Design → Structure → Plan → Parallelize → Implement slices → Integrate → Review
+```
+
+User-facing:
+
+```txt
+Understand → Design → Plan → Build → Review
 ```
 
 ### Investigation
@@ -159,6 +224,183 @@ Structured Change
 Investigation
 ```
 
+## Circuit Protocol Layer
+
+Circuit defines its own canonical events, artifacts, decisions, gates, and workflow states — then
+maps external runtimes into Circuit via adapters.
+
+This keeps Circuit from being locked into OpenCode-specific concepts.
+
+`packages/protocol` holds:
+
+- event schemas
+- artifact schemas
+- decision schemas
+- workflow schemas
+- tool schemas
+- markdown block parsers
+- MCP schemas (future)
+
+Potential runtime adapters:
+
+- OpenCode (first)
+- Claude Code
+- Codex
+- Cursor / manual
+- ZOB-style harnesses
+- future custom agents
+
+### Structured Event Blocks
+
+To power contextual UI, agents should emit structured blocks or call Circuit tools.
+
+Markdown/JSON block types (MVP):
+
+```txt
+circuit-decision
+circuit-artifact
+circuit-validation
+circuit-blocker
+circuit-diff
+```
+
+Future MCP/custom tools:
+
+```txt
+circuit_decision()
+circuit_artifact_ready()
+circuit_mark_stale()
+circuit_validation_result()
+circuit_blocker()
+```
+
+MVP can parse markdown/JSON blocks first; custom tools and MCP come later.
+
+### Structured Event Feed
+
+Layered model:
+
+```txt
+Raw transcript → structured event stream → contextual UI cards
+```
+
+Default visible feed events:
+
+```txt
+phase started
+files read
+artifact written
+decision required
+validation passed/failed
+diff ready
+blocker
+```
+
+Card types:
+
+```txt
+Artifact card
+Decision card
+Approval card
+Validation card
+Diff card
+Blocker card
+```
+
+Example decision card:
+
+```txt
+Decision needed:
+Choose routing strategy
+
+[Use labels] [Use folders] [Compare more] [Ask]
+```
+
+When the user steers via chat:
+
+```txt
+User: Actually, use folder routing.
+```
+
+Circuit should infer workflow impact and offer:
+
+```txt
+This changes Design.
+Mark Structure and Plan stale?
+[Revise Design] [Add note only] [Cancel]
+```
+
+## Harness / Agent Design
+
+Circuit is role-capable, not multi-agent-first.
+
+Default model:
+
+```txt
+Circuit = deterministic orchestrator
+Driver agent = does the work
+Oracle/Reviewer = skeptical review / no-ship gate
+```
+
+MVP roles:
+
+```txt
+Driver
+Oracle
+```
+
+Future roles (defer):
+
+```txt
+Scout
+Architect
+Builder
+Reviewer
+Security Reviewer
+Test Reviewer
+```
+
+Important: a role does not necessarily mean a separate session. A role can be:
+
+- same session with different prompt posture
+- separate session
+- separate model/provider
+
+Default UX should not ask users to pick agents. Instead:
+
+```txt
+Review level: Fast / Standard / Strict
+```
+
+## Fresh Sessions and Context Packs
+
+Because sessions are fresh, each run needs a generated context pack.
+
+Example for Slice 2:
+
+```txt
+AGENTS.md
+00-ticket.md
+approved design
+approved structure
+approved plan
+active slice spec
+dependency outputs
+previous implementation logs
+validation failures
+```
+
+Avoid including:
+
+```txt
+full raw transcripts
+stale artifact versions
+unrelated slice logs
+unbounded repo summaries
+```
+
+Context pack generation is a core feature: Circuit produces bounded context for each run.
+
 ## Main Product Objects
 
 ### Repo
@@ -191,6 +433,7 @@ Fields:
 - branchName
 - workspacePath
 - workspaceStrategy
+- reviewLevel
 - createdAt
 - updatedAt
 
@@ -210,14 +453,16 @@ Task statuses:
 
 A step in the workflow.
 
-Phase names for Structured Change:
+Phase names for Structured Change (internal):
 
 - questions
 - research
 - design
 - structure
 - plan
+- parallelize
 - implement
+- integrate
 - review
 
 Fields:
@@ -276,28 +521,92 @@ Standard artifacts:
 - 03-design.md
 - 04-structure.md
 - 05-plan.md
-- 06-implementation-log.md
-- 07-review.md
+- 06-parallelization-plan.md
+- 06-implementation-log.md (per-slice logs may also exist)
+- 07-integrate-log.md
+- 08-review.md
+- 09-replan.md (when needed)
+
+### Slice
+
+An implementation unit derived from the parallelization plan.
+
+Fields:
+
+- id
+- taskId
+- name
+- order
+- dependsOnSliceIds
+- expectedFiles
+- conflictRisk
+- executionGroup
+- validationCommands
+- status
+- workspaceId
+- currentRunId
+
+Slice statuses:
+
+- pending
+- ready
+- running
+- needs_review
+- approved
+- blocked
+- failed
+- merged
 
 ### Phase Run
 
-One execution of an agent phase.
+One execution of an agent phase or slice in a fresh session.
 
 Fields:
 
 - id
 - taskId
 - phase
+- sliceId (optional)
+- role (driver | oracle | …)
+- runtimeAdapter
+- sessionId
+- contextPackHash
 - agent
 - model
 - status
 - inputPrompt
 - transcript
+- structuredEvents
 - filesRead
 - filesChanged
 - commandsRun
 - startedAt
 - completedAt
+
+### Workflow Event
+
+A normalized Circuit protocol event for the structured feed.
+
+Fields:
+
+- id
+- taskId
+- phaseRunId
+- type
+- payload
+- timestamp
+
+Event types include:
+
+- phase:started
+- phase:completed
+- artifact:written
+- decision:required
+- validation:passed
+- validation:failed
+- diff:ready
+- blocker:raised
+- agent:activity
 
 ### Iteration and Revisiting Phases
 
@@ -318,31 +627,13 @@ Example:
 - Structure v1 and Plan v1 become stale
 - Implementation is locked until Structure and Plan are refreshed
 
-Phase status should include:
-
-- locked
-- ready
-- running
-- needs_review
-- approved
-- needs_revision
-- stale
-- failed
-- skipped
-
 The app should distinguish between three kinds of revision:
 
-1. Minor revision  
-   Use when wording or small details change but downstream work is still valid. This should not mark
-   downstream phases stale.
-
-2. Material revision  
-   Use when the design, architecture, scope, or implementation direction changes. This should create
-   a new artifact version and mark downstream phases stale.
-
-3. Alternate path  
-   Use when the user wants to explore a second design or implementation path without replacing the
-   currently approved path. This can be added after MVP.
+1. **Minor revision** — wording or small details; downstream work remains valid.
+2. **Material revision** — design, architecture, scope, or direction changes; new artifact version;
+   downstream phases become stale.
+3. **Alternate path** — explore a second path without replacing the approved path (defer until after
+   MVP).
 
 The UX should provide actions:
 
@@ -372,17 +663,22 @@ because existing code may no longer match the approved workflow.
 
 For MVP, support:
 
-artifact versions stale phase status downstream invalidation Revisit phase action warning if
-implementation has started
+- artifact versions
+- stale phase status
+- downstream invalidation
+- revisit phase action
+- warning if implementation has started
+- chat-inferred revision prompts (minor vs material)
 
 Defer until later:
 
-alternate design branches visual artifact comparison automatic reconciliation of already-written
-code
+- alternate design branches
+- visual artifact comparison
+- automatic reconciliation of already-written code
 
 ### Workspace
 
-An isolated local workspace for a task.
+An isolated local workspace for a task or slice.
 
 Strategies:
 
@@ -391,14 +687,88 @@ Strategies:
 - cow-worktree
 - full-copy
 
+Workspace model for parallel implementation:
+
+```txt
+one task integration branch/workspace
+one worktree per parallel slice
+one session per slice
+one implementation log per slice
+one diff/review per slice
+```
+
+Approved slices merge into the integration workspace/branch.
+
 MVP should support:
 
 - current
-- git-worktree
+- git-worktree (task workspace first; slice worktrees when parallel execution lands)
 
 Future:
 
 - cow-worktree using filesystem copy-on-write/reflink support where available.
+
+## Parallel Execution and Slice DAG
+
+After planning, Circuit should not assume serial implementation only.
+
+It should generate a **Parallelization Plan** / slice DAG:
+
+```txt
+slices
+dependencies
+expected files touched
+conflict risks
+execution groups
+validation commands
+integration requirements
+```
+
+Example:
+
+```txt
+Slice 1: Classification primitive
+Depends on: none
+
+Slice 2: Webhook integration
+Depends on: Slice 1
+
+Slice 3: Dashboard visibility
+Depends on: Slice 1
+
+Slice 4: Final integration
+Depends on: Slice 2 + Slice 3
+```
+
+Independent slices can run in parallel in isolated worktrees.
+
+**MVP sequencing:** ship serial slice implementation first to validate the end-to-end loop; add
+parallelize + slice worktrees once the core harness works.
+
+## Oracle / No-Ship Gate
+
+Final review uses an explicit Oracle posture (fresh session, bounded context).
+
+Oracle outputs:
+
+```txt
+Ready
+Ready with risks
+No-ship
+```
+
+No-ship blockers include:
+
+```txt
+validation failed
+implementation diverged from plan
+missing tests
+security concern
+scope creep
+unresolved dependency conflict
+```
+
+This is more meaningful than “review complete.”
 
 ## UX Screens
 
@@ -421,6 +791,7 @@ Key actions:
 Purpose:
 
 - Show active tasks and their current phase/status.
+- Surface an **attention inbox** for items needing human action.
 
 Task card should show:
 
@@ -436,8 +807,9 @@ Example statuses:
 
 - Running Research
 - Needs Design Review
-- Ready to Implement
-- Diff Ready
+- Slice 2 diff ready
+- Slice 3 typecheck failed
+- Slice 4 blocked waiting on Slice 2
 - Blocked
 
 ### 3. New Task
@@ -458,7 +830,8 @@ Hidden/advanced fields:
 - branch name
 - workflow type
 - workspace strategy
-- coding agent
+- review level
+- coding agent runtime
 - provider
 - model
 - effort
@@ -472,6 +845,7 @@ What should the agent work on?
 
 Repo: chorus-client-runtime
 Approach: Auto · Structured Change
+Review: Standard
 Workspace: Isolated branch
 
 [Start]
@@ -487,7 +861,7 @@ Behavior:
 - Create task folder under `.Circuit/tasks/<slug>/`.
 - Create initial `00-ticket.md`.
 
-### 4. Task Detail
+### 4. Task Detail (Workbench)
 
 This is the main workbench screen.
 
@@ -495,7 +869,7 @@ Layout:
 
 - Left sidebar: artifacts, changed files, validation, links.
 - Main panel: current artifact, diff, or review.
-- Right panel: agent activity, phase transcript, decisions.
+- Right panel: structured event feed, contextual cards, steering chat.
 
 Top area:
 
@@ -506,10 +880,16 @@ Top area:
 - open in Cursor button
 - advanced settings menu
 
-Phase rail:
+Phase rail (user-facing can simplify Build/Review while internal phases remain granular):
 
 ```txt
-Questions → Research → Design → Structure → Plan → Implement → Review
+Understand → Design → Plan → Build → Review
+```
+
+Internal Structured Change rail:
+
+```txt
+Questions → Research → Design → Structure → Plan → Parallelize → Implement → Integrate → Review
 ```
 
 Each phase should show:
@@ -532,50 +912,39 @@ Features:
 
 - markdown source editor
 - markdown preview
-- approve button
-- request revision button
-- revisit this phase
-- revise without invalidating downstream (minor revision)
-- revise and refresh downstream (material revision)
-- regenerate next phase
-- view stale artifact
-- scoped feedback box
-- activity transcript
+- structured cards inline (decisions, Q&A, findings)
+- contextual steering chat
+- revisit / revise actions (minor vs material)
+- structured event feed (default)
+- show raw transcript (toggle)
 - files read
 - commands run
 
 The user should be able to edit artifacts manually before approving.
 
-Artifacts can be revisited after approval. If a material revision changes an upstream artifact,
-downstream artifacts should be marked stale and implementation should lock until the affected phases
-are refreshed.
-
-### 6. Implementation
+### 6. Implementation Board
 
 Implementation is slice-based.
 
-The active slice is derived from `05-plan.md`.
+During Build, show:
 
-Implementation screen shows:
+- implementation board (slice status overview)
+- attention inbox (compact slice review cards)
+- active slice summary (not multiple live chats by default)
 
-- active slice
-- scope
-- files expected to change
-- validation command
-- agent activity
-- files changed
-- test results
-- implementation log
+Per slice:
 
-Actions:
+- summary
+- changed files
+- validation status
+- oracle status (when applicable)
+- review diff
+- approve / request changes
 
-- implement next slice
-- stop
-- view diff
-- run validation
-- approve slice
-- request changes
-- open in Cursor
+Default order: summary first, diff second, raw transcript last.
+
+Serial MVP: one active slice at a time. Parallel: multiple slices in flight with inbox-driven
+review.
 
 ### 7. Diff Review
 
@@ -597,7 +966,19 @@ Actions:
 - rerun validation
 - revert slice
 
-### 8. Final Review
+### 8. Integration
+
+After parallel slices are approved:
+
+- merge/rebase approved slice work into integration workspace
+- run integration validation
+- surface conflicts and blockers
+- lock final review until integration passes
+
+Defer full integration UX until parallel slice execution exists. For serial MVP, integration is
+implicit (single worktree).
+
+### 9. Final Review (Oracle)
 
 Shows:
 
@@ -606,6 +987,7 @@ Shows:
 - tests run
 - unresolved risks
 - rollback notes
+- Oracle verdict (Ready / Ready with risks / No-ship)
 - generated PR summary
 
 Actions:
@@ -631,41 +1013,97 @@ Circuit should:
 4. Create branch: `Circuit/invoice-inbox-triage`
 5. Create task folder.
 6. Write `00-ticket.md`.
-7. Start Questions phase automatically.
+7. Start Questions phase automatically in a fresh session with a bounded context pack.
 8. Produce `01-questions.md`.
-9. If auto-advance is enabled for read-only setup phases, continue to Research.
+9. If auto-advance is enabled for read-only setup phases, continue to Research (new session).
 10. Pause at Design if a human decision is needed.
 11. Pause before implementation.
-12. Implement one vertical slice at a time.
-13. Require diff review before moving to the next slice.
-14. Generate final PR summary.
+12. Generate parallelization plan after Plan (can be trivially serial for small tasks).
+13. Implement slices (serial in MVP; parallel when ready).
+14. Integrate approved slice outputs (when parallel).
+15. Run Oracle final review.
+16. Generate final PR summary.
 
 ## Agent Integration
 
-Primary engine for MVP:
+Primary runtime for MVP:
 
 - OpenCode
 
 Architecture:
 
-- Circuit owns workflow state, artifacts, approvals, workspaces, git/diff UI.
-- OpenCode owns agent runtime, model providers, tool execution, file edits, shell commands, and
-  codebase interaction.
+```txt
+desktop app + workflow engine + protocol layer + runtime adapters + workspace orchestration
+```
 
-Circuit should communicate with OpenCode through a local adapter.
+Division of responsibility:
+
+**OpenCode handles:**
+
+- agent execution
+- models
+- tool calls
+- file edits
+- bash commands
+- sessions
+
+**Circuit handles:**
+
+- workflow state
+- artifacts
+- decisions
+- approvals
+- stale dependencies
+- diffs
+- validation
+- review queues
+- context packs
+- fresh session policy
+
+### Integration Levels
+
+```txt
+Level 0: file protocol only
+Level 1: prompt protocol with markdown/JSON blocks
+Level 2: custom Circuit tools / MCP
+Level 3: native adapter/plugin integration
+```
+
+MVP starts with:
+
+```txt
+OpenCode SDK/server
++ artifact files
++ structured prompt blocks
++ file/git watchers
++ raw transcript storage
++ structured event normalization
+```
+
+Then later:
+
+```txt
+custom tools
+MCP server
+OpenCode plugin
+```
+
+Circuit communicates with runtimes through local adapters.
 
 Adapter responsibilities:
 
-- start or connect to OpenCode server
-- create sessions
+- start or connect to runtime server
+- create fresh sessions with context packs
 - send phase prompts
 - stream activity/events
+- normalize runtime output into Circuit protocol events
+- parse structured markdown/JSON blocks
 - collect transcripts
 - detect completion/failure
 - read produced artifacts from disk
 - capture files changed and commands run if available
 
-The app should be designed so future adapters can be added:
+Future adapters:
 
 - Codex
 - Claude Code
@@ -687,9 +1125,11 @@ packages/prompts/src/
     03-design.md
     04-structure.md
     05-plan.md
-    06-implement-slice.md
-    07-review.md
-    08-replan.md
+    06-parallelize.md
+    07-implement-slice.md
+    08-integrate.md
+    09-review.md
+    10-replan.md
 
   quick-fix/
     01-plan.md
@@ -720,16 +1160,18 @@ Root prompt:
 
 - `using-circuit.md`
 
-Phase prompts:
+Phase prompts (Structured Change):
 
 - `01-questions.md`
 - `02-research.md`
 - `03-design.md`
 - `04-structure.md`
 - `05-plan.md`
-- `06-implement-slice.md`
-- `07-review.md`
-- `08-replan.md`
+- `06-parallelize.md`
+- `07-implement-slice.md`
+- `08-integrate.md`
+- `09-review.md`
+- `10-replan.md`
 
 Each phase prompt should follow the same structure:
 
@@ -745,11 +1187,13 @@ Each phase run should also follow the same behavioral loop:
 2. Verify required inputs exist
 3. State allowed/prohibited actions
 4. Perform the phase work
-5. Write one artifact
+5. Write one artifact (and emit structured blocks where applicable)
 6. Self-review the artifact
 7. Stop for human approval or mark ready for next phase
 
-Prompts should produce structured markdown artifacts with consistent sections.
+Prompts should produce structured markdown artifacts with consistent sections: Mermaid diagrams
+where useful, file maps, decision tables, risks, assumptions, validation commands, and rollback
+notes.
 
 Research artifacts should emphasize objective codebase facts, file paths, symbols, current behavior,
 tests, risks, and unknowns.
@@ -763,11 +1207,14 @@ dependency diagrams, and validation points.
 Plan artifacts should include implementation slices, files changed, steps, automated verification,
 manual verification, testing strategy, migration notes, rollback notes, and references.
 
+Parallelization artifacts should include slice DAG, dependencies, expected files, conflict risks,
+execution groups, validation commands, and integration requirements.
+
 Implementation artifacts should include files changed, commands run, validation results, deviations
 from plan, and follow-up notes.
 
-Review artifacts should include plan alignment, diff summary, validation results, risks, potential
-issues, rollback notes, PR summary, and human review checklist.
+Review artifacts should include plan alignment, diff summary, validation results, risks, Oracle
+verdict, potential issues, rollback notes, PR summary, and human review checklist.
 
 Example phase rules:
 
@@ -801,16 +1248,29 @@ Plan:
 - Include validation commands.
 - Stop before implementation.
 
+Parallelize:
+
+- Derive slice DAG from approved structure and plan.
+- Identify parallelizable groups and conflict risks.
+- Do not implement code.
+
 Implement:
 
-- Implement one approved vertical slice only.
+- Implement one approved slice only.
 - Do not refactor unrelated code.
 - Run validation.
 - Update implementation log.
 
-Review:
+Integrate:
+
+- Merge approved slice outputs into integration workspace.
+- Run integration validation.
+- Surface conflicts; do not start new feature work.
+
+Review (Oracle):
 
 - Review diff against plan.
+- Emit Ready / Ready with risks / No-ship.
 - Summarize tests, risks, and rollback.
 - Generate PR-ready summary.
 
@@ -871,12 +1331,19 @@ Terminal:
 Validation/logs:
 
 - run commands through Node service
-- stream output into task activity log
+- stream output into structured event feed
 
 Packaging:
 
 - Electron builder or Electron Forge
 - Auto-update later
+
+Conceptual architecture:
+
+```txt
+not just desktop app + OpenCode
+→ desktop app + workflow engine + protocol layer + runtime adapters + workspace orchestration
+```
 
 ## Monorepo Structure
 
@@ -891,6 +1358,13 @@ apps/
       renderer/
 
 packages/
+  protocol/
+    events/
+    artifacts/
+    decisions/
+    blocks/
+    parsers/
+
   ui/
     components/
     styles/
@@ -900,6 +1374,8 @@ packages/
     phase-machine.ts
     workflow-definitions.ts
     auto-select-workflow.ts
+    context-pack.ts
+    phase-revisit.ts
 
   prompts/
     src/
@@ -918,8 +1394,10 @@ packages/
     create-workspace.ts
     create-git-worktree.ts
     create-cow-worktree.ts
+    create-slice-worktree.ts
     detect-capabilities.ts
     cleanup-workspace.ts
+    merge-slices.ts
 
   git/
     status.ts
@@ -950,7 +1428,9 @@ Suggested tables:
 - tasks
 - phases
 - artifacts
+- slices
 - phase_runs
+- workflow_events
 - workspaces
 - validation_runs
 - settings
@@ -969,8 +1449,14 @@ Default location inside target repo:
       03-design.md
       04-structure.md
       05-plan.md
-      06-implementation-log.md
-      07-review.md
+      06-parallelization-plan.md
+      slices/
+        slice-1/
+          implementation-log.md
+        slice-2/
+          implementation-log.md
+      07-integrate-log.md
+      08-review.md
 ```
 
 Alternative global app storage can be added later for users who do not want metadata inside their
@@ -981,7 +1467,7 @@ repos.
 MVP:
 
 - Current workspace for quick fixes.
-- Git worktree for structured changes.
+- Git worktree for structured changes (task integration workspace).
 
 Default:
 
@@ -990,12 +1476,11 @@ Default:
 - Investigation → git worktree.
 - PR Review → existing branch or selected diff.
 
-Future:
+Future (parallel slices):
 
+- One worktree per parallel slice.
+- Merge approved slices into integration workspace.
 - CoW worktrees where available.
-- On macOS, explore APFS clonefile / `cp -c`.
-- On Linux, explore reflink-based copy with supporting filesystems.
-- Fall back safely to normal git worktree.
 
 The user-facing UI should say:
 
@@ -1006,43 +1491,25 @@ Storage: Optimized when available
 
 Do not expose low-level mechanics by default.
 
-## OpenCode Phase Execution
+## Phase Execution
 
 Each phase run should:
 
 1. Load task metadata.
-2. Load required prior artifacts.
-3. Render the phase prompt template.
-4. Send prompt to OpenCode with the correct agent/mode.
-5. Stream activity into the Circuit UI.
-6. Wait for completion.
-7. Read expected artifact.
-8. Update phase state.
-9. Ask for approval or auto-advance if safe.
+2. Build bounded context pack from approved artifacts and slice state.
+3. Create a fresh runtime session.
+4. Render the phase prompt template.
+5. Send prompt to runtime with correct role/posture.
+6. Stream activity; normalize into Circuit protocol events.
+7. Parse structured blocks from output.
+8. Wait for completion.
+9. Read expected artifact.
+10. Update phase/slice state.
+11. Ask for approval, surface decision cards, or auto-advance if safe.
 
 Phase permission defaults:
 
-Questions:
-
-- read-only
-- no code edits
-
-Research:
-
-- read-only
-- no code edits
-
-Design:
-
-- read-only
-- no code edits
-
-Structure:
-
-- read-only
-- no code edits
-
-Plan:
+Questions, Research, Design, Structure, Plan, Parallelize:
 
 - read-only
 - no code edits
@@ -1053,7 +1520,13 @@ Implement:
 - terminal commands allowed
 - destructive commands require approval
 
-Review:
+Integrate:
+
+- merge/rebase allowed
+- integration validation allowed
+- no new feature work
+
+Review (Oracle):
 
 - read-only
 - no code edits unless explicitly requested
@@ -1088,7 +1561,7 @@ Balanced:
 Fast:
 
 - Auto-advance through all read-only phases.
-- Pause only before Implementation and final PR.
+- Pause only before Implementation and final Oracle review.
 
 Default should be Balanced.
 
@@ -1097,18 +1570,20 @@ Default should be Balanced.
 Required:
 
 - Repo selector
-- Task list
+- Task list with attention inbox
 - New task launcher
 - Phase rail
 - Artifact tree
 - Artifact markdown editor
 - Markdown preview
-- Agent activity panel
-- Scoped feedback box
-- Approval buttons
+- Structured event feed
+- Contextual cards (decision, validation, diff, blocker)
+- Steering chat input
+- Show raw transcript toggle
 - Changed files list
 - Diff viewer
 - Validation output panel
+- Implementation board / slice cards
 - Open in Cursor button
 
 Optional later:
@@ -1122,29 +1597,22 @@ Optional later:
 - GitHub PR creation
 - Team sync
 
-## MVP Button Labels
+## MVP Action Labels
 
-Avoid generic labels like “Send” or “Run.”
+Avoid generic labels like “Send” or “Run” where phase context matters.
 
-Use phase-aware actions:
+Prefer contextual cards and primary continue actions when gates pass. Examples:
 
 - Start task
-- Generate questions
-- Approve questions
-- Run research
-- Approve research
+- Continue
 - Revise design
-- Approve design
-- Generate structure
-- Approve structure
-- Generate plan
 - Unlock implementation
-- Implement next slice
-- Run validation
 - Review diff
 - Approve slice
 - Request changes
 - Prepare PR summary
+
+Decision cards should use explicit option labels, not generic approve buttons alone.
 
 ## Naming and Brand Direction
 
@@ -1154,8 +1622,8 @@ Working name:
 
 Positioning:
 
-- Structured agent workspaces for safer code changes.
-- A local-first control plane for AI coding agents.
+- A local-first control plane / harness for governed coding-agent workflows.
+- Circuit keeps coding agents in a controlled loop from task to reviewed diff.
 - Run agents through reviewable software development workflows.
 
 Tone:
@@ -1175,6 +1643,9 @@ Avoid:
 
 Preferred language:
 
+- harness
+- control plane
+- governed
 - structured
 - reviewable
 - isolated
@@ -1185,21 +1656,24 @@ Preferred language:
 - validation
 - approval
 - implementation slices
+- guided autonomy
 
 ## Open Source Strategy
 
-Circuit should likely be open source, at least for the local desktop/core version.
+Circuit should likely be open source, at least for the local desktop/core version — and potentially
+as a protocol/harness layer, not just an app.
 
 Recommended model:
 
-- Open-source local desktop app and workflow engine.
+- Open-source local desktop app, workflow engine, and protocol.
 - Keep hosted/team features for later commercial offering.
 
 Open-source:
 
 - desktop app
 - workflow engine
-- OpenCode adapter
+- Circuit protocol
+- runtime adapters (OpenCode first)
 - prompt templates
 - SQLite schema
 - local task/artifact system
@@ -1238,12 +1712,13 @@ Do not build:
 - custom diff renderer
 - custom markdown editor
 - full plugin marketplace
+- visible multi-agent orchestration UI
 
 Use existing primitives wherever possible.
 
 ## First Build Milestones
 
-### Milestone 1: Local shell
+### Milestone 1: Local shell ✅
 
 - Electron app opens.
 - Add local repo.
@@ -1253,27 +1728,42 @@ Use existing primitives wherever possible.
 - Generate name, slug, branch name.
 - Write `.Circuit/tasks/<slug>/00-ticket.md`.
 
-### Milestone 2: Workflow state
+### Milestone 2a: Circuit protocol
 
-- Implement Structured Change workflow.
+- Add `packages/protocol`.
+- Define canonical event, artifact, decision, and block schemas.
+- Add markdown/JSON block parsers.
+- Extend shared event types.
+
+### Milestone 2b: Workflow state
+
+- Implement Structured Change workflow (internal phases).
 - Show phase rail.
 - Store phase state in SQLite.
 - Show artifact tree.
 - Create empty artifact files for phases.
 
-### Milestone 3: Mock agent runs
+### Milestone 3: Mock agent loop
 
 - Build mock agent adapter.
 - Simulate Questions/Research/Design outputs.
 - Render artifacts in editor/preview.
-- Approve/revise phase.
+- Structured event feed + contextual cards (not raw transcript only).
+- Approve/revise phase; chat-inferred revision prompts.
 - Auto-advance according to Balanced mode.
 
-### Milestone 4: OpenCode integration
+### Milestone 3b: Context packs and fresh sessions
+
+- Context pack builder from approved artifacts.
+- Fresh session per phase run in mock adapter.
+- Store sessionId and contextPackHash on phase_runs.
+
+### Milestone 4: OpenCode integration (Level 1)
 
 - Start/connect to OpenCode server.
-- Send Questions phase prompt.
-- Stream transcript/activity.
+- Send Questions phase prompt with context pack.
+- Stream transcript/activity; normalize to protocol events.
+- Parse structured blocks from output.
 - Write/read generated artifact.
 - Repeat for Research and Design.
 
@@ -1284,11 +1774,11 @@ Use existing primitives wherever possible.
 - Open workspace in Cursor.
 - Remove/cleanup workspace.
 
-### Milestone 6: Implementation slice
+### Milestone 6: Implementation slice (serial)
 
 - Generate plan artifact.
-- Parse implementation slices from plan.
-- Run implement-slice prompt through OpenCode.
+- Parse implementation slices from plan (serial DAG).
+- Run implement-slice prompt through OpenCode in fresh sessions.
 - Capture changed files.
 - Show git status and diff.
 
@@ -1296,16 +1786,29 @@ Use existing primitives wherever possible.
 
 - Render diff viewer.
 - Run validation command.
-- Show command output.
+- Show validation cards in structured feed.
 - Approve/request changes for slice.
 - Update implementation log.
 
-### Milestone 8: Final review
+### Milestone 8: Oracle final review
 
-- Generate `07-review.md`.
+- Generate review artifact with Oracle verdict.
+- Ready / Ready with risks / No-ship gate.
 - Generate PR summary.
 - Copy PR summary.
 - Optional commit creation.
+
+### Milestone 9: Parallelize and slice worktrees (post-MVP core)
+
+- Parallelization plan artifact and slice DAG.
+- Slice worktrees and implementation board.
+- Attention inbox for parallel slice review.
+- Merge approved slices into integration workspace.
+
+### Milestone 10: Integration phase
+
+- Integrate prompt and validation.
+- Conflict surfacing and integration gate before final Oracle review.
 
 ## Cursor Build Instructions
 
@@ -1313,11 +1816,13 @@ When building this project in Cursor:
 
 1. Start with the Electron + React + Vite+ project setup.
 2. Do not implement OpenCode integration first.
-3. Build the local data model, task UI, and mock adapter first.
-4. Use mock agent output to validate the UX.
-5. Add real OpenCode integration only after the phase/artifact loop works.
-6. Avoid building a full IDE.
-7. Keep code modular around packages:
+3. Add `packages/protocol` before wiring agent output to the UI.
+4. Build the local data model, task UI, and mock adapter first.
+5. Use mock agent output to validate guided-autonomy UX (cards + feed, not transcript-only).
+6. Add real OpenCode integration only after the phase/artifact loop works.
+7. Avoid building a full IDE.
+8. Keep code modular around packages:
+   - protocol
    - workflow
    - agent-adapters
    - workspace-manager
@@ -1325,9 +1830,10 @@ When building this project in Cursor:
    - db
    - ui
 
-8. Treat workflow state as the core product.
-9. Keep artifacts as markdown files on disk.
-10. Every major feature should be testable without a real coding agent.
+9. Treat workflow state and the Circuit protocol as the core product.
+10. Keep artifacts as markdown files on disk.
+11. Every major feature should be testable without a real coding agent.
+12. Ship serial slice implementation before parallel worktrees.
 
 ## Initial Success Criteria
 
@@ -1336,11 +1842,11 @@ The MVP is successful if a developer can:
 1. Add a local repo.
 2. Start a task from one prompt.
 3. Watch Circuit produce Questions, Research, Design, Structure, and Plan artifacts.
-4. Approve or revise those artifacts.
-5. Let an agent implement one slice in an isolated worktree.
+4. Steer and approve via structured cards and contextual chat.
+5. Let an agent implement one slice in an isolated worktree (serial).
 6. Review the diff.
 7. Run validation.
-8. Generate a clean final review/PR summary.
+8. Receive an Oracle verdict and generate a clean final review/PR summary.
 9. Open the worktree in Cursor whenever they want deeper code control.
 
 The user should feel:
@@ -1352,6 +1858,14 @@ I can correct it before code is written.
 I approve the plan.
 I review each slice.
 Nothing important happens invisibly.
+```
+
+Extended north star:
+
+```txt
+Circuit is a local-first control plane for coding agents that coordinates fresh sessions,
+artifacts, worktrees, parallel implementation slices, validation, and review gates through a
+simple task-first UX.
 ```
 
 That is the product north star.

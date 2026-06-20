@@ -73,13 +73,16 @@ function HumanQaCard({
 
   if (!hasChoices) {
     return (
-      <CompactFreeformCard item={item} onAnswer={onAnswer} onDefer={onDefer} recommended={recommended?.label} />
+      <CompactFreeformCard
+        item={item}
+        onAnswer={onAnswer}
+        onDefer={onDefer}
+        recommended={recommended?.label}
+      />
     )
   }
 
-  return (
-    <ChoiceQaCard item={item} onAnswer={onAnswer} onDefer={onDefer} />
-  )
+  return <ChoiceQaCard item={item} onAnswer={onAnswer} onDefer={onDefer} />
 }
 
 function choiceLetter(index: number): string {
@@ -98,8 +101,7 @@ function ChoiceQaCard({
   const choices = item.choices ?? []
   const otherLetter = choiceLetter(choices.length)
   const matchedChoice = choices.find((c) => c.label === item.answer)
-  const isOtherSelected =
-    Boolean(item.answer) && (item.usedCustomAnswer || !matchedChoice)
+  const isOtherSelected = Boolean(item.answer) && (item.usedCustomAnswer || !matchedChoice)
   const [customOpen, setCustomOpen] = useState(isOtherSelected)
   const [customText, setCustomText] = useState(isOtherSelected ? item.answer : '')
 
@@ -156,7 +158,9 @@ function ChoiceQaCard({
               >
                 {choiceLetter(index)}
               </span>
-              <span className="min-w-0 flex-1 text-xs leading-snug text-foreground">{choice.label}</span>
+              <span className="min-w-0 flex-1 text-xs leading-snug text-foreground">
+                {choice.label}
+              </span>
               {choice.recommended && (
                 <span className="shrink-0 text-[10px] font-medium text-primary">Recommended</span>
               )}
@@ -184,7 +188,9 @@ function ChoiceQaCard({
           >
             {otherLetter}
           </span>
-          <span className="text-xs text-muted-foreground group-hover:text-foreground">Other — custom answer</span>
+          <span className="text-xs text-muted-foreground group-hover:text-foreground">
+            Other — custom answer
+          </span>
         </button>
       </div>
 
@@ -199,7 +205,13 @@ function ChoiceQaCard({
               if (e.key === 'Enter') submitCustom()
             }}
           />
-          <Button type="button" size="sm" className="h-8 shrink-0 text-xs" onClick={submitCustom} disabled={!customText.trim()}>
+          <Button
+            type="button"
+            size="sm"
+            className="h-8 shrink-0 text-xs"
+            onClick={submitCustom}
+            disabled={!customText.trim()}
+          >
             Save
           </Button>
         </div>

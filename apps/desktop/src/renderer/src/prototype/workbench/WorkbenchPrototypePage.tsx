@@ -43,7 +43,9 @@ interface WorkbenchPrototypePageProps {
   scenario: ScenarioId
 }
 
-export function WorkbenchPrototypePage({ scenario }: WorkbenchPrototypePageProps): React.ReactElement {
+export function WorkbenchPrototypePage({
+  scenario,
+}: WorkbenchPrototypePageProps): React.ReactElement {
   const navigate = useNavigate()
   const [selectedTaskId, setSelectedTaskId] = useState(ACTIVE_PROTOTYPE_TASK_ID)
 

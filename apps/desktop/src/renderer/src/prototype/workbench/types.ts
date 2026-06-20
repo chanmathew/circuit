@@ -18,14 +18,7 @@ export type RightTab = 'artifacts' | 'files' | 'git'
 /** @deprecated use RightTab */
 export type LeftTab = RightTab
 
-export type ScenarioId =
-  | 'early'
-  | 'research'
-  | 'design'
-  | 'mid'
-  | 'plan'
-  | 'implementing'
-  | 'final'
+export type ScenarioId = 'early' | 'research' | 'design' | 'mid' | 'plan' | 'implementing' | 'final'
 
 export type QaItemStatus = 'pending' | 'answered' | 'deferred'
 

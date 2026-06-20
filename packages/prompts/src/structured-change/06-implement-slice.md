@@ -4,7 +4,8 @@
 
 1. Announce: Implement slice phase and name the active slice.
 2. Verify inputs: approved `05-plan.md` and an explicit active slice are available.
-3. Allowed: code edits and commands for the active slice only. Prohibited: future slices, unrelated refactors, new architecture.
+3. Allowed: code edits and commands for the active slice only. Prohibited: future slices, unrelated
+   refactors, new architecture.
 4. Perform phase work: implement the active slice and run its automated verification.
 5. Write artifact: update `06-implementation-log.md`.
 6. Self-review: compare implementation against the approved plan; record deviations.
@@ -50,14 +51,14 @@ What was implemented.
 ## Files Changed
 
 | File | Change |
-| --- | --- |
-| ... | ... |
+| ---- | ------ |
+| ...  | ...    |
 
 ## Commands Run
 
-| Command | Result |
-| --- | --- |
-| `...` | Pass/Fail |
+| Command | Result    |
+| ------- | --------- |
+| `...`   | Pass/Fail |
 
 ## Validation Results
 

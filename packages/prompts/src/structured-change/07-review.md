@@ -3,8 +3,10 @@
 ## Phase Protocol
 
 1. Announce: Review phase.
-2. Verify inputs: task, approved plan, implementation log, git diff, and validation results are available.
-3. Allowed: review analysis and PR summary generation. Prohibited: code edits unless explicitly instructed.
+2. Verify inputs: task, approved plan, implementation log, git diff, and validation results are
+   available.
+3. Allowed: review analysis and PR summary generation. Prohibited: code edits unless explicitly
+   instructed.
 4. Perform phase work: review implementation against approved artifacts.
 5. Write artifact: `07-review.md`.
 6. Self-review: plan alignment table, risks, and human review checklist are complete.
@@ -59,9 +61,9 @@ Short summary of what changed.
 
 Does the implementation match the approved plan?
 
-| Planned Item | Implemented? | Notes |
-| --- | :---: | --- |
-| ... | Yes/No/Partial | ... |
+| Planned Item |  Implemented?  | Notes |
+| ------------ | :------------: | ----- |
+| ...          | Yes/No/Partial | ...   |
 
 ## Diff Summary
 

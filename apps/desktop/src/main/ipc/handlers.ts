@@ -5,6 +5,7 @@ import { CircuitError } from '@circuit/shared'
 import {
   toRepoDto,
   toTaskDto,
+  toTaskSummaryDto,
   type CreateTaskRequest,
   type ListTasksRequest,
 } from '../../shared/api.js'
@@ -58,7 +59,7 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('circuit:tasks:list', (_event, request?: ListTasksRequest) => {
     try {
-      return listAllTasks(request?.repoId).map(toTaskDto)
+      return listAllTasks(request?.repoId).map(toTaskSummaryDto)
     } catch (error) {
       throw toIpcError(error)
     }

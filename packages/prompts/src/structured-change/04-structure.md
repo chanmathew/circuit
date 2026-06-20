@@ -4,7 +4,8 @@
 
 1. Announce: Structure phase.
 2. Verify inputs: approved `03-design.md` and `02-research.md` are available.
-3. Allowed: file maps, interfaces, vertical slices, dependency diagrams. Prohibited: code edits, detailed implementation steps, tactical checklists.
+3. Allowed: file maps, interfaces, vertical slices, dependency diagrams. Prohibited: code edits,
+   detailed implementation steps, tactical checklists.
 4. Perform phase work: define implementation structure as reviewable vertical slices.
 5. Write artifact: `04-structure.md`.
 6. Self-review: slices are vertical, independently reviewable, and aligned with approved design.
@@ -49,9 +50,9 @@ Short summary of how the implementation will be organized.
 
 ## File Map
 
-| File | Create/Modify | Purpose | Slice |
-| --- | --- | --- | --- |
-| `path/to/file.ts` | Modify | ... | Slice 1 |
+| File              | Create/Modify | Purpose | Slice   |
+| ----------------- | ------------- | ------- | ------- |
+| `path/to/file.ts` | Modify        | ...     | Slice 1 |
 
 ## Proposed Interfaces
 
@@ -59,10 +60,10 @@ Include function/type/component signatures where useful.
 
 ```ts
 type Example = {
-  id: string;
-};
+  id: string
+}
 
-function example(input: Example): Promise<void>;
+function example(input: Example): Promise<void>
 ```
 
 ## Data Flow

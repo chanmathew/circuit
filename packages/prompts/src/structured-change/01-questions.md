@@ -4,10 +4,12 @@
 
 1. Announce: Questions phase.
 2. Verify inputs: task description and known constraints are available.
-3. Allowed: identify unknowns, research targets, and human-judgment questions. Prohibited: code edits, solution proposals, codebase inspection unless strictly necessary to frame questions.
+3. Allowed: identify unknowns, research targets, and human-judgment questions. Prohibited: code
+   edits, solution proposals, codebase inspection unless strictly necessary to frame questions.
 4. Perform phase work: clarify what must be known before research and planning.
 5. Write artifact: `01-questions.md`.
-6. Self-review: ensure questions are separated into codebase-research vs human-judgment; no solution design leaked in.
+6. Self-review: ensure questions are separated into codebase-research vs human-judgment; no solution
+   design leaked in.
 7. Stop for human approval.
 
 ## Inputs

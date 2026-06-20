@@ -1,5 +1,5 @@
 {
-  "name": "@circuit/shared",
+  "name": "@circuit/protocol",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -13,12 +13,7 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
-    "@circuit/protocol": "workspace:*",
-    "nanoid": "^5.1.11"
-  },
   "devDependencies": {
-    "@types/node": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

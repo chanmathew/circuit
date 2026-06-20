@@ -370,14 +370,21 @@ export function createScenarioState(scenario: ScenarioId): WorkbenchState {
           research: 'needs_review',
         }),
         artifacts: baseArtifacts.map((a) => {
-          if (a.filename === '01-questions.md') return { ...a, content: QUESTIONS, status: 'approved' as const }
-          if (a.filename === '02-research.md') return { ...a, content: RESEARCH, status: 'needs_review' as const }
+          if (a.filename === '01-questions.md')
+            return { ...a, content: QUESTIONS, status: 'approved' as const }
+          if (a.filename === '02-research.md')
+            return { ...a, content: RESEARCH, status: 'needs_review' as const }
           if (a.filename === '00-ticket.md') return { ...a, status: 'approved' as const }
           return a
         }),
         activity: [
           ...BASE_ACTIVITY,
-          { id: 'r1', timestamp: '10:10:00', type: 'message', content: 'Questions approved. Running research.' },
+          {
+            id: 'r1',
+            timestamp: '10:10:00',
+            type: 'message',
+            content: 'Questions approved. Running research.',
+          },
           { id: 'r2', timestamp: '10:14:00', type: 'message', content: 'Wrote 02-research.md.' },
         ],
         changedFiles: [],
@@ -407,16 +414,29 @@ export function createScenarioState(scenario: ScenarioId): WorkbenchState {
           design: 'needs_review',
         }),
         artifacts: baseArtifacts.map((a) => {
-          if (a.filename === '01-questions.md') return { ...a, content: QUESTIONS, status: 'approved' as const }
-          if (a.filename === '02-research.md') return { ...a, content: RESEARCH, status: 'approved' as const }
-          if (a.filename === '03-design.md') return { ...a, content: DESIGN, status: 'needs_review' as const }
+          if (a.filename === '01-questions.md')
+            return { ...a, content: QUESTIONS, status: 'approved' as const }
+          if (a.filename === '02-research.md')
+            return { ...a, content: RESEARCH, status: 'approved' as const }
+          if (a.filename === '03-design.md')
+            return { ...a, content: DESIGN, status: 'needs_review' as const }
           if (a.filename === '00-ticket.md') return { ...a, status: 'approved' as const }
           return a
         }),
         activity: [
           ...BASE_ACTIVITY,
-          { id: 'd1', timestamp: '10:20:00', type: 'message', content: 'Research approved. Running design.' },
-          { id: 'd2', timestamp: '10:26:00', type: 'message', content: 'Wrote 03-design.md — decisions need approval.' },
+          {
+            id: 'd1',
+            timestamp: '10:20:00',
+            type: 'message',
+            content: 'Research approved. Running design.',
+          },
+          {
+            id: 'd2',
+            timestamp: '10:26:00',
+            type: 'message',
+            content: 'Wrote 03-design.md — decisions need approval.',
+          },
         ],
         changedFiles: [],
         slices: [],
@@ -447,17 +467,31 @@ export function createScenarioState(scenario: ScenarioId): WorkbenchState {
           plan: 'locked',
         }),
         artifacts: baseArtifacts.map((a) => {
-          if (a.filename === '01-questions.md') return { ...a, content: QUESTIONS, status: 'approved' as const }
-          if (a.filename === '02-research.md') return { ...a, content: RESEARCH, status: 'approved' as const }
-          if (a.filename === '03-design.md') return { ...a, content: DESIGN, status: 'approved' as const }
-          if (a.filename === '04-structure.md') return { ...a, content: STRUCTURE, status: 'needs_review' as const }
+          if (a.filename === '01-questions.md')
+            return { ...a, content: QUESTIONS, status: 'approved' as const }
+          if (a.filename === '02-research.md')
+            return { ...a, content: RESEARCH, status: 'approved' as const }
+          if (a.filename === '03-design.md')
+            return { ...a, content: DESIGN, status: 'approved' as const }
+          if (a.filename === '04-structure.md')
+            return { ...a, content: STRUCTURE, status: 'needs_review' as const }
           if (a.filename === '00-ticket.md') return { ...a, status: 'approved' as const }
           return a
         }),
         activity: [
           ...BASE_ACTIVITY,
-          { id: 'a5', timestamp: '10:15:00', type: 'message', content: 'Research complete — 02-research.md approved.' },
-          { id: 'a6', timestamp: '10:28:00', type: 'message', content: 'Design complete — awaiting structure.' },
+          {
+            id: 'a5',
+            timestamp: '10:15:00',
+            type: 'message',
+            content: 'Research complete — 02-research.md approved.',
+          },
+          {
+            id: 'a6',
+            timestamp: '10:28:00',
+            type: 'message',
+            content: 'Design complete — awaiting structure.',
+          },
           { id: 'a7', timestamp: '10:35:12', type: 'message', content: 'Wrote 04-structure.md.' },
         ],
         changedFiles: [],
@@ -489,19 +523,38 @@ export function createScenarioState(scenario: ScenarioId): WorkbenchState {
           plan: 'needs_review',
         }),
         artifacts: baseArtifacts.map((a) => {
-          if (['00-ticket.md', '01-questions.md', '02-research.md', '03-design.md', '04-structure.md'].includes(a.filename)) {
+          if (
+            [
+              '00-ticket.md',
+              '01-questions.md',
+              '02-research.md',
+              '03-design.md',
+              '04-structure.md',
+            ].includes(a.filename)
+          ) {
             const content =
-              a.filename === '04-structure.md' ? STRUCTURE :
-              a.filename === '03-design.md' ? DESIGN :
-              a.filename === '02-research.md' ? RESEARCH :
-              a.filename === '01-questions.md' ? QUESTIONS : a.content
+              a.filename === '04-structure.md'
+                ? STRUCTURE
+                : a.filename === '03-design.md'
+                  ? DESIGN
+                  : a.filename === '02-research.md'
+                    ? RESEARCH
+                    : a.filename === '01-questions.md'
+                      ? QUESTIONS
+                      : a.content
             return { ...a, content, status: 'approved' as const }
           }
-          if (a.filename === '05-plan.md') return { ...a, content: PLAN, status: 'needs_review' as const }
+          if (a.filename === '05-plan.md')
+            return { ...a, content: PLAN, status: 'needs_review' as const }
           return a
         }),
         activity: [
-          { id: 'p1', timestamp: '11:00:00', type: 'message', content: 'Structure approved. Generating plan.' },
+          {
+            id: 'p1',
+            timestamp: '11:00:00',
+            type: 'message',
+            content: 'Structure approved. Generating plan.',
+          },
           { id: 'p2', timestamp: '11:08:00', type: 'message', content: 'Wrote 05-plan.md.' },
         ],
         changedFiles: [],
@@ -534,29 +587,65 @@ export function createScenarioState(scenario: ScenarioId): WorkbenchState {
           implement: 'running',
         }),
         artifacts: baseArtifacts.map((a) => {
-          if (['00-ticket.md', '01-questions.md', '02-research.md', '03-design.md', '04-structure.md', '05-plan.md'].includes(a.filename)) {
+          if (
+            [
+              '00-ticket.md',
+              '01-questions.md',
+              '02-research.md',
+              '03-design.md',
+              '04-structure.md',
+              '05-plan.md',
+            ].includes(a.filename)
+          ) {
             const content =
-              a.filename === '05-plan.md' ? PLAN :
-              a.filename === '04-structure.md' ? STRUCTURE :
-              a.filename === '03-design.md' ? DESIGN :
-              a.filename === '02-research.md' ? RESEARCH :
-              a.filename === '01-questions.md' ? QUESTIONS : a.content
+              a.filename === '05-plan.md'
+                ? PLAN
+                : a.filename === '04-structure.md'
+                  ? STRUCTURE
+                  : a.filename === '03-design.md'
+                    ? DESIGN
+                    : a.filename === '02-research.md'
+                      ? RESEARCH
+                      : a.filename === '01-questions.md'
+                        ? QUESTIONS
+                        : a.content
             return { ...a, content, status: 'approved' as const }
           }
           if (a.filename === '06-implementation-log.md') {
             return {
               ...a,
-              content: '# Implementation log\n\n## Slice 1 ✓\n- Added classifier + types\n- 109 tests passing\n\n## Slice 2 (in progress)\n- Wired processor\n- Extended webhook payload',
+              content:
+                '# Implementation log\n\n## Slice 1 ✓\n- Added classifier + types\n- 109 tests passing\n\n## Slice 2 (in progress)\n- Wired processor\n- Extended webhook payload',
               status: 'draft' as const,
             }
           }
           return a
         }),
         activity: [
-          { id: 'b1', timestamp: '11:00:00', type: 'message', content: 'Implementing slice 2 — processor integration.' },
-          { id: 'b2', timestamp: '11:02:14', type: 'file_read', content: 'Read src/inbox/processor.ts' },
-          { id: 'b3', timestamp: '11:05:33', type: 'command', content: 'pnpm test src/inbox/classifier.test.ts — 24 passed' },
-          { id: 'b4', timestamp: '11:08:01', type: 'message', content: 'Modified 4 files. Ready for diff review.' },
+          {
+            id: 'b1',
+            timestamp: '11:00:00',
+            type: 'message',
+            content: 'Implementing slice 2 — processor integration.',
+          },
+          {
+            id: 'b2',
+            timestamp: '11:02:14',
+            type: 'file_read',
+            content: 'Read src/inbox/processor.ts',
+          },
+          {
+            id: 'b3',
+            timestamp: '11:05:33',
+            type: 'command',
+            content: 'pnpm test src/inbox/classifier.test.ts — 24 passed',
+          },
+          {
+            id: 'b4',
+            timestamp: '11:08:01',
+            type: 'message',
+            content: 'Modified 4 files. Ready for diff review.',
+          },
         ],
         changedFiles: CHANGED_FILES,
         slices: SLICES,
@@ -589,17 +678,32 @@ export function createScenarioState(scenario: ScenarioId): WorkbenchState {
           review: 'needs_review',
         }),
         artifacts: baseArtifacts.map((a) => {
-          if (a.filename === '07-review.md') return { ...a, content: REVIEW, status: 'needs_review' as const }
+          if (a.filename === '07-review.md')
+            return { ...a, content: REVIEW, status: 'needs_review' as const }
           if (a.filename === '06-implementation-log.md') {
-            return { ...a, content: '# Implementation log\n\nAll 3 slices complete.', status: 'approved' as const }
+            return {
+              ...a,
+              content: '# Implementation log\n\nAll 3 slices complete.',
+              status: 'approved' as const,
+            }
           }
           if (a.filename !== '00-ticket.md') return { ...a, status: 'approved' as const }
           return { ...a, status: 'approved' as const }
         }),
         activity: [
-          { id: 'c1', timestamp: '14:00:00', type: 'message', content: 'All slices approved. Generating final review.' },
+          {
+            id: 'c1',
+            timestamp: '14:00:00',
+            type: 'message',
+            content: 'All slices approved. Generating final review.',
+          },
           { id: 'c2', timestamp: '14:01:22', type: 'command', content: 'pnpm test — 847 passed' },
-          { id: 'c3', timestamp: '14:02:00', type: 'message', content: 'Wrote 07-review.md with PR summary.' },
+          {
+            id: 'c3',
+            timestamp: '14:02:00',
+            type: 'message',
+            content: 'Wrote 07-review.md with PR summary.',
+          },
         ],
         changedFiles: CHANGED_FILES,
         slices: SLICES.map((s) => ({ ...s, status: 'done' as const })),

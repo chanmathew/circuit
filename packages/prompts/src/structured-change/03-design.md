@@ -4,8 +4,10 @@
 
 1. Announce: Design phase.
 2. Verify inputs: `00-ticket.md`, `01-questions.md`, and `02-research.md` are available.
-3. Allowed: design proposals, tradeoff analysis, architecture diagrams. Prohibited: code edits, tactical implementation plans, slice-level steps.
-4. Perform phase work: propose the design, compare options, and surface decisions requiring human approval.
+3. Allowed: design proposals, tradeoff analysis, architecture diagrams. Prohibited: code edits,
+   tactical implementation plans, slice-level steps.
+4. Perform phase work: propose the design, compare options, and surface decisions requiring human
+   approval.
 5. Write artifact: `03-design.md`.
 6. Self-review: check options, tradeoffs, assumptions, and open questions are explicit.
 7. Stop for human approval.
@@ -32,7 +34,8 @@ Do not edit code.
 
 Do not write a tactical implementation plan yet.
 
-Your job is to propose the design, compare options, surface tradeoffs, and identify decisions that require human approval.
+Your job is to propose the design, compare options, surface tradeoffs, and identify decisions that
+require human approval.
 
 ## Rules
 

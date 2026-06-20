@@ -2,12 +2,7 @@ import { useState } from 'react'
 
 import { Badge, Button, cn, ScrollArea } from '@circuit/ui'
 
-import {
-  ActionBar,
-  ActivityFeed,
-  MainPanelContent,
-  RightSidebarTabs,
-} from './content-panels.js'
+import { ActionBar, ActivityFeed, MainPanelContent, RightSidebarTabs } from './content-panels.js'
 import { shouldShowStructuredPanel } from './phase-approval.js'
 import { PHASE_STATUS_DOT } from './phase-styles.js'
 import { PhaseStructuredPanel } from './structured/PhaseStructuredPanel.js'
@@ -31,8 +26,10 @@ function HeaderPhaseRail({
             className={cn(
               'flex items-center gap-1 rounded-full px-2 py-1 text-[11px] transition-colors',
               phase.status === 'locked' && 'cursor-not-allowed opacity-30',
-              phase.status === 'needs_review' && 'bg-sky-500/15 text-sky-800 dark:text-sky-200 ring-1 ring-sky-500/30',
-              phase.status === 'running' && 'bg-amber-500/15 text-amber-800 dark:text-amber-200 animate-pulse',
+              phase.status === 'needs_review' &&
+                'bg-sky-500/15 text-sky-800 dark:text-sky-200 ring-1 ring-sky-500/30',
+              phase.status === 'running' &&
+                'bg-amber-500/15 text-amber-800 dark:text-amber-200 animate-pulse',
               phase.status === 'approved' && 'text-muted-foreground hover:text-foreground',
               phase.status === 'ready' && 'text-primary hover:bg-primary/10',
               !['locked', 'needs_review', 'running', 'approved', 'ready'].includes(phase.status) &&
@@ -40,7 +37,9 @@ function HeaderPhaseRail({
             )}
             title={phase.label}
           >
-            <span className={cn('h-1.5 w-1.5 rounded-full shrink-0', PHASE_STATUS_DOT[phase.status])} />
+            <span
+              className={cn('h-1.5 w-1.5 rounded-full shrink-0', PHASE_STATUS_DOT[phase.status])}
+            />
             <span className="font-medium whitespace-nowrap">{phase.label}</span>
           </button>
           {i < phases.length - 1 && (
@@ -67,7 +66,9 @@ export function WorkbenchLayout({ state, actions }: WorkbenchLayoutProps): React
         <div className="flex items-center gap-3 px-4 py-2.5">
           <div className="min-w-0 shrink-0 max-w-[200px]">
             <h1 className="truncate text-sm font-semibold leading-tight">{state.task.title}</h1>
-            <p className="truncate text-[10px] text-muted-foreground font-mono">{state.task.branchName}</p>
+            <p className="truncate text-[10px] text-muted-foreground font-mono">
+              {state.task.branchName}
+            </p>
           </div>
 
           <HeaderPhaseRail phases={state.phases} onSelectPhase={actions.selectPhase} />

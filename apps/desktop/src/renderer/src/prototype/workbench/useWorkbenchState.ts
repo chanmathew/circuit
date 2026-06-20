@@ -48,11 +48,12 @@ export function useWorkbenchState(scenario: ScenarioId): {
       return {
         ...prev,
         selectedArtifactId: id,
-        mainMode: artifact.phase === 'review' && prev.mainMode === 'final_review'
-          ? 'final_review'
-          : prev.mainMode === 'diff' || prev.mainMode === 'implementation'
-            ? prev.mainMode
-            : 'artifact',
+        mainMode:
+          artifact.phase === 'review' && prev.mainMode === 'final_review'
+            ? 'final_review'
+            : prev.mainMode === 'diff' || prev.mainMode === 'implementation'
+              ? prev.mainMode
+              : 'artifact',
       }
     })
   }, [])
@@ -210,7 +211,11 @@ export function useWorkbenchState(scenario: ScenarioId): {
         )
         const artifacts = prev.artifacts.map((a) =>
           a.phase === running.name && a.content.includes('_(empty)_')
-            ? { ...a, content: `# ${running.label}\n\nGenerated content for ${running.label} phase.\n\n_(mock agent output)_`, status: 'needs_review' as const }
+            ? {
+                ...a,
+                content: `# ${running.label}\n\nGenerated content for ${running.label} phase.\n\n_(mock agent output)_`,
+                status: 'needs_review' as const,
+              }
             : a.phase === running.name
               ? { ...a, status: 'needs_review' as const }
               : a,
@@ -271,7 +276,10 @@ export function useWorkbenchState(scenario: ScenarioId): {
         isAgentRunning: false,
         mainMode: 'diff',
         rightTab: 'files',
-        changedFiles: prev.changedFiles.length > 0 ? prev.changedFiles : createScenarioState('implementing').changedFiles,
+        changedFiles:
+          prev.changedFiles.length > 0
+            ? prev.changedFiles
+            : createScenarioState('implementing').changedFiles,
         validationOutput: '24 passed · 0 failed · 1.2s',
         activity: [
           ...prev.activity,
@@ -310,8 +318,11 @@ export function useWorkbenchState(scenario: ScenarioId): {
         validationOutput: null,
         phases: allDone
           ? prev.phases.map((p) =>
-              p.name === 'implement' ? { ...p, status: 'approved' as const } :
-              p.name === 'review' ? { ...p, status: 'ready' as const } : p,
+              p.name === 'implement'
+                ? { ...p, status: 'approved' as const }
+                : p.name === 'review'
+                  ? { ...p, status: 'ready' as const }
+                  : p,
             )
           : prev.phases,
         task: {
@@ -325,7 +336,9 @@ export function useWorkbenchState(scenario: ScenarioId): {
             id: `slice-${Date.now()}`,
             timestamp: new Date().toLocaleTimeString(),
             type: 'message' as const,
-            content: allDone ? 'All slices approved — ready for final review.' : `Slice ${idx + 1} approved.`,
+            content: allDone
+              ? 'All slices approved — ready for final review.'
+              : `Slice ${idx + 1} approved.`,
           },
         ],
       }

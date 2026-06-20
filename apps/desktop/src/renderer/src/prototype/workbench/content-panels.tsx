@@ -27,10 +27,17 @@ export function WorkbenchHeader({
   compact?: boolean
 }): React.ReactElement {
   return (
-    <header className={cn('shrink-0 border-b border-border bg-card', compact ? 'px-4 py-3' : 'px-5 py-4')}>
+    <header
+      className={cn('shrink-0 border-b border-border bg-card', compact ? 'px-4 py-3' : 'px-5 py-4')}
+    >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 space-y-1">
-          <h1 className={cn('font-semibold tracking-tight truncate', compact ? 'text-base' : 'text-lg')}>
+          <h1
+            className={cn(
+              'font-semibold tracking-tight truncate',
+              compact ? 'text-base' : 'text-lg',
+            )}
+          >
             {state.task.title}
           </h1>
           <p className="text-xs text-muted-foreground truncate">
@@ -192,13 +199,34 @@ export function ArtifactEditor({
       <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-border bg-card px-4 py-2">
         <div>
           <p className="text-sm font-medium">{artifact.title}</p>
-          <PhaseStatusBadge status={artifact.status === 'draft' ? 'locked' : artifact.status === 'approved' ? 'approved' : artifact.status === 'stale' ? 'stale' : 'needs_review'} className="mt-1" />
+          <PhaseStatusBadge
+            status={
+              artifact.status === 'draft'
+                ? 'locked'
+                : artifact.status === 'approved'
+                  ? 'approved'
+                  : artifact.status === 'stale'
+                    ? 'stale'
+                    : 'needs_review'
+            }
+            className="mt-1"
+          />
         </div>
         <div className="flex gap-1">
-          <Button variant={preview ? 'ghost' : 'secondary'} size="sm" type="button" onClick={() => onPreviewChange(false)}>
+          <Button
+            variant={preview ? 'ghost' : 'secondary'}
+            size="sm"
+            type="button"
+            onClick={() => onPreviewChange(false)}
+          >
             Source
           </Button>
-          <Button variant={preview ? 'secondary' : 'ghost'} size="sm" type="button" onClick={() => onPreviewChange(true)}>
+          <Button
+            variant={preview ? 'secondary' : 'ghost'}
+            size="sm"
+            type="button"
+            onClick={() => onPreviewChange(true)}
+          >
             Preview
           </Button>
         </div>
@@ -223,11 +251,36 @@ function MarkdownPreview({ content }: { content: string }): React.ReactElement {
   return (
     <div className="space-y-2 text-sm leading-relaxed">
       {lines.map((line, i) => {
-        if (line.startsWith('# ')) return <h1 key={i} className="text-xl font-bold mt-0 mb-3">{line.slice(2)}</h1>
-        if (line.startsWith('## ')) return <h2 key={i} className="text-base font-semibold mt-4 mb-2">{line.slice(3)}</h2>
-        if (line.startsWith('### ')) return <h3 key={i} className="text-sm font-semibold mt-3 mb-1">{line.slice(4)}</h3>
-        if (line.startsWith('- ')) return <li key={i} className="ml-4 list-disc">{renderInline(line.slice(2))}</li>
-        if (line.startsWith('|')) return <pre key={i} className="text-xs overflow-x-auto">{line}</pre>
+        if (line.startsWith('# '))
+          return (
+            <h1 key={i} className="text-xl font-bold mt-0 mb-3">
+              {line.slice(2)}
+            </h1>
+          )
+        if (line.startsWith('## '))
+          return (
+            <h2 key={i} className="text-base font-semibold mt-4 mb-2">
+              {line.slice(3)}
+            </h2>
+          )
+        if (line.startsWith('### '))
+          return (
+            <h3 key={i} className="text-sm font-semibold mt-3 mb-1">
+              {line.slice(4)}
+            </h3>
+          )
+        if (line.startsWith('- '))
+          return (
+            <li key={i} className="ml-4 list-disc">
+              {renderInline(line.slice(2))}
+            </li>
+          )
+        if (line.startsWith('|'))
+          return (
+            <pre key={i} className="text-xs overflow-x-auto">
+              {line}
+            </pre>
+          )
         if (line.startsWith('```')) return null
         if (line.trim() === '') return <br key={i} />
         if (line.startsWith('---')) return <Separator key={i} className="my-4" />
@@ -241,7 +294,9 @@ function renderInline(text: string): React.ReactNode {
   const parts = text.split(/(`[^`]+`)/g)
   return parts.map((part, i) =>
     part.startsWith('`') && part.endsWith('`') ? (
-      <code key={i} className="rounded bg-muted px-1 py-0.5 font-mono text-xs">{part.slice(1, -1)}</code>
+      <code key={i} className="rounded bg-muted px-1 py-0.5 font-mono text-xs">
+        {part.slice(1, -1)}
+      </code>
     ) : (
       part
     ),
@@ -262,17 +317,31 @@ export function DiffPanel({
     <div className="flex flex-1 flex-col min-h-0">
       <div className="border-b border-border px-4 py-2">
         <p className="text-sm font-medium">Diff review</p>
-        <p className="text-xs text-muted-foreground font-mono">{file?.path ?? 'No file selected'}</p>
+        <p className="text-xs text-muted-foreground font-mono">
+          {file?.path ?? 'No file selected'}
+        </p>
       </div>
       <ScrollArea className="flex-1">
         <pre className="p-4 font-mono text-xs leading-5">
-          <span className="text-muted-foreground">@@ -42,6 +42,12 @@</span>{'\n'}
-          <span className="text-red-500/80">-  await routeMessage(msg)</span>{'\n'}
-          <span className="text-emerald-600">+  const classification = classifyInboundEmail(msg)</span>{'\n'}
-          <span className="text-emerald-600">+  await routeMessage(msg, &#123; classification &#125;)</span>{'\n'}
+          <span className="text-muted-foreground">@@ -42,6 +42,12 @@</span>
           {'\n'}
-          <span className="text-muted-foreground">  export function handleWebhook(event) {'{'}</span>{'\n'}
-          <span className="text-emerald-600">+    if (event.classification) payload.classification = event.classification</span>{'\n'}
+          <span className="text-red-500/80">- await routeMessage(msg)</span>
+          {'\n'}
+          <span className="text-emerald-600">
+            + const classification = classifyInboundEmail(msg)
+          </span>
+          {'\n'}
+          <span className="text-emerald-600">
+            + await routeMessage(msg, &#123; classification &#125;)
+          </span>
+          {'\n'}
+          {'\n'}
+          <span className="text-muted-foreground"> export function handleWebhook(event) {'{'}</span>
+          {'\n'}
+          <span className="text-emerald-600">
+            + if (event.classification) payload.classification = event.classification
+          </span>
+          {'\n'}
         </pre>
         {onSliceFeedbackChange && (
           <div className="border-t border-border p-4 space-y-2">
@@ -304,7 +373,9 @@ export function ImplementationPanel({
     <ScrollArea className="flex-1">
       <div className="space-y-4 p-5">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Active slice</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Active slice
+          </p>
           <p className="mt-1 text-base font-semibold">{active?.title ?? 'No active slice'}</p>
           <p className="text-sm text-muted-foreground">{active?.scope}</p>
         </div>
@@ -344,8 +415,12 @@ export function FinalReviewPanel({ content }: { content: string }): React.ReactE
     <ScrollArea className="flex-1">
       <div className="p-6 space-y-4">
         <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-4">
-          <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">Ready for PR</p>
-          <p className="text-xs text-muted-foreground mt-1">Review summary generated from artifacts</p>
+          <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">
+            Ready for PR
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Review summary generated from artifacts
+          </p>
         </div>
         <pre className="whitespace-pre-wrap rounded-md border border-border bg-muted/30 p-4 font-mono text-xs leading-relaxed">
           {content.split('## PR summary')[1] ?? content}
@@ -366,7 +441,11 @@ export function ActionBar({
   actions: WorkbenchActions
 }): React.ReactElement | null {
   const readyPhase = state.phases.find((p) => p.status === 'ready' || p.status === 'needs_revision')
-  const isImplementPhase = state.phases.some((p) => p.name === 'implement' && (p.status === 'running' || p.status === 'approved' || state.slices.length > 0))
+  const isImplementPhase = state.phases.some(
+    (p) =>
+      p.name === 'implement' &&
+      (p.status === 'running' || p.status === 'approved' || state.slices.length > 0),
+  )
   const inPhaseReview = isInPhaseReview(state)
   const canApprove = canApprovePhase(state)
   const blockedReason = getApproveBlockedReason(state)
@@ -387,77 +466,93 @@ export function ActionBar({
   return (
     <div className="shrink-0 border-t border-border bg-card">
       <div className="flex flex-wrap items-center gap-2 px-4 py-3">
-      {inPhaseReview && !state.revisionOpen && (
-        <>
+        {inPhaseReview && !state.revisionOpen && (
+          <>
+            <Button
+              type="button"
+              size="sm"
+              onClick={actions.approveCurrentPhase}
+              disabled={!canApprove}
+              title={blockedReason ?? undefined}
+            >
+              {proceedLabel}
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={actions.openRevision}>
+              Request revision
+            </Button>
+            {!canApprove && blockedReason && (
+              <span className="text-xs text-muted-foreground">{blockedReason}</span>
+            )}
+          </>
+        )}
+        {inPhaseReview && state.revisionOpen && (
+          <>
+            <Button
+              type="button"
+              size="sm"
+              onClick={actions.submitRevision}
+              disabled={!state.revisionDraft.note.trim()}
+            >
+              Submit revision
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={actions.closeRevision}>
+              Cancel
+            </Button>
+          </>
+        )}
+        {readyPhase && !state.isAgentRunning && (
           <Button
             type="button"
             size="sm"
-            onClick={actions.approveCurrentPhase}
-            disabled={!canApprove}
-            title={blockedReason ?? undefined}
+            onClick={actions.runCurrentPhase}
+            disabled={state.isAgentRunning}
           >
-            {proceedLabel}
+            Run {readyPhase.label.toLowerCase()}
           </Button>
-          <Button type="button" variant="outline" size="sm" onClick={actions.openRevision}>
-            Request revision
+        )}
+        {isImplementPhase && state.mainMode === 'implementation' && (
+          <Button
+            type="button"
+            size="sm"
+            onClick={actions.implementNextSlice}
+            disabled={state.isAgentRunning}
+          >
+            {state.isAgentRunning ? 'Implementing…' : 'Implement next slice'}
           </Button>
-          {!canApprove && blockedReason && (
-            <span className="text-xs text-muted-foreground">{blockedReason}</span>
+        )}
+        {state.mainMode === 'diff' && (
+          <>
+            <Button type="button" size="sm" onClick={actions.approveSlice}>
+              Approve slice
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={actions.requestSliceChanges}>
+              Request changes
+            </Button>
+            <Button type="button" variant="outline" size="sm" onClick={actions.runValidation}>
+              Run validation
+            </Button>
+          </>
+        )}
+        {(state.mainMode === 'artifact' || state.mainMode === 'implementation') &&
+          !(inPhaseReview && state.revisionOpen) && (
+            <Button type="button" variant="ghost" size="sm" onClick={actions.runValidation}>
+              Run validation
+            </Button>
           )}
-        </>
-      )}
-      {inPhaseReview && state.revisionOpen && (
-        <>
+        {state.mainMode === 'final_review' && (
           <Button
             type="button"
             size="sm"
-            onClick={actions.submitRevision}
-            disabled={!state.revisionDraft.note.trim()}
+            onClick={() => void navigator.clipboard.writeText('PR summary copied')}
           >
-            Submit revision
+            Copy PR summary
           </Button>
-          <Button type="button" variant="outline" size="sm" onClick={actions.closeRevision}>
-            Cancel
-          </Button>
-        </>
-      )}
-      {readyPhase && !state.isAgentRunning && (
-        <Button type="button" size="sm" onClick={actions.runCurrentPhase} disabled={state.isAgentRunning}>
-          Run {readyPhase.label.toLowerCase()}
-        </Button>
-      )}
-      {isImplementPhase && state.mainMode === 'implementation' && (
-        <Button type="button" size="sm" onClick={actions.implementNextSlice} disabled={state.isAgentRunning}>
-          {state.isAgentRunning ? 'Implementing…' : 'Implement next slice'}
-        </Button>
-      )}
-      {state.mainMode === 'diff' && (
-        <>
-          <Button type="button" size="sm" onClick={actions.approveSlice}>
-            Approve slice
-          </Button>
-          <Button type="button" variant="outline" size="sm" onClick={actions.requestSliceChanges}>
-            Request changes
-          </Button>
-          <Button type="button" variant="outline" size="sm" onClick={actions.runValidation}>
-            Run validation
-          </Button>
-        </>
-      )}
-      {(state.mainMode === 'artifact' || state.mainMode === 'implementation') &&
-        !(inPhaseReview && state.revisionOpen) && (
-        <Button type="button" variant="ghost" size="sm" onClick={actions.runValidation}>
-          Run validation
-        </Button>
-      )}
-      {state.mainMode === 'final_review' && (
-        <Button type="button" size="sm" onClick={() => void navigator.clipboard.writeText('PR summary copied')}>
-          Copy PR summary
-        </Button>
-      )}
-      {state.isAgentRunning && (
-        <span className="text-xs text-amber-600 dark:text-amber-400 animate-pulse">Agent running…</span>
-      )}
+        )}
+        {state.isAgentRunning && (
+          <span className="text-xs text-amber-600 dark:text-amber-400 animate-pulse">
+            Agent running…
+          </span>
+        )}
       </div>
     </div>
   )
@@ -520,7 +615,9 @@ export function GitPanel({
   return (
     <div className="space-y-3 p-2">
       <div className="rounded-md border border-border bg-card p-2.5">
-        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Branch</p>
+        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          Branch
+        </p>
         <p className="mt-0.5 font-mono text-xs">{branchName}</p>
         <p className="mt-2 text-[10px] text-muted-foreground">
           {hasChanges ? `${changedFiles.length} modified` : 'Working tree clean'}

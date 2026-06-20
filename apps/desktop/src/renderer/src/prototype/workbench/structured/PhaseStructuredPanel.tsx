@@ -3,11 +3,7 @@ import { useState } from 'react'
 import { Button, cn } from '@circuit/ui'
 
 import { structuredPanelTitle } from '../phase-approval.js'
-import type {
-  PhaseStructuredData,
-  RevisionDraft,
-  WorkbenchActions,
-} from '../types.js'
+import type { PhaseStructuredData, RevisionDraft, WorkbenchActions } from '../types.js'
 import { HumanQaCards } from './HumanQaCards.js'
 import { RevisionForm } from './RevisionDrawer.js'
 
@@ -52,41 +48,45 @@ export function PhaseStructuredPanel({
           <RevisionForm draft={revisionDraft} actions={actions} />
         ) : (
           <>
-        {data.mode === 'human_qa' && (
-          <HumanQaCards
-            items={data.items}
-            onAnswer={(id, answer, usedCustom) => actions.answerHumanQa(id, answer, usedCustom)}
-            onDefer={actions.deferHumanQa}
-          />
-        )}
-        {data.mode === 'research_verify' && (
-          <FindingVerifyList findings={data.findings} onVerify={actions.verifyFinding} />
-        )}
-        {data.mode === 'design_review' && (
-          <>
-            <HumanQaCards
-              items={data.decisions}
-              onAnswer={(id, answer, usedCustom) => actions.answerHumanQa(id, answer, usedCustom)}
-              onDefer={actions.deferHumanQa}
-              title="Key decisions"
-            />
-            <HumanQaCards
-              items={data.openQuestions}
-              onAnswer={(id, answer, usedCustom) => actions.answerHumanQa(id, answer, usedCustom)}
-              onDefer={actions.deferHumanQa}
-              title="Open questions"
-            />
-          </>
-        )}
-        {data.mode === 'structure_slices' && (
-          <StructureSliceCards slices={data.slices} onApprove={actions.approveStructureSlice} />
-        )}
-        {data.mode === 'plan_slices' && (
-          <PlanSliceAccordion slices={data.slices} onApprove={actions.approvePlanSlice} />
-        )}
-        {data.mode === 'review_checklist' && (
-          <ReviewChecklistPanel items={data.items} onToggle={actions.toggleReviewChecklist} />
-        )}
+            {data.mode === 'human_qa' && (
+              <HumanQaCards
+                items={data.items}
+                onAnswer={(id, answer, usedCustom) => actions.answerHumanQa(id, answer, usedCustom)}
+                onDefer={actions.deferHumanQa}
+              />
+            )}
+            {data.mode === 'research_verify' && (
+              <FindingVerifyList findings={data.findings} onVerify={actions.verifyFinding} />
+            )}
+            {data.mode === 'design_review' && (
+              <>
+                <HumanQaCards
+                  items={data.decisions}
+                  onAnswer={(id, answer, usedCustom) =>
+                    actions.answerHumanQa(id, answer, usedCustom)
+                  }
+                  onDefer={actions.deferHumanQa}
+                  title="Key decisions"
+                />
+                <HumanQaCards
+                  items={data.openQuestions}
+                  onAnswer={(id, answer, usedCustom) =>
+                    actions.answerHumanQa(id, answer, usedCustom)
+                  }
+                  onDefer={actions.deferHumanQa}
+                  title="Open questions"
+                />
+              </>
+            )}
+            {data.mode === 'structure_slices' && (
+              <StructureSliceCards slices={data.slices} onApprove={actions.approveStructureSlice} />
+            )}
+            {data.mode === 'plan_slices' && (
+              <PlanSliceAccordion slices={data.slices} onApprove={actions.approvePlanSlice} />
+            )}
+            {data.mode === 'review_checklist' && (
+              <ReviewChecklistPanel items={data.items} onToggle={actions.toggleReviewChecklist} />
+            )}
           </>
         )}
       </div>
@@ -147,17 +147,26 @@ function StructureSliceCards({
           key={s.id}
           className={cn(
             'rounded-md border p-3',
-            s.status === 'approved' ? 'border-emerald-500/30 bg-emerald-500/5 opacity-80' : 'border-border bg-card',
+            s.status === 'approved'
+              ? 'border-emerald-500/30 bg-emerald-500/5 opacity-80'
+              : 'border-border bg-card',
           )}
         >
           <div className="flex items-start justify-between gap-2">
             <div>
               <p className="text-sm font-medium">{s.title}</p>
               <p className="text-xs text-muted-foreground">{s.scope}</p>
-              <p className="text-[10px] font-mono text-muted-foreground mt-1">{s.files.join(', ')}</p>
+              <p className="text-[10px] font-mono text-muted-foreground mt-1">
+                {s.files.join(', ')}
+              </p>
             </div>
             {s.status === 'pending' && (
-              <Button type="button" size="sm" className="h-7 text-xs shrink-0" onClick={() => onApprove(s.id)}>
+              <Button
+                type="button"
+                size="sm"
+                className="h-7 text-xs shrink-0"
+                onClick={() => onApprove(s.id)}
+              >
                 Approve slice
               </Button>
             )}
@@ -201,7 +210,12 @@ function PlanSliceAccordion({
                 </ul>
                 <p className="font-mono text-[10px] text-primary">{s.validation}</p>
                 {s.status === 'pending' && (
-                  <Button type="button" size="sm" className="h-7 text-xs" onClick={() => onApprove(s.id)}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => onApprove(s.id)}
+                  >
                     Approve slice plan
                   </Button>
                 )}
@@ -224,7 +238,10 @@ function ReviewChecklistPanel({
   return (
     <div className="space-y-2">
       {items.map((item) => (
-        <label key={item.id} className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm cursor-pointer hover:bg-accent/30">
+        <label
+          key={item.id}
+          className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm cursor-pointer hover:bg-accent/30"
+        >
           <input
             type="checkbox"
             checked={item.checked}

@@ -4,10 +4,12 @@
 
 1. Announce: Plan phase.
 2. Verify inputs: approved `03-design.md`, `04-structure.md`, and `02-research.md` are available.
-3. Allowed: tactical implementation plan, verification commands, slice checklists. Prohibited: code edits, implementing slices.
+3. Allowed: tactical implementation plan, verification commands, slice checklists. Prohibited: code
+   edits, implementing slices.
 4. Perform phase work: produce an executable plan aligned with approved structure.
 5. Write artifact: `05-plan.md`.
-6. Self-review: every slice has files, steps, automated verification, manual verification, and a stop point.
+6. Self-review: every slice has files, steps, automated verification, manual verification, and a
+   stop point.
 7. Stop for human approval before implementation.
 
 ## Inputs
@@ -82,9 +84,9 @@ What this slice accomplishes.
 
 #### Files Changed
 
-| File | Change |
-| --- | --- |
-| `path/to/file.ts` | ... |
+| File              | Change |
+| ----------------- | ------ |
+| `path/to/file.ts` | ...    |
 
 #### Steps
 
