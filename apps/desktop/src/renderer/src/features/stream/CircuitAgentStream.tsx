@@ -1,41 +1,26 @@
 import { useState } from 'react'
 
-import type { ReferenceTarget } from '@circuit/protocol'
+import type { ReferenceTarget, StreamAction } from '@circuit/protocol'
 
-import type { ArtifactDto, DecisionResolutionDto, FeedEventDto } from '../../../../shared/api.js'
-import { useTaskStreamItems, type LocalUserMessage } from '../../lib/useTaskStreamItems.js'
+import type { DecisionResolutionDto, FeedEventDto } from '../../../../shared/api.js'
+import { useTaskStreamItems, type LocalUserMessage } from './hooks/useTaskStreamItems.js'
 import { CircuitInputComposer } from './CircuitInputComposer.js'
 import { StreamList } from './StreamList.js'
 
 export interface CircuitAgentStreamProps {
   feedEvents: FeedEventDto[]
-  artifacts: ArtifactDto[]
   decisionResolutions?: DecisionResolutionDto[]
   isRunning?: boolean
   onResolveDecision?: (decisionId: string, optionId: string, optionLabel: string) => void
-  onSelectArtifact?: (artifactId: string) => void
-}
-
-function resolveArtifactId(artifacts: ArtifactDto[], target: ReferenceTarget): string | undefined {
-  if (target.type !== 'artifact') return undefined
-  const byId = artifacts.find((artifact) => artifact.id === target.artifactId)
-  if (byId) return byId.id
-  const byPath = artifacts.find(
-    (artifact) =>
-      artifact.path === target.artifactId ||
-      artifact.path.endsWith(target.artifactId) ||
-      artifact.title === target.artifactId,
-  )
-  return byPath?.id
+  onOpenReference?: (target: ReferenceTarget) => void
 }
 
 export function CircuitAgentStream({
   feedEvents,
-  artifacts,
   decisionResolutions = [],
   isRunning = false,
   onResolveDecision,
-  onSelectArtifact,
+  onOpenReference,
 }: CircuitAgentStreamProps): React.ReactElement {
   const [localMessages, setLocalMessages] = useState<LocalUserMessage[]>([])
 
@@ -52,7 +37,10 @@ export function CircuitAgentStream({
     ])
   }
 
-  const handleStreamAction = (action: string, payload?: Record<string, unknown>): void => {
+  const handleStreamAction = (
+    action: StreamAction['action'],
+    payload?: StreamAction['payload'],
+  ): void => {
     if (action === 'decision.resolve') {
       const decisionId = payload?.decisionId
       const optionId = payload?.optionId
@@ -68,10 +56,7 @@ export function CircuitAgentStream({
   }
 
   const handleOpenReference = (target: ReferenceTarget): void => {
-    if (target.type === 'artifact') {
-      const artifactId = resolveArtifactId(artifacts, target)
-      if (artifactId) onSelectArtifact?.(artifactId)
-    }
+    onOpenReference?.(target)
   }
 
   return (

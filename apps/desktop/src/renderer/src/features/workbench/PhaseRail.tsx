@@ -6,7 +6,7 @@ import {
   circuitTraceClassName,
   isPhaseComplete,
   phaseNodeClassName,
-} from '../lib/phase-styles.js'
+} from './lib/phase-styles.js'
 
 export interface PhaseRailItem {
   name: string

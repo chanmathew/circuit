@@ -1,4 +1,4 @@
-import type { StreamItem, ReferenceTarget } from '@circuit/protocol'
+import type { StreamItem, ReferenceTarget, StreamAction } from '@circuit/protocol'
 
 import type { DecisionResolutionDto } from '../../../../shared/api.js'
 import {
@@ -13,7 +13,7 @@ import {
 export interface StreamItemRendererProps {
   item: StreamItem
   decisionResolutions?: DecisionResolutionDto[]
-  onStreamAction?: (action: string, payload?: Record<string, unknown>) => void
+  onStreamAction?: (action: StreamAction['action'], payload?: StreamAction['payload']) => void
   onOpenReference?: (target: ReferenceTarget) => void
 }
 

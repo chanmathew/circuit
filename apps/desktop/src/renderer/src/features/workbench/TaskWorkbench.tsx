@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 
+import type { ContentNavigationState, InspectorTab, ReferenceTarget } from '@circuit/protocol'
 import { ScrollArea } from '@circuit/ui'
 
-import type { TaskDto } from '../../../shared/api.js'
-import { ArtifactPanel } from './ArtifactPanel.js'
-import { CircuitAgentStream } from './stream/CircuitAgentStream.js'
+import type { TaskDto } from '../../../../shared/api.js'
+import { CircuitAgentStream } from '../stream/CircuitAgentStream.js'
+import { ContentViewPanel } from './ContentViewPanel.js'
 import { TaskRightSidebar } from './TaskRightSidebar.js'
 import { TaskWorkbenchHeader } from './TaskWorkbenchHeader.js'
 import { WorkbenchActionBar } from './WorkbenchActionBar.js'
@@ -13,7 +14,14 @@ import {
   canApprovePhase,
   getApproveBlockedReason,
   getProceedLabel,
-} from '../lib/phase-approval.js'
+} from './lib/phase-approval.js'
+import {
+  checksFromFeed,
+  defaultNavigation,
+  diffsFromFeed,
+  inspectorSelectionForTab,
+  navigationForReference,
+} from './lib/workbench-content.js'
 
 export interface TaskWorkbenchProps {
   task: TaskDto
@@ -52,16 +60,20 @@ export function TaskWorkbench({
     )
   }, [task, activePhase, needsReviewPhase])
 
-  const [selectedArtifactId, setSelectedArtifactId] = useState(defaultArtifactId)
+  const [navigation, setNavigation] = useState<ContentNavigationState>(() =>
+    defaultNavigation(defaultArtifactId),
+  )
   const [preview, setPreview] = useState(true)
   const [revisionOpen, setRevisionOpen] = useState(false)
   const [revisionNote, setRevisionNote] = useState('')
 
   useEffect(() => {
-    setSelectedArtifactId(defaultArtifactId)
+    setNavigation(defaultNavigation(defaultArtifactId))
   }, [defaultArtifactId])
 
-  const selectedArtifact = task.artifacts.find((a) => a.id === selectedArtifactId)
+  const diffs = useMemo(() => diffsFromFeed(task.feedEvents), [task.feedEvents])
+  const checks = useMemo(() => checksFromFeed(task.feedEvents), [task.feedEvents])
+
   const actionPhase = needsReviewPhase ?? activePhase
 
   const canRun =
@@ -80,15 +92,55 @@ export function TaskWorkbench({
     [task.decisionResolutions, actionPhase],
   )
 
+  const requiredDecisions = actionPhase
+    ? (task.requiredDecisionsByPhase[actionPhase.name] ?? [])
+    : []
+
   const approveBlockedReason = useMemo(() => {
     if (!actionPhase || !canApprove) return null
-    if (!canApprovePhase(task.feedEvents, phaseResolutions, actionPhase.name)) {
-      return getApproveBlockedReason(task.feedEvents, phaseResolutions, actionPhase.name)
+    if (!canApprovePhase(requiredDecisions, phaseResolutions)) {
+      return getApproveBlockedReason(requiredDecisions, phaseResolutions)
     }
     return null
-  }, [actionPhase, canApprove, task.feedEvents, phaseResolutions])
+  }, [actionPhase, canApprove, requiredDecisions, phaseResolutions])
 
   const proceedLabel = actionPhase ? getProceedLabel(actionPhase.name) : undefined
+
+  const applyNavigation = (next: ContentNavigationState): void => {
+    setNavigation(next)
+  }
+
+  const handleOpenReference = (target: ReferenceTarget): void => {
+    applyNavigation(navigationForReference(target, task.artifacts))
+  }
+
+  const handleSelectArtifact = (artifactId: string): void => {
+    applyNavigation({
+      contentView: { type: 'artifact', artifactId },
+      inspector: { tab: 'artifacts', selectedId: artifactId },
+    })
+  }
+
+  const handleSelectDiff = (diffId: string): void => {
+    applyNavigation({
+      contentView: { type: 'diff', diffId },
+      inspector: { tab: 'changes', selectedId: diffId, changesKind: 'diff' },
+    })
+  }
+
+  const handleSelectCheck = (checkId: string): void => {
+    applyNavigation({
+      contentView: { type: 'check', checkId },
+      inspector: { tab: 'changes', selectedId: checkId, changesKind: 'check' },
+    })
+  }
+
+  const handleInspectorTabChange = (tab: InspectorTab): void => {
+    setNavigation((current) => ({
+      ...current,
+      inspector: inspectorSelectionForTab(tab, current.contentView),
+    }))
+  }
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
@@ -98,33 +150,28 @@ export function TaskWorkbench({
         stream={
           <CircuitAgentStream
             feedEvents={task.feedEvents}
-            artifacts={task.artifacts}
             decisionResolutions={phaseResolutions}
             isRunning={isRunning}
             onResolveDecision={(decisionId, optionId, optionLabel) => {
               if (!actionPhase) return
               onResolveDecision(actionPhase.name, decisionId, optionId, optionLabel)
             }}
-            onSelectArtifact={setSelectedArtifactId}
+            onOpenReference={handleOpenReference}
           />
         }
         content={
           <div className="flex h-full min-h-0 flex-col overflow-hidden">
-            {selectedArtifact ? (
-              <ScrollArea className="min-h-0 flex-1">
-                <ArtifactPanel
-                  title={selectedArtifact.title}
-                  relativePath={selectedArtifact.path.replace(task.repoPath, '.')}
-                  content={selectedArtifact.content}
-                  preview={preview}
-                  onPreviewChange={setPreview}
-                />
-              </ScrollArea>
-            ) : (
-              <div className="flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center text-sm text-muted-foreground">
-                <p>Select an artifact from the inspector</p>
-              </div>
-            )}
+            <ScrollArea className="min-h-0 flex-1">
+              <ContentViewPanel
+                contentView={navigation.contentView}
+                artifacts={task.artifacts}
+                repoPath={task.repoPath}
+                diffs={diffs}
+                checks={checks}
+                preview={preview}
+                onPreviewChange={setPreview}
+              />
+            </ScrollArea>
 
             <WorkbenchActionBar
               actionPhase={actionPhase}
@@ -157,8 +204,15 @@ export function TaskWorkbench({
           <TaskRightSidebar
             task={task}
             artifacts={task.artifacts}
-            selectedArtifactId={selectedArtifactId}
-            onSelectArtifact={setSelectedArtifactId}
+            diffs={diffs}
+            checks={checks}
+            activeTab={navigation.inspector.tab}
+            selectedId={navigation.inspector.selectedId}
+            changesKind={navigation.inspector.changesKind}
+            onTabChange={handleInspectorTabChange}
+            onSelectArtifact={handleSelectArtifact}
+            onSelectDiff={handleSelectDiff}
+            onSelectCheck={handleSelectCheck}
           />
         }
       />

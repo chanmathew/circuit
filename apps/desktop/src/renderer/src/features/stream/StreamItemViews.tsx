@@ -52,7 +52,7 @@ function formatTime(iso: string): string {
 
 export interface StreamItemContext {
   decisionResolutions?: DecisionResolutionDto[]
-  onStreamAction?: (action: string, payload?: Record<string, unknown>) => void
+  onStreamAction?: (action: StreamAction['action'], payload?: StreamAction['payload']) => void
   onOpenReference?: (target: ReferenceTarget) => void
 }
 

@@ -9,11 +9,13 @@ export type ContentView =
   | { type: 'implementation'; sliceId: string }
   | { type: 'final_review' }
 
-export type InspectorTab = 'artifacts' | 'files' | 'git' | 'checks' | 'diffs'
+export type InspectorTab = 'artifacts' | 'changes' | 'files'
 
 export interface InspectorSelection {
   tab: InspectorTab
   selectedId?: string
+  /** When the changes tab is active, which subsection owns the selection. */
+  changesKind?: 'diff' | 'check'
 }
 
 export interface ContentNavigationState {
@@ -24,8 +26,8 @@ export interface ContentNavigationState {
 const INSPECTOR_TAB_BY_TARGET: Record<ReferenceTarget['type'], InspectorTab> = {
   artifact: 'artifacts',
   file: 'files',
-  diff: 'diffs',
-  check: 'checks',
+  diff: 'changes',
+  check: 'changes',
   review: 'artifacts',
 }
 
@@ -62,9 +64,15 @@ export function referenceToContentView(target: ReferenceTarget): ContentView {
 
 /** Map a reference-card target to the right inspector tab + selection. */
 export function referenceToInspectorSelection(target: ReferenceTarget): InspectorSelection {
+  const tab = INSPECTOR_TAB_BY_TARGET[target.type]
+  const selectedId = selectedIdForTarget(target)
+  const changesKind =
+    target.type === 'diff' ? 'diff' : target.type === 'check' ? 'check' : undefined
+
   return {
-    tab: INSPECTOR_TAB_BY_TARGET[target.type],
-    selectedId: selectedIdForTarget(target),
+    tab,
+    selectedId,
+    ...(changesKind ? { changesKind } : {}),
   }
 }
 

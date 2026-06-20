@@ -1,5 +1,5 @@
 import type { ArtifactRow, PhaseRow, RepoRow, TaskRow } from '@circuit/db'
-import type { CircuitEvent } from '@circuit/protocol'
+import type { CircuitEvent, DecisionRequiredPayload } from '@circuit/protocol'
 import { getPhaseLabel } from '@circuit/workflow'
 import type { PhaseStatus } from '@circuit/workflow'
 
@@ -54,6 +54,8 @@ export interface TaskDto extends TaskRow {
   artifacts: ArtifactDto[]
   feedEvents: FeedEventDto[]
   decisionResolutions: DecisionResolutionDto[]
+  /** Required decisions from latest phase run — same source as server approve gate. */
+  requiredDecisionsByPhase: Record<string, DecisionRequiredPayload[]>
 }
 
 export interface RunPhaseRequest {
@@ -159,6 +161,7 @@ export function toTaskDto(
       optionLabel: string
       resolvedAt: string
     }[]
+    requiredDecisionsByPhase: Record<string, DecisionRequiredPayload[]>
   },
 ): TaskDto {
   return {
@@ -175,6 +178,7 @@ export function toTaskDto(
       optionLabel: row.optionLabel,
       resolvedAt: row.resolvedAt,
     })),
+    requiredDecisionsByPhase: task.requiredDecisionsByPhase,
   }
 }
 

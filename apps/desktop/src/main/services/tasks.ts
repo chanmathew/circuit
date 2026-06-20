@@ -19,7 +19,7 @@ import {
   type PhaseRow,
   type TaskRow,
 } from '@circuit/db'
-import type { CircuitEvent } from '@circuit/protocol'
+import type { CircuitEvent, DecisionRequiredPayload } from '@circuit/protocol'
 import {
   artifactPath,
   createId,
@@ -44,7 +44,7 @@ import {
 
 import { getDb } from '../db.js'
 import { buildFeedEvents } from './feed-events.js'
-import { decisionResolvedEvents } from './feed-decisions.js'
+import { decisionResolvedEvents, requiredDecisionsForPhaseFromRuns } from './feed-decisions.js'
 
 export interface CreateTaskInput {
   repoId: string
@@ -63,6 +63,8 @@ export interface TaskDetail extends TaskRow {
   artifacts: ArtifactRow[]
   feedEvents: CircuitEvent[]
   decisionResolutions: DecisionResolutionRow[]
+  /** Latest phase-run decisions per phase — matches server approve gate. */
+  requiredDecisionsByPhase: Record<string, DecisionRequiredPayload[]>
 }
 
 export function createTask(input: CreateTaskInput): TaskDetail {
@@ -277,6 +279,15 @@ function loadTaskDetail(taskId: string): TaskDetail | undefined {
     ),
   ].sort((a, b) => a.timestamp.localeCompare(b.timestamp))
 
+  const requiredDecisionsByPhase: Record<string, DecisionRequiredPayload[]> = {}
+  for (const phase of phases) {
+    requiredDecisionsByPhase[phase.name] = requiredDecisionsForPhaseFromRuns(
+      task.id,
+      phase.name,
+      phaseRuns,
+    )
+  }
+
   return toTaskDetail(
     task,
     repo?.name ?? 'Unknown repo',
@@ -286,6 +297,7 @@ function loadTaskDetail(taskId: string): TaskDetail | undefined {
     artifacts,
     feedEvents,
     decisionResolutionRows,
+    requiredDecisionsByPhase,
   )
 }
 
@@ -302,6 +314,7 @@ function toTaskDetail(
   artifacts: ArtifactRow[],
   feedEvents: CircuitEvent[],
   decisionResolutions: DecisionResolutionRow[],
+  requiredDecisionsByPhase: Record<string, DecisionRequiredPayload[]>,
 ): TaskDetail {
   return {
     ...task,
@@ -312,6 +325,7 @@ function toTaskDetail(
     artifacts,
     feedEvents,
     decisionResolutions,
+    requiredDecisionsByPhase,
   }
 }
 

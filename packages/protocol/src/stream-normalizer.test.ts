@@ -249,11 +249,11 @@ describe('content navigation helpers', () => {
   it('opens diff and check references in matching views', () => {
     expect(openReference({ type: 'diff', diffId: 'slice-2' })).toEqual({
       contentView: { type: 'diff', diffId: 'slice-2' },
-      inspector: { tab: 'diffs', selectedId: 'slice-2' },
+      inspector: { tab: 'changes', selectedId: 'slice-2', changesKind: 'diff' },
     })
     expect(openReference({ type: 'check', checkId: 'pnpm typecheck' })).toEqual({
       contentView: { type: 'check', checkId: 'pnpm typecheck' },
-      inspector: { tab: 'checks', selectedId: 'pnpm typecheck' },
+      inspector: { tab: 'changes', selectedId: 'pnpm typecheck', changesKind: 'check' },
     })
   })
 })

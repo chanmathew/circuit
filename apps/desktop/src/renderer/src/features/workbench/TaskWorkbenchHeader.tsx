@@ -1,6 +1,6 @@
 import { Badge } from '@circuit/ui'
 
-import type { TaskDto } from '../../../shared/api.js'
+import type { TaskDto } from '../../../../shared/api.js'
 import { PhaseRail } from './PhaseRail.js'
 
 export interface TaskWorkbenchHeaderProps {

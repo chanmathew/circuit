@@ -1,6 +1,6 @@
 import { Button, Textarea } from '@circuit/ui'
 
-import type { PhaseDto } from '../../../shared/api.js'
+import type { PhaseDto } from '../../../../shared/api.js'
 
 export interface WorkbenchActionBarProps {
   actionPhase?: PhaseDto

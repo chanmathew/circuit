@@ -1,0 +1,245 @@
+import {
+  Badge,
+  Button,
+  cn,
+  ScrollArea,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@circuit/ui'
+import type { InspectorTab } from '@circuit/protocol'
+
+import type { ArtifactDto, TaskDto } from '../../../../shared/api.js'
+import type { CheckEntry, DiffEntry } from './lib/workbench-content.js'
+
+function ArtifactTree({
+  artifacts,
+  selectedId,
+  onSelect,
+}: {
+  artifacts: ArtifactDto[]
+  selectedId?: string
+  onSelect: (id: string) => void
+}): React.ReactElement {
+  return (
+    <ul className="space-y-0.5">
+      {artifacts.map((artifact) => (
+        <li key={artifact.id}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className={cn(
+              'h-auto w-full flex-col items-start gap-0.5 px-2 py-1.5 text-left font-normal',
+              selectedId === artifact.id && 'bg-accent',
+            )}
+            onClick={() => onSelect(artifact.id)}
+          >
+            <span className="font-mono text-xs font-medium">{artifact.title}</span>
+            <span className="text-[10px] capitalize text-muted-foreground">{artifact.status}</span>
+          </Button>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function ChangesPanel({
+  task,
+  diffs,
+  checks,
+  selectedDiffId,
+  selectedCheckId,
+  onSelectDiff,
+  onSelectCheck,
+}: {
+  task: TaskDto
+  diffs: DiffEntry[]
+  checks: CheckEntry[]
+  selectedDiffId?: string
+  selectedCheckId?: string
+  onSelectDiff: (id: string) => void
+  onSelectCheck: (id: string) => void
+}): React.ReactElement {
+  const hasChanges = diffs.length > 0 || checks.length > 0
+
+  return (
+    <div className="space-y-4 p-2">
+      <div className="rounded-md border border-border bg-card px-2.5 py-2">
+        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          Branch
+        </p>
+        <p className="mt-0.5 font-mono text-xs">{task.branchName}</p>
+      </div>
+
+      {!hasChanges && (
+        <p className="px-2 text-center text-xs text-muted-foreground">
+          Diffs and validation results will appear here during build and review.
+        </p>
+      )}
+
+      {diffs.length > 0 && (
+        <section>
+          <p className="mb-1 px-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            Diffs
+          </p>
+          <ul className="space-y-0.5">
+            {diffs.map((diff) => (
+              <li key={diff.id}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    'h-auto w-full flex-col items-start gap-0.5 px-2 py-1.5 text-left font-normal',
+                    selectedDiffId === diff.id && 'bg-accent',
+                  )}
+                  onClick={() => onSelectDiff(diff.id)}
+                >
+                  <span className="text-xs font-medium">{diff.title}</span>
+                  <span className="text-[10px] text-muted-foreground">{diff.summary}</span>
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {checks.length > 0 && (
+        <section>
+          <p className="mb-1 px-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            Checks
+          </p>
+          <ul className="space-y-0.5">
+            {checks.map((check) => (
+              <li key={check.id}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    'h-auto w-full items-center justify-between gap-2 px-2 py-1.5 text-left font-normal',
+                    selectedCheckId === check.id && 'bg-accent',
+                  )}
+                  onClick={() => onSelectCheck(check.id)}
+                >
+                  <span className="truncate font-mono text-xs">{check.command}</span>
+                  <Badge
+                    variant={check.passed ? 'outline' : 'destructive'}
+                    className="shrink-0 text-[9px]"
+                  >
+                    {check.passed ? 'pass' : 'fail'}
+                  </Badge>
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
+  )
+}
+
+export interface TaskRightSidebarProps {
+  task: TaskDto
+  artifacts: ArtifactDto[]
+  diffs: DiffEntry[]
+  checks: CheckEntry[]
+  activeTab: InspectorTab
+  selectedId?: string
+  changesKind?: 'diff' | 'check'
+  onTabChange: (tab: InspectorTab) => void
+  onSelectArtifact: (id: string) => void
+  onSelectDiff: (id: string) => void
+  onSelectCheck: (id: string) => void
+}
+
+export function TaskRightSidebar({
+  task,
+  artifacts,
+  diffs,
+  checks,
+  activeTab,
+  selectedId,
+  changesKind,
+  onTabChange,
+  onSelectArtifact,
+  onSelectDiff,
+  onSelectCheck,
+}: TaskRightSidebarProps): React.ReactElement {
+  const selectedDiffId = activeTab === 'changes' && changesKind === 'diff' ? selectedId : undefined
+  const selectedCheckId =
+    activeTab === 'changes' && changesKind === 'check' ? selectedId : undefined
+
+  return (
+    <aside className="flex h-full min-h-0 flex-col bg-card/50">
+      <div className="shrink-0 border-b border-border px-3 py-2">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          Inspector
+        </p>
+      </div>
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => onTabChange(value as InspectorTab)}
+        className="flex min-h-0 flex-1 flex-col gap-0"
+      >
+        <TabsList
+          variant="line"
+          className="h-auto w-full shrink-0 rounded-none border-b border-border bg-transparent p-0 gap-0"
+        >
+          <TabsTrigger
+            value="artifacts"
+            className="flex-1 rounded-none border-0 py-2 text-[10px] uppercase shadow-none data-active:shadow-none"
+          >
+            Artifacts
+          </TabsTrigger>
+          <TabsTrigger
+            value="changes"
+            className="flex-1 rounded-none border-0 py-2 text-[10px] uppercase shadow-none data-active:shadow-none"
+          >
+            Changes
+          </TabsTrigger>
+          <TabsTrigger
+            value="files"
+            className="flex-1 rounded-none border-0 py-2 text-[10px] uppercase shadow-none data-active:shadow-none"
+          >
+            Files
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="artifacts" className="mt-0 min-h-0 flex-1 overflow-hidden">
+          <ScrollArea className="h-full">
+            <div className="p-2">
+              <ArtifactTree
+                artifacts={artifacts}
+                selectedId={activeTab === 'artifacts' ? selectedId : undefined}
+                onSelect={onSelectArtifact}
+              />
+            </div>
+          </ScrollArea>
+        </TabsContent>
+
+        <TabsContent value="changes" className="mt-0 min-h-0 flex-1 overflow-hidden">
+          <ScrollArea className="h-full">
+            <ChangesPanel
+              task={task}
+              diffs={diffs}
+              checks={checks}
+              selectedDiffId={selectedDiffId}
+              selectedCheckId={selectedCheckId}
+              onSelectDiff={onSelectDiff}
+              onSelectCheck={onSelectCheck}
+            />
+          </ScrollArea>
+        </TabsContent>
+
+        <TabsContent value="files" className="mt-0 min-h-0 flex-1">
+          <div className="p-4 text-center text-xs text-muted-foreground">
+            Changed files will appear here during implement and review.
+          </div>
+        </TabsContent>
+      </Tabs>
+    </aside>
+  )
+}
