@@ -296,18 +296,24 @@ diff ready
 blocker
 ```
 
-Card types:
+Stream primitives (lightweight — heavy content renders in the center content view):
 
 ```txt
-Artifact card
-Decision card
-Approval card
-Validation card
-Diff card
-Blocker card
+user_message      — user steering and clarifications
+agent_message     — agent prose (driver, oracle, scout, builder)
+activity_group    — collapsed tool/file/command activity
+action_card       — decisions, approvals, blockers, revision prompts
+reference_card    — links to artifacts, diffs, checks, files, reviews
 ```
 
-Example decision card:
+The stream summarizes and navigates; artifacts, diffs, validation output, and file
+content render in the center content view. Reference cards update content selection
+and the right inspector tab when opened.
+
+`ActionCard` variants cover decisions, approvals, blockers, and no-ship gates.
+`ReferenceCard` variants cover artifacts, diffs, checks, files, and reviews.
+
+Example decision card (rendered as an action card in the stream):
 
 ```txt
 Decision needed:

@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 
-import { Badge, ScrollArea } from '@circuit/ui'
+import { ScrollArea } from '@circuit/ui'
 
 import type { TaskDto } from '../../../shared/api.js'
 import { ArtifactPanel } from './ArtifactPanel.js'
 import { DecisionCards, decisionsFromFeed } from './DecisionCards.js'
-import { PhaseRail } from './PhaseRail.js'
+import { TaskChatPanel } from './TaskChatPanel.js'
 import { TaskRightSidebar } from './TaskRightSidebar.js'
+import { TaskWorkbenchHeader } from './TaskWorkbenchHeader.js'
 import { WorkbenchActionBar } from './WorkbenchActionBar.js'
 import {
   canApprovePhase,
@@ -108,32 +109,12 @@ export function TaskWorkbench({
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <header className="shrink-0 border-b border-border bg-card">
-        <div className="flex items-center gap-3 px-4 py-2.5">
-          <div className="min-w-0 shrink-0 max-w-[200px]">
-            <p className="truncate text-sm font-semibold">{task.title}</p>
-            <p className="truncate font-mono text-[10px] text-muted-foreground">{task.branchName}</p>
-          </div>
-          {task.phases.length > 0 ? (
-            <PhaseRail
-              phases={task.phases.map((p) => ({
-                name: p.name,
-                label: p.label,
-                status: p.status,
-              }))}
-              currentPhase={task.currentPhase}
-            />
-          ) : (
-            <p className="text-xs text-muted-foreground">No workflow phases</p>
-          )}
-          <Badge variant="outline" className="shrink-0 text-[10px] capitalize">
-            {task.status.replace(/_/g, ' ')}
-          </Badge>
-        </div>
-      </header>
+      <TaskWorkbenchHeader task={task} />
 
-      <div className="flex min-h-0 flex-1">
-        <div className="flex min-w-0 flex-1 flex-col min-h-0">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <TaskChatPanel feedEvents={task.feedEvents} />
+
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           {selectedArtifact ? (
             <ScrollArea className="min-h-0 flex-1">
               <ArtifactPanel
@@ -155,7 +136,7 @@ export function TaskWorkbench({
             </ScrollArea>
           ) : (
             <div className="flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center text-sm text-muted-foreground">
-              <p>Select an artifact from the sidebar</p>
+              <p>Select an artifact from the inspector</p>
             </div>
           )}
 

@@ -9,14 +9,16 @@
     "baseColor": "neutral",
     "cssVariables": true
   },
+  "iconLibrary": "hugeicons",
+  "rtl": false,
+  "menuColor": "default-translucent",
+  "menuAccent": "subtle",
   "aliases": {
     "components": "@/components",
     "utils": "@/lib/utils",
     "ui": "@/components"
   },
-  "iconLibrary": "hugeicons",
-  "rtl": false,
-  "menuColor": "default-translucent",
-  "menuAccent": "subtle",
-  "registries": {}
+  "registries": {
+    "@ai-elements": "https://ai-sdk.dev/elements/api/registry/{name}.json"
+  }
 }

@@ -15,12 +15,43 @@ export {
   type RevisionInferencePayload,
 } from './decisions.js'
 export {
+  type ContentNavigationState,
+  type ContentView,
+  type InspectorSelection,
+  type InspectorTab,
+  openReference,
+  referenceToContentView,
+  referenceToInspectorSelection,
+} from './content-view.js'
+export {
   type CircuitCard,
   type CircuitCardType,
   type CircuitEvent,
   type CircuitEventHandler,
   type CircuitEventType,
 } from './events.js'
+export {
+  type ActionCardItem,
+  type ActionCardSeverity,
+  type ActivityGroupItem,
+  type ActivityStatus,
+  type AgentMessageItem,
+  type AgentRole,
+  type ReferenceCardItem,
+  type ReferenceTarget,
+  type StreamAction,
+  type StreamActivityEvent,
+  type StreamItem,
+  type StreamOption,
+  type StreamUserMessage,
+  type UserMessageItem,
+} from './stream-items.js'
+export {
+  eventsToStreamItems,
+  revisionInferenceToStreamItem,
+  type NormalizeStreamInput,
+  type NormalizeStreamOptions,
+} from './stream-normalizer.js'
 export {
   blocksToEvents,
   parseCircuitBlocks,
