@@ -1,55 +1,12 @@
 import { useState } from 'react'
 
-import { Badge, Button, cn, ScrollArea } from '@circuit/ui'
+import { Badge, Button, ScrollArea } from '@circuit/ui'
 
+import { PhaseRail } from '../../components/PhaseRail.js'
 import { ActionBar, ActivityFeed, MainPanelContent, RightSidebarTabs } from './content-panels.js'
 import { shouldShowStructuredPanel } from './phase-approval.js'
-import { PHASE_STATUS_DOT } from './phase-styles.js'
 import { PhaseStructuredPanel } from './structured/PhaseStructuredPanel.js'
-import type { PrototypePhase, WorkbenchLayoutProps } from './types.js'
-
-function HeaderPhaseRail({
-  phases,
-  onSelectPhase,
-}: {
-  phases: PrototypePhase[]
-  onSelectPhase: (name: string) => void
-}): React.ReactElement {
-  return (
-    <div className="flex min-w-0 flex-1 items-center justify-center gap-0.5 overflow-x-auto px-2">
-      {phases.map((phase, i) => (
-        <div key={phase.name} className="flex shrink-0 items-center">
-          <button
-            type="button"
-            disabled={phase.status === 'locked'}
-            onClick={() => onSelectPhase(phase.name)}
-            className={cn(
-              'flex items-center gap-1 rounded-full px-2 py-1 text-[11px] transition-colors',
-              phase.status === 'locked' && 'cursor-not-allowed opacity-30',
-              phase.status === 'needs_review' &&
-                'bg-sky-500/15 text-sky-800 dark:text-sky-200 ring-1 ring-sky-500/30',
-              phase.status === 'running' &&
-                'bg-amber-500/15 text-amber-800 dark:text-amber-200 animate-pulse',
-              phase.status === 'approved' && 'text-muted-foreground hover:text-foreground',
-              phase.status === 'ready' && 'text-primary hover:bg-primary/10',
-              !['locked', 'needs_review', 'running', 'approved', 'ready'].includes(phase.status) &&
-                'hover:bg-accent',
-            )}
-            title={phase.label}
-          >
-            <span
-              className={cn('h-1.5 w-1.5 rounded-full shrink-0', PHASE_STATUS_DOT[phase.status])}
-            />
-            <span className="font-medium whitespace-nowrap">{phase.label}</span>
-          </button>
-          {i < phases.length - 1 && (
-            <span className="mx-0.5 text-muted-foreground/30 text-[10px]">·</span>
-          )}
-        </div>
-      ))}
-    </div>
-  )
-}
+import type { WorkbenchLayoutProps } from './types.js'
 
 export function WorkbenchLayout({ state, actions }: WorkbenchLayoutProps): React.ReactElement {
   const [preview, setPreview] = useState(true)
@@ -71,7 +28,17 @@ export function WorkbenchLayout({ state, actions }: WorkbenchLayoutProps): React
             </p>
           </div>
 
-          <HeaderPhaseRail phases={state.phases} onSelectPhase={actions.selectPhase} />
+          <PhaseRail
+            phases={state.phases.map((p) => ({
+              name: p.name,
+              label: p.label,
+              status: p.status,
+            }))}
+            currentPhase={
+              state.artifacts.find((a) => a.id === state.selectedArtifactId)?.phase
+            }
+            onSelectPhase={actions.selectPhase}
+          />
 
           <div className="flex shrink-0 items-center gap-2">
             <Badge variant="outline" className="hidden text-[10px] sm:inline-flex">

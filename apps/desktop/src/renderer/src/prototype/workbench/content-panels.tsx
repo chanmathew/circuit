@@ -8,13 +8,11 @@ import {
 } from './phase-approval.js'
 
 import { PhaseStatusBadge } from './PhaseStatusBadge.js'
-import { PHASE_STATUS_DOT } from './phase-styles.js'
 import type {
   ActivityEvent,
   ChangedFile,
   ImplementationSlice,
   PrototypeArtifact,
-  PrototypePhase,
   WorkbenchActions,
   WorkbenchState,
 } from './types.js'
@@ -56,41 +54,6 @@ export function WorkbenchHeader({
       </div>
       <p className="mt-2 text-xs text-primary font-medium">Next: {state.task.nextAction}</p>
     </header>
-  )
-}
-
-export function HorizontalPhaseRail({
-  phases,
-  onSelectPhase,
-}: {
-  phases: PrototypePhase[]
-  onSelectPhase: (name: string) => void
-}): React.ReactElement {
-  return (
-    <div className="flex shrink-0 items-center gap-1 overflow-x-auto border-b border-border bg-muted/20 px-4 py-2">
-      {phases.map((phase, i) => (
-        <div key={phase.name} className="flex items-center gap-1 shrink-0">
-          <button
-            type="button"
-            disabled={phase.status === 'locked'}
-            onClick={() => onSelectPhase(phase.name)}
-            className={cn(
-              'flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs transition-colors',
-              phase.status === 'locked'
-                ? 'cursor-not-allowed opacity-40'
-                : 'hover:bg-accent cursor-pointer',
-              (phase.status === 'needs_review' || phase.status === 'running') && 'bg-accent/60',
-            )}
-          >
-            <span className={cn('h-2 w-2 rounded-full shrink-0', PHASE_STATUS_DOT[phase.status])} />
-            <span className="font-medium">{phase.label}</span>
-          </button>
-          {i < phases.length - 1 && (
-            <span className="text-muted-foreground/40 text-[10px] px-0.5">→</span>
-          )}
-        </div>
-      ))}
-    </div>
   )
 }
 

@@ -10,7 +10,14 @@ export default defineConfig({
     plugins: [copyDbMigrationsPlugin()],
     build: {
       externalizeDeps: {
-        exclude: ['@circuit/db', '@circuit/git', '@circuit/shared', '@circuit/workflow'],
+        exclude: [
+          '@circuit/agent-adapters',
+          '@circuit/db',
+          '@circuit/git',
+          '@circuit/protocol',
+          '@circuit/shared',
+          '@circuit/workflow',
+        ],
       },
       rollupOptions: {
         external: ['better-sqlite3'],

@@ -4,8 +4,11 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 
 import { routeTree } from './routeTree'
+import { applyTheme, getTheme } from './lib/theme.js'
 import '@circuit/ui/styles.css'
 import './index.css'
+
+applyTheme(getTheme())
 
 const queryClient = new QueryClient()
 

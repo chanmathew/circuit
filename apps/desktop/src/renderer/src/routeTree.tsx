@@ -5,26 +5,27 @@ import {
   useNavigate,
   useRouterState,
 } from '@tanstack/react-router'
-import { Link } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 
 import {
-  Badge,
   Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-  ScrollArea,
-  Separator,
+  Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Textarea,
 } from '@circuit/ui'
 import { autoSelectWorkflow, getWorkflowDefinition } from '@circuit/workflow'
 
-import type { RepoDto, TaskSummaryDto } from '../../shared/api.js'
-import type { WorkflowType } from '@circuit/workflow'
+import { ProjectTreeSidebar } from './components/ProjectTreeSidebar.js'
 import { TaskWorkbench } from './components/TaskWorkbench.js'
 import {
   WorkbenchPrototypePage,
@@ -33,17 +34,9 @@ import {
 } from './prototype/workbench/WorkbenchPrototypePage.js'
 
 function AppShell(): React.ReactElement {
-  const [pingResult, setPingResult] = useState<string>('…')
   const isPrototype = useRouterState({
     select: (s) => s.location.pathname.startsWith('/prototype/'),
   })
-
-  useEffect(() => {
-    window.circuit
-      .ping()
-      .then(setPingResult)
-      .catch(() => setPingResult('error'))
-  }, [])
 
   if (isPrototype) {
     return (
@@ -54,42 +47,9 @@ function AppShell(): React.ReactElement {
   }
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
-      <aside className="flex w-56 shrink-0 flex-col border-r border-border bg-card">
-        <div className="border-b border-border px-4 py-5">
-          <p className="text-lg font-semibold tracking-tight">Circuit</p>
-          <p className="text-xs text-muted-foreground">Structured agent workspaces</p>
-        </div>
-        <ScrollArea className="flex-1 px-2 py-3">
-          <nav className="flex flex-col gap-1">
-            <Link
-              to="/"
-              className="rounded-md px-3 py-2 text-sm hover:bg-accent [&.active]:bg-accent"
-            >
-              Dashboard
-            </Link>
-            <Link
-              to="/new-task"
-              className="rounded-md px-3 py-2 text-sm hover:bg-accent [&.active]:bg-accent"
-            >
-              New Task
-            </Link>
-            {import.meta.env.DEV && (
-              <Link
-                to="/prototype/workbench"
-                search={{ scenario: 'early' }}
-                className="rounded-md px-3 py-2 text-sm text-amber-700 dark:text-amber-300 hover:bg-amber-500/10 [&.active]:bg-amber-500/15"
-              >
-                UX Prototype
-              </Link>
-            )}
-          </nav>
-        </ScrollArea>
-        <div className="border-t border-border px-4 py-3">
-          <Badge variant="secondary">IPC: {pingResult}</Badge>
-        </div>
-      </aside>
-      <main className="flex flex-1 flex-col min-h-0 overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-background text-foreground">
+      <ProjectTreeSidebar />
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col">
         <Outlet />
       </main>
     </div>
@@ -109,6 +69,9 @@ const indexRoute = createRoute({
 const newTaskRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/new-task',
+  validateSearch: (search: Record<string, unknown>): { repoId?: string } => ({
+    repoId: typeof search.repoId === 'string' ? search.repoId : undefined,
+  }),
   component: NewTaskPage,
 })
 
@@ -133,156 +96,20 @@ function WorkbenchPrototypeRoutePage(): React.ReactElement {
 }
 
 function DashboardPage(): React.ReactElement {
-  const queryClient = useQueryClient()
-
-  const reposQuery = useQuery({
-    queryKey: ['repos'],
-    queryFn: () => window.circuit.listRepos(),
-  })
-
-  const tasksQuery = useQuery({
-    queryKey: ['tasks'],
-    queryFn: () => window.circuit.listTasks(),
-  })
-
-  const addRepoMutation = useMutation({
-    mutationFn: () => window.circuit.addRepo(),
-    onSuccess: (repo) => {
-      if (repo) {
-        void queryClient.invalidateQueries({ queryKey: ['repos'] })
-      }
-    },
-  })
-
-  const repos = reposQuery.data ?? []
-  const tasks = tasksQuery.data ?? []
-
   return (
-    <div className="flex flex-1 flex-col gap-6 p-8">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Task Dashboard</h1>
-          <p className="text-sm text-muted-foreground">
-            {repos.length === 0
-              ? 'No repos registered yet. Add a repo to start structured agent work.'
-              : `${repos.length} repo${repos.length === 1 ? '' : 's'} · ${tasks.length} task${tasks.length === 1 ? '' : 's'}`}
-          </p>
-        </div>
-        <Button onClick={() => addRepoMutation.mutate()} disabled={addRepoMutation.isPending}>
-          {addRepoMutation.isPending ? 'Adding…' : 'Add repo'}
-        </Button>
-      </div>
-
-      {addRepoMutation.isError && (
-        <p className="text-sm text-destructive">
-          {addRepoMutation.error instanceof Error
-            ? addRepoMutation.error.message
-            : 'Failed to add repo'}
-        </p>
-      )}
-
-      {repos.length > 0 && (
-        <section className="space-y-3">
-          <h2 className="text-sm font-medium text-muted-foreground">Registered repos</h2>
-          <div className="grid gap-3 md:grid-cols-2">
-            {repos.map((repo) => (
-              <RepoCard key={repo.id} repo={repo} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {tasks.length > 0 ? (
-        <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-medium text-muted-foreground">Active tasks</h2>
-            <Link to="/new-task">
-              <Button variant="outline" size="sm">
-                New task
-              </Button>
-            </Link>
-          </div>
-          <div className="grid gap-3">
-            {tasks.map((task) => (
-              <TaskCard key={task.id} task={task} />
-            ))}
-          </div>
-        </section>
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Getting started</CardTitle>
-            <CardDescription>
-              Circuit runs AI coding agents through reviewable development workflows.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Add a local git repo, then create a task from a single description. Circuit writes{' '}
-              <code className="rounded bg-muted px-1 py-0.5 text-xs">
-                .Circuit/tasks/&lt;slug&gt;/00-ticket.md
-              </code>{' '}
-              in the repo.
-            </p>
-            <Separator />
-            {repos.length > 0 ? (
-              <Link to="/new-task">
-                <Button>New task</Button>
-              </Link>
-            ) : (
-              <Button onClick={() => addRepoMutation.mutate()} disabled={addRepoMutation.isPending}>
-                Add your first repo
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      )}
+    <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
+      <h1 className="text-xl font-semibold tracking-tight">Select a task</h1>
+      <p className="max-w-sm text-sm text-muted-foreground">
+        Choose a task from the project tree, or use + on a repo to start a new one.
+      </p>
     </div>
-  )
-}
-
-function RepoCard({ repo }: { repo: RepoDto }): React.ReactElement {
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">{repo.name}</CardTitle>
-        <CardDescription className="truncate font-mono text-xs">{repo.path}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Badge variant="secondary">default: {repo.defaultBranch}</Badge>
-      </CardContent>
-    </Card>
-  )
-}
-
-function TaskCard({ task }: { task: TaskSummaryDto }): React.ReactElement {
-  const workflow = getWorkflowDefinition(task.workflowType as WorkflowType)
-
-  return (
-    <Link to="/tasks/$taskId" params={{ taskId: task.id }}>
-      <Card className="transition-colors hover:bg-accent/40">
-        <CardHeader className="pb-2">
-          <div className="flex items-start justify-between gap-3">
-            <CardTitle className="text-base">{task.title}</CardTitle>
-            <Badge variant="outline">{task.status}</Badge>
-          </div>
-          <CardDescription>
-            {task.repoName} · {workflow?.label ?? task.workflowType} · phase: {task.currentPhase}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-          <span className="font-mono">{task.branchName}</span>
-          <span>·</span>
-          <span>updated {new Date(task.updatedAt).toLocaleString()}</span>
-        </CardContent>
-      </Card>
-    </Link>
   )
 }
 
 function NewTaskPage(): React.ReactElement {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { repoId: repoIdFromSearch } = newTaskRoute.useSearch()
   const [description, setDescription] = useState('')
   const [repoId, setRepoId] = useState('')
 
@@ -294,10 +121,12 @@ function NewTaskPage(): React.ReactElement {
   const repos = reposQuery.data ?? []
 
   useEffect(() => {
-    if (!repoId && repos.length > 0) {
+    if (repoIdFromSearch && repos.some((r) => r.id === repoIdFromSearch)) {
+      setRepoId(repoIdFromSearch)
+    } else if (!repoId && repos.length > 0) {
       setRepoId(repos[0]?.id ?? '')
     }
-  }, [repoId, repos])
+  }, [repoIdFromSearch, repoId, repos])
 
   const preview = description.trim()
     ? autoSelectWorkflow(description)
@@ -317,7 +146,7 @@ function NewTaskPage(): React.ReactElement {
   })
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-8">
+    <div className="flex flex-1 flex-col gap-6 overflow-y-auto p-8">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">New Task</h1>
         <p className="text-sm text-muted-foreground">Describe what the agent should work on.</p>
@@ -328,18 +157,13 @@ function NewTaskPage(): React.ReactElement {
           <CardHeader>
             <CardTitle>Add a repo first</CardTitle>
             <CardDescription>
-              Register a local git repository from the dashboard before creating a task.
+              Use the + button in the project tree to register a local git repository.
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Link to="/">
-              <Button>Go to Dashboard</Button>
-            </Link>
-          </CardContent>
         </Card>
       ) : (
-        <Card className="max-w-2xl">
-          <CardHeader>
+        <Card className="max-w-lg border-border/50 shadow-none">
+          <CardHeader className="border-b border-border/50 pb-4">
             <CardTitle>What should the agent work on?</CardTitle>
             <CardDescription>
               Approach: Auto · {previewWorkflow?.label ?? preview.workflowType} · Workspace:{' '}
@@ -348,31 +172,33 @@ function NewTaskPage(): React.ReactElement {
                 : preview.workspaceStrategy}
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="repo" className="text-sm font-medium">
-                Repo
-              </label>
-              <select
-                id="repo"
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
-                value={repoId}
-                onChange={(event) => setRepoId(event.target.value)}
-              >
-                {repos.map((repo) => (
-                  <option key={repo.id} value={repo.id}>
-                    {repo.name}
-                  </option>
-                ))}
-              </select>
+          <CardContent className="space-y-5 pt-6">
+            <div className="grid gap-2">
+              <Label htmlFor="repo">Repo</Label>
+              <Select value={repoId || undefined} onValueChange={setRepoId}>
+                <SelectTrigger id="repo">
+                  <SelectValue placeholder="Select a repo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {repos.map((repo) => (
+                    <SelectItem key={repo.id} value={repo.id}>
+                      {repo.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            <Textarea
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              placeholder="Describe the task…"
-              className="min-h-[160px]"
-            />
+            <div className="grid gap-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                placeholder="Describe the task…"
+                className="min-h-[160px]"
+              />
+            </div>
 
             {createTaskMutation.isError && (
               <p className="text-sm text-destructive">
@@ -442,35 +268,25 @@ function TaskDetailPage(): React.ReactElement {
 
   if (taskQuery.isError || !taskQuery.data) {
     return (
-      <div className="flex flex-1 flex-col gap-4 p-8">
-        <h1 className="text-2xl font-semibold tracking-tight">Task not found</h1>
-        <Link to="/">
-          <Button variant="outline">Back to Dashboard</Button>
-        </Link>
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
+        <h1 className="text-xl font-semibold tracking-tight">Task not found</h1>
+        <p className="text-sm text-muted-foreground">Select another task from the project tree.</p>
       </div>
     )
   }
 
   const task = taskQuery.data
-  const workflow = getWorkflowDefinition(task.workflowType as WorkflowType)
 
   return (
-    <div className="flex flex-1 flex-col gap-4 p-6 min-h-0">
-      <div className="shrink-0 space-y-1">
-        <Link to="/" className="text-sm text-muted-foreground hover:text-foreground">
-          ← Dashboard
-        </Link>
-        <p className="text-sm text-muted-foreground">
-          {task.repoName} · {workflow?.label ?? task.workflowType}
-        </p>
-      </div>
-
+    <div className="flex min-h-0 flex-1 flex-col">
       {workflowMutation.isError && (
-        <p className="text-sm text-destructive">
-          {workflowMutation.error instanceof Error
-            ? workflowMutation.error.message
-            : 'Workflow action failed'}
-        </p>
+        <Card className="shrink-0 rounded-none border-x-0 border-t-0 border-destructive/30 bg-destructive/5 shadow-none">
+          <CardContent className="py-2 text-sm text-destructive">
+            {workflowMutation.error instanceof Error
+              ? workflowMutation.error.message
+              : 'Workflow action failed'}
+          </CardContent>
+        </Card>
       )}
 
       <TaskWorkbench
