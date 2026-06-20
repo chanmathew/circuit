@@ -15,6 +15,13 @@
       "when": 1781973617534,
       "tag": "0001_spooky_medusa",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1781982403285,
+      "tag": "0002_workflow_events",
+      "breakpoints": true
     }
   ]
 }

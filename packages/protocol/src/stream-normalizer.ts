@@ -6,6 +6,7 @@ import type {
 } from './blocks.js'
 import type { DecisionRequiredPayload, RevisionInferencePayload } from './decisions.js'
 import type { CircuitEvent } from './events.js'
+import type { WorkflowRevisionRequestedPayload, WorkflowSteeringPayload } from './workflow-events.js'
 import type {
   ActionCardItem,
   ActivityGroupItem,
@@ -117,7 +118,7 @@ function decisionToActionCard(event: CircuitEvent, id: string): ActionCardItem {
         id: 'resolve',
         label: 'Choose option',
         action: 'decision.resolve',
-        payload: { decisionId: payload.decisionId },
+        payload: { decisionId: payload.decisionId, phase: payload.phase },
       },
     ],
     createdAt: event.timestamp,
@@ -284,6 +285,27 @@ function eventToStreamItem(event: CircuitEvent, index: number): StreamItem | nul
         createdAt: event.timestamp,
       }
     }
+    case 'workflow:steering_received': {
+      const payload = event.payload as WorkflowSteeringPayload
+      if (!payload.rawText.trim()) return null
+      return {
+        kind: 'user_message',
+        id,
+        text: payload.rawText,
+        createdAt: event.timestamp,
+      }
+    }
+    case 'workflow:revision_requested': {
+      const payload = event.payload as WorkflowRevisionRequestedPayload
+      return {
+        kind: 'user_message',
+        id,
+        text: `Requested revision on ${payload.phase}: ${payload.note}`,
+        createdAt: event.timestamp,
+      }
+    }
+    case 'workflow:revision_inference':
+      return revisionToActionCard(event, id)
     default:
       return null
   }
@@ -402,6 +424,17 @@ export function eventsToStreamItems(input: NormalizeStreamInput): StreamItem[] {
   }
 
   return timestamped.sort((a, b) => a.sortKey.localeCompare(b.sortKey)).map((entry) => entry.item)
+}
+
+/** Append live activity events without re-parsing the persisted feed. */
+export function mergeLiveActivities(
+  baseItems: StreamItem[],
+  activityEvents: StreamActivityEvent[],
+  options?: Pick<NormalizeStreamOptions, 'defaultAgentRole'>,
+): StreamItem[] {
+  if (activityEvents.length === 0) return baseItems
+  const tail = eventsToStreamItems({ events: [], activityEvents, options })
+  return [...baseItems, ...tail]
 }
 
 /** Map a revision-inference payload to a stream action card (chat steering flow). */

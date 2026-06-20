@@ -1,4 +1,5 @@
 export { autoSelectWorkflow, type WorkflowSelection } from './auto-select-workflow.js'
+export { inferRevisionFromSteering, type SteeringInferenceInput } from './steering-inference.js'
 export {
   AUTO_RUN_ON_TASK_CREATE,
   BALANCED_AUTO_RUN_AFTER_APPROVE,

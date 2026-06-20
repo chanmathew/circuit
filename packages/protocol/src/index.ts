@@ -48,10 +48,17 @@ export {
 } from './stream-items.js'
 export {
   eventsToStreamItems,
+  mergeLiveActivities,
   revisionInferenceToStreamItem,
   type NormalizeStreamInput,
   type NormalizeStreamOptions,
 } from './stream-normalizer.js'
+export {
+  type WorkflowEventActor,
+  type WorkflowRevisionAppliedPayload,
+  type WorkflowRevisionRequestedPayload,
+  type WorkflowSteeringPayload,
+} from './workflow-events.js'
 export {
   blocksToEvents,
   parseCircuitBlocks,

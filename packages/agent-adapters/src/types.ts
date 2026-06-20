@@ -24,18 +24,12 @@ export interface PhaseRunResult {
   sessionId: string
   contextPackHash: string
   transcript: string
+  /** Path to harness-owned transcript (e.g. Codex session JSONL). */
+  transcriptRef?: string
   filesRead: string[]
   filesChanged: string[]
   commandsRun: string[]
   artifactContent?: string
-}
-
-export interface AgentAdapter {
-  readonly name: string
-  connect(): Promise<void>
-  disconnect(): Promise<void>
-  runPhase(
-    request: PhaseRunRequest,
-    onActivity: (event: AgentActivityEvent) => void,
-  ): Promise<PhaseRunResult>
+  /** Label stored on phase_runs — adapter-owned, not env-specific. */
+  modelLabel?: string
 }

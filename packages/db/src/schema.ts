@@ -87,6 +87,21 @@ export const decisionResolutions = sqliteTable('decision_resolutions', {
   resolvedAt: text('resolved_at').notNull(),
 })
 
+export const workflowEvents = sqliteTable('workflow_events', {
+  id: text('id').primaryKey(),
+  taskId: text('task_id')
+    .notNull()
+    .references(() => tasks.id),
+  phaseRunId: text('phase_run_id'),
+  actor: text('actor').notNull(),
+  type: text('type').notNull(),
+  summary: text('summary'),
+  payloadJson: text('payload_json').notNull(),
+  externalSessionId: text('external_session_id'),
+  externalMessageId: text('external_message_id'),
+  createdAt: text('created_at').notNull(),
+})
+
 export const workspaces = sqliteTable('workspaces', {
   id: text('id').primaryKey(),
   taskId: text('task_id')

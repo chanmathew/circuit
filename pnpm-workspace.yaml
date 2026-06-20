@@ -36,6 +36,7 @@ catalog:
   vite: ^8.0.16
   vite-plus: latest
   vitest: ^4.1.9
+  '@opencode-ai/sdk': ^1.17.8
 
 minimumReleaseAgeExclude:
   - typescript@7.0.1-rc

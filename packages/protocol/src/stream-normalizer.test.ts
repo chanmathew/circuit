@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { openReference, referenceToContentView, referenceToInspectorSelection } from './content-view.js'
 import type { CircuitEvent } from './events.js'
 import { parseTranscript } from './parsers.js'
-import { eventsToStreamItems, revisionInferenceToStreamItem } from './stream-normalizer.js'
+import { eventsToStreamItems, mergeLiveActivities, revisionInferenceToStreamItem } from './stream-normalizer.js'
 
 const TASK_ID = 'task-1'
 const RUN_ID = 'run-1'
@@ -186,6 +186,55 @@ describe('eventsToStreamItems', () => {
     })
   })
 
+  it('maps workflow steering events to user messages', () => {
+    const items = eventsToStreamItems({
+      events: [
+        {
+          id: 'steer-1',
+          type: 'workflow:steering_received',
+          taskId: TASK_ID,
+          timestamp: TS,
+          payload: { rawText: 'Use folder routing instead.' },
+        },
+      ],
+    })
+
+    expect(items).toHaveLength(1)
+    expect(items[0]).toMatchObject({
+      kind: 'user_message',
+      text: 'Use folder routing instead.',
+    })
+  })
+
+  it('maps workflow revision inference to action cards', () => {
+    const items = eventsToStreamItems({
+      events: [
+        {
+          id: 'infer-1',
+          type: 'workflow:revision_inference',
+          taskId: TASK_ID,
+          timestamp: TS,
+          payload: {
+            source: 'chat',
+            affectedPhase: 'design',
+            message: 'This changes Design. Mark Structure stale?',
+            stalePhases: ['structure'],
+            options: [
+              { id: 'revise', label: 'Revise Design', recommended: true },
+              { id: 'note', label: 'Add note only' },
+            ],
+          },
+        },
+      ],
+    })
+
+    expect(items[0]).toMatchObject({
+      kind: 'action_card',
+      title: 'Revise design?',
+      severity: 'warning',
+    })
+  })
+
   it('can include collapsed phase lifecycle groups', () => {
     const items = eventsToStreamItems({
       events: feedFromTranscript(''),
@@ -229,6 +278,27 @@ describe('revisionInferenceToStreamItem', () => {
         expect.arrayContaining([{ id: 'revise', label: 'Revise Design', recommended: true }]),
       )
     }
+  })
+})
+
+describe('mergeLiveActivities', () => {
+  it('appends live activity tail without re-processing persisted feed items', () => {
+    const base = eventsToStreamItems({
+      events: [],
+      userMessages: [{ id: 'u1', text: 'Hello', createdAt: '2026-06-20T12:00:00.000Z' }],
+    })
+
+    const merged = mergeLiveActivities(base, [
+      {
+        type: 'message',
+        timestamp: '2026-06-20T12:00:01.000Z',
+        content: 'Running questions phase…',
+      },
+    ])
+
+    expect(merged).toHaveLength(2)
+    expect(merged[0]?.kind).toBe('user_message')
+    expect(merged[1]?.kind).toBe('agent_message')
   })
 })
 

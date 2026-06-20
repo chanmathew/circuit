@@ -18,6 +18,10 @@ export type CircuitEventType =
   | 'blocker:raised'
   | 'blocker:resolved'
   | 'agent:activity'
+  | 'workflow:steering_received'
+  | 'workflow:revision_requested'
+  | 'workflow:revision_inference'
+  | 'workflow:revision_applied'
 
 export interface CircuitEvent<T = unknown> {
   id?: string

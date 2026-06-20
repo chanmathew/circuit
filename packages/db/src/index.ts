@@ -37,6 +37,12 @@ export {
   type NewDecisionResolutionRow,
 } from './decision-resolutions.js'
 export {
+  insertWorkflowEvent,
+  listWorkflowEventsForTask,
+  type NewWorkflowEventRow,
+  type WorkflowEventRow,
+} from './workflow-events.js'
+export {
   getRepoById,
   getRepoByPath,
   insertRepo,
@@ -63,5 +69,6 @@ export {
   settings,
   tasks,
   validationRuns,
+  workflowEvents,
   workspaces,
 } from './schema.js'

@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto'
 
 import { getMockPhaseOutput } from './mock-fixtures.js'
-import type { AgentActivityEvent, AgentAdapter, PhaseRunRequest, PhaseRunResult } from './types.js'
+import { MOCK_CAPABILITIES } from './capabilities.js'
+import type { AgentAdapter } from './adapter.js'
+import type { AgentActivityEvent, PhaseRunRequest, PhaseRunResult } from './types.js'
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -9,6 +11,7 @@ function delay(ms: number): Promise<void> {
 
 export class MockAgentAdapter implements AgentAdapter {
   readonly name = 'mock'
+  readonly capabilities = MOCK_CAPABILITIES
 
   async connect(): Promise<void> {
     // no-op
@@ -63,6 +66,7 @@ export class MockAgentAdapter implements AgentAdapter {
       filesChanged: [],
       commandsRun: [],
       artifactContent: output.artifactContent,
+      modelLabel: 'mock',
     }
   }
 }

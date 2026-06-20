@@ -94,7 +94,7 @@ export type StreamActivityEvent = {
   metadata?: Record<string, unknown>
 }
 
-/** Persisted user chat messages merged into the stream. */
+/** Ephemeral or derived user messages merged into the stream projection. */
 export type StreamUserMessage = {
   id: string
   text: string
