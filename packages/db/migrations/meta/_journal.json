@@ -8,6 +8,13 @@
       "when": 1781842174465,
       "tag": "0000_init",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1781973617534,
+      "tag": "0001_spooky_medusa",
+      "breakpoints": true
     }
   ]
 }

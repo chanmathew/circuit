@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto'
+
 import { getMockPhaseOutput } from './mock-fixtures.js'
 import type { AgentActivityEvent, AgentAdapter, PhaseRunRequest, PhaseRunResult } from './types.js'
 
@@ -22,6 +24,13 @@ export class MockAgentAdapter implements AgentAdapter {
   ): Promise<PhaseRunResult> {
     const output = getMockPhaseOutput(request.phase)
     const timestamp = new Date().toISOString()
+    const sessionId = request.sessionId || randomUUID()
+
+    onActivity({
+      type: 'message',
+      timestamp,
+      content: `Session ${sessionId.slice(0, 8)} · context ${request.contextPack.hash.slice(0, 8)} (${request.contextPack.files.length} files)`,
+    })
 
     onActivity({
       type: 'message',
@@ -47,6 +56,8 @@ export class MockAgentAdapter implements AgentAdapter {
     })
 
     return {
+      sessionId,
+      contextPackHash: request.contextPack.hash,
       transcript: output.transcript,
       filesRead: output.filesRead,
       filesChanged: [],

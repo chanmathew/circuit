@@ -8,6 +8,8 @@ export interface WorkbenchActionBarProps {
   canRun: boolean
   canApprove: boolean
   canRevise: boolean
+  approveBlockedReason?: string | null
+  proceedLabel?: string
   showRunHint: boolean
   revisionOpen: boolean
   revisionNote: string
@@ -25,6 +27,8 @@ export function WorkbenchActionBar({
   canRun,
   canApprove,
   canRevise,
+  approveBlockedReason,
+  proceedLabel,
   showRunHint,
   revisionOpen,
   revisionNote,
@@ -35,6 +39,7 @@ export function WorkbenchActionBar({
   onCloseRevision,
   onSubmitRevision,
 }: WorkbenchActionBarProps): React.ReactElement | null {
+  const approveDisabled = isRunning || Boolean(approveBlockedReason)
   const hasActions =
     (canRun && actionPhase) ||
     (canApprove && actionPhase) ||
@@ -51,6 +56,12 @@ export function WorkbenchActionBar({
         </p>
       )}
 
+      {canApprove && actionPhase && approveBlockedReason && !revisionOpen && (
+        <p className="border-b border-border/60 bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
+          {approveBlockedReason}
+        </p>
+      )}
+
       <div className="flex flex-wrap items-center gap-2 px-4 py-3">
         {canRun && actionPhase && (
           <Button type="button" disabled={isRunning} onClick={() => onRunPhase(actionPhase.name)}>
@@ -62,10 +73,10 @@ export function WorkbenchActionBar({
           <>
             <Button
               type="button"
-              disabled={isRunning}
+              disabled={approveDisabled}
               onClick={() => onApprovePhase(actionPhase.name)}
             >
-              Approve {actionPhase.label}
+              {proceedLabel ?? `Approve ${actionPhase.label}`}
             </Button>
             {canRevise && (
               <Button

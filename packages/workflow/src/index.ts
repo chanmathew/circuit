@@ -4,8 +4,22 @@ export {
   BALANCED_AUTO_RUN_AFTER_APPROVE,
   PAUSE_BEFORE_PHASES,
 } from './auto-advance.js'
+export {
+  buildContextPack,
+  buildPhasePrompt,
+  serializeContextPackForPrompt,
+  type BuildContextPackInput,
+  type ContextPack,
+  type ContextPackArtifact,
+  type ContextPackFile,
+} from './context-pack.js'
 export { buildInitialPhases, type InitialPhase } from './phase-init.js'
 export { getPhaseLabel } from './phase-labels.js'
+export {
+  approveBlockedReason,
+  getProceedLabel,
+  getUnresolvedDecisions,
+} from './phase-decisions.js'
 export {
   emptyArtifactMarkdown,
   getWorkflowPhaseArtifacts,

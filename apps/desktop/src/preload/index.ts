@@ -12,6 +12,7 @@ const circuitApi: CircuitApi = {
   runPhase: (request) => ipcRenderer.invoke('circuit:tasks:runPhase', request),
   approvePhase: (request) => ipcRenderer.invoke('circuit:tasks:approvePhase', request),
   requestPhaseRevision: (request) => ipcRenderer.invoke('circuit:tasks:requestRevision', request),
+  resolveDecision: (request) => ipcRenderer.invoke('circuit:tasks:resolveDecision', request),
 }
 
 contextBridge.exposeInMainWorld('circuit', circuitApi)

@@ -239,15 +239,27 @@ function TaskDetailPage(): React.ReactElement {
 
   const workflowMutation = useMutation({
     mutationFn: async (action: {
-      type: 'run' | 'approve' | 'revise'
+      type: 'run' | 'approve' | 'revise' | 'resolve'
       phaseName: string
       note?: string
+      decisionId?: string
+      optionId?: string
+      optionLabel?: string
     }) => {
       if (action.type === 'run') {
         return window.circuit.runPhase({ taskId, phaseName: action.phaseName })
       }
       if (action.type === 'approve') {
         return window.circuit.approvePhase({ taskId, phaseName: action.phaseName })
+      }
+      if (action.type === 'resolve') {
+        return window.circuit.resolveDecision({
+          taskId,
+          phase: action.phaseName,
+          decisionId: action.decisionId ?? '',
+          optionId: action.optionId ?? '',
+          optionLabel: action.optionLabel ?? '',
+        })
       }
       return window.circuit.requestPhaseRevision({
         taskId,
@@ -296,6 +308,15 @@ function TaskDetailPage(): React.ReactElement {
         onApprovePhase={(phaseName) => workflowMutation.mutate({ type: 'approve', phaseName })}
         onRequestRevision={(phaseName, note) =>
           workflowMutation.mutate({ type: 'revise', phaseName, note })
+        }
+        onResolveDecision={(phase, decisionId, optionId, optionLabel) =>
+          workflowMutation.mutate({
+            type: 'resolve',
+            phaseName: phase,
+            decisionId,
+            optionId,
+            optionLabel,
+          })
         }
       />
     </div>

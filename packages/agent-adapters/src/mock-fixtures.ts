@@ -87,6 +87,14 @@ const FIXTURES: Record<string, MockPhaseOutput> = {
 
 Reviewing the ticket and drafting clarifying questions.
 
+\`\`\`circuit-decision
+{"decisionId":"classifier-order","title":"Should classification run before or after webhook dispatch?","options":[{"id":"before","label":"Before dispatch","recommended":true},{"id":"after","label":"After dispatch"},{"id":"defer","label":"Defer — research first"}],"phase":"questions"}
+\`\`\`
+
+\`\`\`circuit-decision
+{"decisionId":"category-set","title":"Are there categories beyond PDF invoice, no-PDF invoice, and needs review?","options":[{"id":"three","label":"Three categories only","recommended":true},{"id":"more","label":"Add more categories now"},{"id":"unsure","label":"Unsure — needs research"}],"phase":"questions"}
+\`\`\`
+
 \`\`\`circuit-artifact
 {"phase":"questions","path":".Circuit/tasks/example/01-questions.md","title":"01-questions.md","status":"needs_review"}
 \`\`\`

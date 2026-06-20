@@ -1,11 +1,16 @@
 import { writeFileSync } from 'node:fs'
+import { randomUUID } from 'node:crypto'
 
 import { MockAgentAdapter } from '@circuit/agent-adapters'
 import {
   getArtifactByTaskAndPhase,
   getPhaseByTaskAndName,
   getTaskById,
+  getTicketArtifactForTask,
   insertPhaseRun,
+  listArtifactsForTask,
+  listDecisionResolutionsForPhase,
+  listPhaseRunsForTask,
   listPhasesForTask,
   updateArtifact,
   updatePhase,
@@ -13,18 +18,35 @@ import {
 } from '@circuit/db'
 import { createId, NotFoundError, ValidationError } from '@circuit/shared'
 import {
+  approveBlockedReason,
   BALANCED_AUTO_RUN_AFTER_APPROVE,
+  buildContextPack,
+  buildPhasePrompt,
   canTransition,
   getWorkflowDefinition,
+  serializeContextPackForPrompt,
   type PhaseStatus,
   type WorkflowType,
 } from '@circuit/workflow'
 
 import { getDb } from '../db.js'
+import { requiredDecisionsForPhaseFromRuns } from './feed-decisions.js'
 import { getTaskDetail, type TaskDetail } from './tasks.js'
 
 const adapter = new MockAgentAdapter()
 const RUNNABLE_STATUSES = new Set<PhaseStatus>(['ready', 'needs_revision'])
+
+function assertCanApprove(taskId: string, phaseName: string): void {
+  const db = getDb()
+  const phaseRuns = listPhaseRunsForTask(db, taskId)
+  const required = requiredDecisionsForPhaseFromRuns(taskId, phaseName, phaseRuns)
+  const resolutions = listDecisionResolutionsForPhase(db, taskId, phaseName)
+  const resolvedIds = new Set(resolutions.map((r) => r.decisionId))
+  const reason = approveBlockedReason(required, resolvedIds)
+  if (reason) {
+    throw new ValidationError(reason)
+  }
+}
 
 export async function runPhase(taskId: string, phaseName?: string): Promise<TaskDetail> {
   await adapter.connect()
@@ -44,6 +66,26 @@ export async function runPhase(taskId: string, phaseName?: string): Promise<Task
   const artifact = getArtifactByTaskAndPhase(db, taskId, targetName)
   if (!artifact) throw new NotFoundError('Artifact', targetName)
 
+  const ticket = getTicketArtifactForTask(db, taskId)
+  const approvedArtifacts = listArtifactsForTask(db, taskId).filter(
+    (item) => item.status === 'approved' && item.phase !== targetName,
+  )
+
+  const contextPack = buildContextPack({
+    ticketPath: ticket?.path ?? '.Circuit/tasks/ticket/00-ticket.md',
+    ticketContent: ticket?.content ?? '',
+    approvedArtifacts: approvedArtifacts.map((item) => ({
+      phase: item.phase,
+      path: item.path,
+      title: item.title,
+      content: item.content,
+    })),
+  })
+
+  const contextSection = serializeContextPackForPrompt(contextPack)
+  const inputPrompt = buildPhasePrompt(targetName, contextSection)
+  const sessionId = randomUUID()
+
   const now = new Date().toISOString()
   updatePhase(db, phase.id, { status: 'running' })
   updateTask(db, taskId, { status: 'running', currentPhase: targetName, updatedAt: now })
@@ -55,9 +97,14 @@ export async function runPhase(taskId: string, phaseName?: string): Promise<Task
     {
       taskId,
       phase: targetName,
-      prompt: `Run ${targetName} phase`,
+      prompt: inputPrompt,
       workspacePath: task.workspacePath,
       readOnly: targetName !== 'implement',
+      sessionId,
+      contextPack: {
+        hash: contextPack.hash,
+        files: contextPack.files,
+      },
     },
     () => {
       // Activity events are persisted via transcript + feed rebuild for MVP.
@@ -88,11 +135,13 @@ export async function runPhase(taskId: string, phaseName?: string): Promise<Task
     agent: adapter.name,
     model: 'mock',
     status: 'completed',
-    inputPrompt: `Run ${targetName} phase`,
+    inputPrompt,
     transcript: result.transcript,
     filesRead: JSON.stringify(result.filesRead),
     filesChanged: JSON.stringify(result.filesChanged),
     commandsRun: JSON.stringify(result.commandsRun),
+    sessionId: result.sessionId,
+    contextPackHash: result.contextPackHash,
     startedAt,
     completedAt: new Date().toISOString(),
   })
@@ -101,6 +150,8 @@ export async function runPhase(taskId: string, phaseName?: string): Promise<Task
 }
 
 export async function approvePhase(taskId: string, phaseName: string): Promise<TaskDetail> {
+  assertCanApprove(taskId, phaseName)
+
   const db = getDb()
   const phase = getPhaseByTaskAndName(db, taskId, phaseName)
   if (!phase) throw new NotFoundError('Phase', phaseName)

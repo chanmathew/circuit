@@ -1,5 +1,3 @@
-import { useState } from 'react'
-
 import {
   Badge,
   Button,
@@ -12,42 +10,56 @@ import {
 } from '@circuit/ui'
 import type { DecisionOption, DecisionRequiredPayload } from '@circuit/protocol'
 
+import type { DecisionResolutionDto } from '../../../shared/api.js'
+
+export { decisionsFromFeed, isDecisionRequiredPayload } from '../lib/decisions.js'
+
 export interface DecisionCardsProps {
   decisions: DecisionRequiredPayload[]
-  /** Called when user picks an option (steering chat wiring comes later). */
+  resolutions?: DecisionResolutionDto[]
   onSelectOption?: (decisionId: string, option: DecisionOption) => void
 }
 
 export function DecisionCards({
   decisions,
+  resolutions = [],
   onSelectOption,
 }: DecisionCardsProps): React.ReactElement | null {
   if (decisions.length === 0) return null
 
+  const resolvedById = new Map(resolutions.map((r) => [r.decisionId, r]))
+
   return (
-    <div className="space-y-3 border-t border-border bg-muted/20 px-4 py-4">
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-        Decisions
-      </p>
-      {decisions.map((decision) => (
-        <DecisionCard
-          key={decision.decisionId}
-          decision={decision}
-          onSelectOption={onSelectOption}
-        />
-      ))}
-    </div>
+    <section className="border-t border-border bg-card">
+      <div className="border-b border-border px-6 py-3">
+        <p className="text-[10px] font-semibold uppercase tracking-wide text-foreground">
+          Human judgment
+        </p>
+      </div>
+      <div className="space-y-3 px-6 py-4">
+        {decisions.map((decision) => (
+          <DecisionCard
+            key={decision.decisionId}
+            decision={decision}
+            resolution={resolvedById.get(decision.decisionId)}
+            onSelectOption={onSelectOption}
+          />
+        ))}
+      </div>
+    </section>
   )
 }
 
 function DecisionCard({
   decision,
+  resolution,
   onSelectOption,
 }: {
   decision: DecisionRequiredPayload
+  resolution?: DecisionResolutionDto
   onSelectOption?: (decisionId: string, option: DecisionOption) => void
 }): React.ReactElement {
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const selectedId = resolution?.optionId ?? null
 
   return (
     <Card size="sm" className="shadow-none">
@@ -65,15 +77,13 @@ function DecisionCard({
               key={option.id}
               type="button"
               variant="outline"
+              disabled={Boolean(resolution)}
               className={cn(
                 'h-auto w-full justify-start gap-2.5 px-3 py-2.5 text-left font-normal',
-                isSelected && 'border-primary bg-primary/5 ring-1 ring-primary/30',
+                isSelected && 'border-primary bg-primary/5 ring-1 ring-inset ring-primary/30',
                 !isSelected && option.recommended && 'border-primary/40 bg-primary/5',
               )}
-              onClick={() => {
-                setSelectedId(option.id)
-                onSelectOption?.(decision.decisionId, option)
-              }}
+              onClick={() => onSelectOption?.(decision.decisionId, option)}
             >
               <span
                 className={cn(
@@ -94,29 +104,12 @@ function DecisionCard({
             </Button>
           )
         })}
-        {selectedId && (
+        {resolution && (
           <p className="pt-1 text-[10px] text-muted-foreground">
-            Selection recorded locally — workflow steering via chat arrives in a later milestone.
+            Selected: {resolution.optionLabel}
           </p>
         )}
       </CardContent>
     </Card>
   )
-}
-
-export function isDecisionRequiredPayload(payload: unknown): payload is DecisionRequiredPayload {
-  if (typeof payload !== 'object' || payload === null) return false
-  const p = payload as Record<string, unknown>
-  return typeof p.decisionId === 'string' && typeof p.title === 'string' && Array.isArray(p.options)
-}
-
-export function decisionsFromFeed(
-  events: { type: string; payload: unknown }[],
-  phaseName?: string,
-): DecisionRequiredPayload[] {
-  return events
-    .filter((event) => event.type === 'decision:required')
-    .map((event) => event.payload)
-    .filter(isDecisionRequiredPayload)
-    .filter((decision) => !decision.phase || !phaseName || decision.phase === phaseName)
 }

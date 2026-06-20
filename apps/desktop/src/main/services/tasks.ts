@@ -8,12 +8,14 @@ import {
   insertPhases,
   insertTask,
   listArtifactsForTask,
+  listDecisionResolutionsForTask,
   listPhaseRunsForTask,
   listPhasesForTask,
   listSlugsForRepo,
   listTasks,
   updatePhaseArtifactId,
   type ArtifactRow,
+  type DecisionResolutionRow,
   type PhaseRow,
   type TaskRow,
 } from '@circuit/db'
@@ -42,6 +44,7 @@ import {
 
 import { getDb } from '../db.js'
 import { buildFeedEvents } from './feed-events.js'
+import { decisionResolvedEvents } from './feed-decisions.js'
 
 export interface CreateTaskInput {
   repoId: string
@@ -59,6 +62,7 @@ export interface TaskDetail extends TaskRow {
   phases: PhaseRow[]
   artifacts: ArtifactRow[]
   feedEvents: CircuitEvent[]
+  decisionResolutions: DecisionResolutionRow[]
 }
 
 export function createTask(input: CreateTaskInput): TaskDetail {
@@ -253,14 +257,25 @@ function loadTaskDetail(taskId: string): TaskDetail | undefined {
   const phases = listPhasesForTask(db, task.id)
   const artifacts = listArtifactsForTask(db, task.id)
   const phaseRuns = listPhaseRunsForTask(db, task.id)
-  const feedEvents = buildFeedEvents(
-    task.id,
-    phaseRuns.map((run) => ({
-      id: run.id,
-      transcript: run.transcript,
-      startedAt: run.startedAt,
-    })),
-  )
+  const decisionResolutionRows = listDecisionResolutionsForTask(db, task.id)
+  const feedEvents = [
+    ...buildFeedEvents(
+      task.id,
+      phaseRuns.map((run) => ({
+        id: run.id,
+        transcript: run.transcript,
+        startedAt: run.startedAt,
+      })),
+    ),
+    ...decisionResolvedEvents(
+      task.id,
+      decisionResolutionRows.map((row) => ({
+        decisionId: row.decisionId,
+        optionId: row.optionId,
+        resolvedAt: row.resolvedAt,
+      })),
+    ),
+  ].sort((a, b) => a.timestamp.localeCompare(b.timestamp))
 
   return toTaskDetail(
     task,
@@ -270,6 +285,7 @@ function loadTaskDetail(taskId: string): TaskDetail | undefined {
     phases,
     artifacts,
     feedEvents,
+    decisionResolutionRows,
   )
 }
 
@@ -285,6 +301,7 @@ function toTaskDetail(
   phases: PhaseRow[],
   artifacts: ArtifactRow[],
   feedEvents: CircuitEvent[],
+  decisionResolutions: DecisionResolutionRow[],
 ): TaskDetail {
   return {
     ...task,
@@ -294,6 +311,7 @@ function toTaskDetail(
     phases,
     artifacts,
     feedEvents,
+    decisionResolutions,
   }
 }
 

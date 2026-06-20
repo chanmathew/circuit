@@ -156,6 +156,9 @@ importers:
 
   packages/agent-adapters:
     devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.19.21
       typescript:
         specifier: 'catalog:'
         version: 7.0.1-rc
@@ -283,6 +286,9 @@ importers:
 
   packages/workflow:
     devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.19.21
       typescript:
         specifier: 'catalog:'
         version: 7.0.1-rc

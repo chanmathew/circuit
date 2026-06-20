@@ -105,15 +105,18 @@ Milestone 1 (**Local shell**) and Milestone 2b (**Workflow state**) are implemen
 Also done: **Circuit protocol** (`@circuit/protocol`) — event schemas, structured block types,
 parsers.
 
-Also done: **Mock agent loop** — mock adapter phase runs, structured activity feed, approve/revise.
+Also done: **Mock agent loop (M3)** — mock adapter phase runs, structured activity feed, approve/revise, markdown preview, decision cards with gating, proceed labels.
+
+Also done: **Context packs & fresh sessions (M3b)** — context pack builder from approved artifacts, fresh session per mock run, `sessionId` + `contextPackHash` on `phase_runs`.
 
 Not yet implemented:
 
-- Context packs and fresh sessions
+- Research/structure/plan structured panels (prototype-only modes)
+- Chat-inferred revision prompts (minor vs material)
 - OpenCode integration
 - Git worktrees and diff review
 
-Next milestone: **OpenCode integration** — real agent runs after mock loop validation.
+Next milestone: **OpenCode integration** — real agent runs with the same context pack + session model.
 
 ## License
 

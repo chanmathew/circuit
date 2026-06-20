@@ -29,6 +29,14 @@ export {
   type PhaseRunRow,
 } from './phase-runs.js'
 export {
+  getDecisionResolution,
+  listDecisionResolutionsForPhase,
+  listDecisionResolutionsForTask,
+  upsertDecisionResolution,
+  type DecisionResolutionRow,
+  type NewDecisionResolutionRow,
+} from './decision-resolutions.js'
+export {
   getRepoById,
   getRepoByPath,
   insertRepo,
@@ -48,6 +56,7 @@ export {
 export { updateTask } from './tasks-update.js'
 export {
   artifacts,
+  decisionResolutions,
   phaseRuns,
   phases,
   repos,

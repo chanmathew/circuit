@@ -10,9 +10,11 @@ import {
   type CreateTaskRequest,
   type ListTasksRequest,
   type RequestPhaseRevisionRequest,
+  type ResolveDecisionRequest,
   type RunPhaseRequest,
 } from '../../shared/api.js'
 import { registerRepo, listRegisteredRepos } from '../services/repos.js'
+import { resolveDecision } from '../services/decisions.js'
 import { createTask, getTaskDetail, listAllTasks } from '../services/tasks.js'
 import {
   approvePhase,
@@ -123,4 +125,19 @@ export function registerIpcHandlers(): void {
       }
     },
   )
+
+  ipcMain.handle('circuit:tasks:resolveDecision', async (_event, request: ResolveDecisionRequest) => {
+    try {
+      const detail = resolveDecision(
+        request.taskId,
+        request.phase,
+        request.decisionId,
+        request.optionId,
+        request.optionLabel,
+      )
+      return toTaskDto(detail)
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
 }

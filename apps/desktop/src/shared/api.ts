@@ -53,6 +53,7 @@ export interface TaskDto extends TaskRow {
   phases: PhaseDto[]
   artifacts: ArtifactDto[]
   feedEvents: FeedEventDto[]
+  decisionResolutions: DecisionResolutionDto[]
 }
 
 export interface RunPhaseRequest {
@@ -69,6 +70,24 @@ export interface RequestPhaseRevisionRequest {
   taskId: string
   phaseName: string
   note: string
+}
+
+export interface DecisionResolutionDto {
+  id: string
+  taskId: string
+  phase: string
+  decisionId: string
+  optionId: string
+  optionLabel: string
+  resolvedAt: string
+}
+
+export interface ResolveDecisionRequest {
+  taskId: string
+  phase: string
+  decisionId: string
+  optionId: string
+  optionLabel: string
 }
 
 export interface CreateTaskRequest {
@@ -131,6 +150,15 @@ export function toTaskDto(
     phases: PhaseRow[]
     artifacts: ArtifactRow[]
     feedEvents: CircuitEvent[]
+    decisionResolutions: {
+      id: string
+      taskId: string
+      phase: string
+      decisionId: string
+      optionId: string
+      optionLabel: string
+      resolvedAt: string
+    }[]
   },
 ): TaskDto {
   return {
@@ -138,6 +166,15 @@ export function toTaskDto(
     phases: task.phases.map(toPhaseDto),
     artifacts: task.artifacts.map(toArtifactDto),
     feedEvents: task.feedEvents,
+    decisionResolutions: task.decisionResolutions.map((row) => ({
+      id: row.id,
+      taskId: row.taskId,
+      phase: row.phase,
+      decisionId: row.decisionId,
+      optionId: row.optionId,
+      optionLabel: row.optionLabel,
+      resolvedAt: row.resolvedAt,
+    })),
   }
 }
 
@@ -151,4 +188,5 @@ export interface CircuitApi {
   runPhase: (request: RunPhaseRequest) => Promise<TaskDto>
   approvePhase: (request: ApprovePhaseRequest) => Promise<TaskDto>
   requestPhaseRevision: (request: RequestPhaseRevisionRequest) => Promise<TaskDto>
+  resolveDecision: (request: ResolveDecisionRequest) => Promise<TaskDto>
 }

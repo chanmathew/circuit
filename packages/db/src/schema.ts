@@ -69,8 +69,22 @@ export const phaseRuns = sqliteTable('phase_runs', {
   filesRead: text('files_read').notNull(),
   filesChanged: text('files_changed').notNull(),
   commandsRun: text('commands_run').notNull(),
+  sessionId: text('session_id'),
+  contextPackHash: text('context_pack_hash'),
   startedAt: text('started_at').notNull(),
   completedAt: text('completed_at'),
+})
+
+export const decisionResolutions = sqliteTable('decision_resolutions', {
+  id: text('id').primaryKey(),
+  taskId: text('task_id')
+    .notNull()
+    .references(() => tasks.id),
+  phase: text('phase').notNull(),
+  decisionId: text('decision_id').notNull(),
+  optionId: text('option_id').notNull(),
+  optionLabel: text('option_label').notNull(),
+  resolvedAt: text('resolved_at').notNull(),
 })
 
 export const workspaces = sqliteTable('workspaces', {
