@@ -1,14 +1,29 @@
-import { useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 
 import type { StreamActivityEvent } from '@circuit/protocol'
 
 import { circuitApi } from '../../../ipc/client.js'
+import { TaskStreamContext, type HarnessSessionState, type TaskStreamLiveState } from './TaskStreamProvider.js'
+import { dedupeHarnessActivities } from './task-stream-live-state.js'
 
-export function useTaskStreamLive(taskId: string): StreamActivityEvent[] {
+export type { HarnessSessionState, TaskStreamLiveState }
+export { TaskStreamProvider, useTaskStreamContext } from './TaskStreamProvider.js'
+
+/** Uses TaskStreamProvider when present; otherwise attaches its own IPC listener. */
+export function useTaskStreamLive(taskId: string): TaskStreamLiveState {
+  const context = useContext(TaskStreamContext)
+  if (context) return context
+
   const [liveActivities, setLiveActivities] = useState<StreamActivityEvent[]>([])
+  const [phaseRunning, setPhaseRunning] = useState(false)
+  const [harnessSession, setHarnessSession] = useState<HarnessSessionState | null>(null)
+  const [lastPhaseRunError, setLastPhaseRunError] = useState<string | null>(null)
 
   useEffect(() => {
     setLiveActivities([])
+    setPhaseRunning(false)
+    setHarnessSession(null)
+    setLastPhaseRunError(null)
   }, [taskId])
 
   useEffect(() => {
@@ -16,20 +31,48 @@ export function useTaskStreamLive(taskId: string): StreamActivityEvent[] {
       if (update.taskId !== taskId) return
 
       if (update.type === 'activity') {
-        setLiveActivities((current) => [...current, update.activity])
+        setLiveActivities((current) => dedupeHarnessActivities([...current, update.activity]))
         return
       }
 
       if (update.type === 'phase_run_started') {
         setLiveActivities([])
+        setPhaseRunning(true)
+        setLastPhaseRunError(null)
         return
       }
 
-      if (update.type === 'phase_run_completed' || update.type === 'phase_run_failed') {
+      if (update.type === 'phase_run_completed') {
         setLiveActivities([])
+        setPhaseRunning(false)
+        setHarnessSession(null)
+        setLastPhaseRunError(null)
+        return
+      }
+
+      if (update.type === 'phase_run_failed') {
+        setLiveActivities([])
+        setPhaseRunning(false)
+        setHarnessSession(null)
+        setLastPhaseRunError(
+          update.error === 'Session aborted by user' ? null : update.error,
+        )
+        return
+      }
+
+      if (update.type === 'harness_session_active') {
+        setHarnessSession({
+          sessionId: update.sessionId,
+          workspacePath: update.workspacePath,
+        })
+        return
+      }
+
+      if (update.type === 'harness_session_cleared') {
+        setHarnessSession(null)
       }
     })
   }, [taskId])
 
-  return liveActivities
+  return { liveActivities, phaseRunning, harnessSession, lastPhaseRunError }
 }

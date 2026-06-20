@@ -48,10 +48,21 @@ import { buildFeedEvents } from './feed-events.js'
 import { decisionResolvedEvents, requiredDecisionsForPhaseFromRuns } from './feed-decisions.js'
 import { workflowEventsToFeedEvents } from './feed-workflow-events.js'
 
+export function taskNeedsIntake(task: { status: string; description: string }): boolean {
+  return task.status === 'draft' && task.description.trim() === DRAFT_TASK_PLACEHOLDER
+}
+
+function taskUsesStructuredWorkflow(task: { workflowType: string }): boolean {
+  return getWorkflowDefinition(task.workflowType as WorkflowType) !== undefined
+}
+
 export interface CreateTaskInput {
   repoId: string
   description: string
 }
+
+/** Placeholder description for composer-first draft tasks. */
+export const DRAFT_TASK_PLACEHOLDER = 'New task'
 
 export interface TaskSummary extends TaskRow {
   repoName: string
@@ -67,6 +78,7 @@ export interface TaskDetail extends TaskRow {
   decisionResolutions: DecisionResolutionRow[]
   /** Latest phase-run decisions per phase — matches server approve gate. */
   requiredDecisionsByPhase: Record<string, DecisionRequiredPayload[]>
+  needsIntake: boolean
 }
 
 export function createTask(input: CreateTaskInput): TaskDetail {
@@ -135,6 +147,42 @@ export function createTask(input: CreateTaskInput): TaskDetail {
   })
 
   ensureWorkflowState(taskId, now)
+
+  return getTaskDetail(taskId)
+}
+
+/** Composer-first draft — task shell only; phases and artifacts created at plan intake. */
+export function createDraftTask(
+  repoId: string,
+  composerMode: 'chat' | 'plan' = 'chat',
+): TaskDetail {
+  const db = getDb()
+  const repo = getRepoById(db, repoId)
+  if (!repo) {
+    throw new NotFoundError('Repo', repoId)
+  }
+
+  const isPlan = composerMode === 'plan'
+  const now = new Date().toISOString()
+  const taskId = createId()
+  const slug = ensureUniqueSlug('new-task', listSlugsForRepo(db, repo.id))
+  const branchName = generateBranchName(slug)
+
+  insertTask(db, {
+    id: taskId,
+    repoId: repo.id,
+    title: 'New task',
+    slug,
+    description: DRAFT_TASK_PLACEHOLDER,
+    workflowType: isPlan ? 'structured_change' : 'freeform',
+    status: 'draft',
+    currentPhase: isPlan ? 'intake' : 'chat',
+    branchName,
+    workspacePath: repo.path,
+    workspaceStrategy: 'direct',
+    createdAt: now,
+    updatedAt: now,
+  })
 
   return getTaskDetail(taskId)
 }
@@ -254,7 +302,9 @@ function loadTaskDetail(taskId: string): TaskDetail | undefined {
   const task = getTaskById(db, taskId)
   if (!task) return undefined
 
-  ensureWorkflowState(taskId)
+  if (!taskNeedsIntake(task) && taskUsesStructuredWorkflow(task)) {
+    ensureWorkflowState(taskId)
+  }
 
   const repo = getRepoById(db, task.repoId)
   const ticket = getTicketArtifactForTask(db, task.id)
@@ -268,6 +318,7 @@ function loadTaskDetail(taskId: string): TaskDetail | undefined {
       task.id,
       phaseRuns.map((run) => ({
         id: run.id,
+        phase: run.phase,
         transcript: run.transcript,
         startedAt: run.startedAt,
       })),
@@ -330,6 +381,7 @@ function toTaskDetail(
     feedEvents,
     decisionResolutions,
     requiredDecisionsByPhase,
+    needsIntake: taskNeedsIntake(task),
   }
 }
 

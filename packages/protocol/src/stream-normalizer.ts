@@ -19,6 +19,7 @@ import type {
   StreamUserMessage,
   UserMessageItem,
 } from './stream-items.js'
+import { isHarnessMetaMessage } from './parsers.js'
 
 export interface NormalizeStreamOptions {
   /** Default agent role for prose messages without explicit role metadata. */
@@ -71,6 +72,10 @@ function activityStatusFromType(type: StreamActivityEvent['type']): ActivityStat
     case 'tool_call':
       return 'success'
     case 'message':
+      return 'info'
+    case 'permission_request':
+      return 'warning'
+    case 'question_request':
       return 'info'
   }
 }
@@ -169,6 +174,152 @@ function revisionToActionCard(event: CircuitEvent, id: string): ActionCardItem {
     createdAt: event.timestamp,
     eventId: event.id,
   }
+}
+
+type HarnessPermissionPendingPayload = {
+  cardId: string
+  permissionId: string
+  sessionId?: string
+  content?: string
+}
+
+type OpenCodeQuestionOption = {
+  label: string
+  description?: string
+}
+
+type OpenCodeQuestionInfo = {
+  question: string
+  header: string
+  options: OpenCodeQuestionOption[]
+}
+
+type HarnessQuestionPendingPayload = {
+  cardId: string
+  requestId: string
+  sessionId?: string
+  content?: string
+  questions?: OpenCodeQuestionInfo[]
+}
+
+function harnessPermissionPendingToActionCard(
+  event: CircuitEvent,
+  id: string,
+): ActionCardItem {
+  const payload = event.payload as HarnessPermissionPendingPayload
+  const permissionId = payload.permissionId
+  const sessionId = payload.sessionId
+
+  return {
+    kind: 'action_card',
+    id: payload.cardId ?? id,
+    title: 'Permission required',
+    summary: payload.content?.trim() || 'The agent needs approval to continue.',
+    severity: 'warning',
+    actions: [
+      {
+        id: 'once',
+        label: 'Allow once',
+        action: 'permission.reply',
+        payload: { permissionId, sessionId, response: 'once' },
+      },
+      {
+        id: 'always',
+        label: 'Always allow',
+        action: 'permission.reply',
+        payload: { sessionId, permissionId, response: 'always' },
+      },
+      {
+        id: 'reject',
+        label: 'Reject',
+        action: 'permission.reply',
+        payload: { sessionId, permissionId, response: 'reject' },
+      },
+    ],
+    createdAt: event.timestamp,
+    eventId: event.id,
+  }
+}
+
+function harnessQuestionPendingToActionCards(
+  event: CircuitEvent,
+  id: string,
+): ActionCardItem[] {
+  const payload = event.payload as HarnessQuestionPendingPayload
+  const requestId = payload.requestId
+  const sessionId = payload.sessionId
+  const questions = Array.isArray(payload.questions) ? payload.questions : []
+
+  if (questions.length === 0) {
+    return [
+      {
+        kind: 'action_card',
+        id: payload.cardId ?? id,
+        title: 'Agent question',
+        summary: payload.content?.trim() || 'The agent needs clarification.',
+        severity: 'info',
+        actions: [
+          {
+            id: 'dismiss',
+            label: 'Dismiss',
+            action: 'question.reject',
+            payload: { requestId, sessionId },
+          },
+        ],
+        createdAt: event.timestamp,
+        eventId: event.id,
+      },
+    ]
+  }
+
+  return questions.map((question, questionIndex) => ({
+    kind: 'action_card' as const,
+    id:
+      questions.length > 1
+        ? `${payload.cardId ?? id}-${questionIndex}`
+        : (payload.cardId ?? id),
+    title:
+      question.header ||
+      (questions.length > 1 ? `Question ${questionIndex + 1} of ${questions.length}` : 'Agent question'),
+    summary: question.question,
+    severity: 'info' as const,
+    options: question.options.map((option) => ({
+      id: option.label,
+      label: option.label,
+      description: option.description,
+    })),
+    actions: [
+      {
+        id: 'reply',
+        label: 'Submit answer',
+        action: 'question.reply',
+        payload: {
+          requestId,
+          sessionId,
+          questionIndex,
+          questionCount: questions.length,
+        },
+      },
+    ],
+    createdAt: event.timestamp,
+    eventId: event.id,
+  }))
+}
+
+function resolvedHarnessCardIds(events: CircuitEvent[]): Set<string> {
+  const resolved = new Set<string>()
+  for (const event of events) {
+    if (event.type !== 'harness:action_resolved') continue
+    const payload = event.payload as { cardId?: string }
+    if (typeof payload.cardId === 'string') {
+      resolved.add(payload.cardId)
+      // Multi-question cards use suffixed ids — resolve all parts.
+      for (let index = 0; index < 8; index += 1) {
+        resolved.add(`${payload.cardId}-${index}`)
+      }
+    }
+  }
+  return resolved
 }
 
 function artifactToReferenceCard(event: CircuitEvent, id: string): ReferenceCardItem {
@@ -306,6 +457,14 @@ function eventToStreamItem(event: CircuitEvent, index: number): StreamItem | nul
     }
     case 'workflow:revision_inference':
       return revisionToActionCard(event, id)
+    case 'harness:permission_pending':
+      return harnessPermissionPendingToActionCard(event, id)
+    case 'harness:question_pending': {
+      const cards = harnessQuestionPendingToActionCards(event, id)
+      return cards[0] ?? null
+    }
+    case 'harness:action_resolved':
+      return null
     default:
       return null
   }
@@ -361,6 +520,7 @@ export function eventsToStreamItems(input: NormalizeStreamInput): StreamItem[] {
   const { events, userMessages = [], activityEvents = [], options = {} } = input
   const defaultRole = options.defaultAgentRole ?? 'driver'
   const timestamped: Timestamped[] = []
+  const resolvedHarnessIds = resolvedHarnessCardIds(events)
 
   for (const message of userMessages) {
     timestamped.push({
@@ -370,7 +530,19 @@ export function eventsToStreamItems(input: NormalizeStreamInput): StreamItem[] {
   }
 
   for (const [index, event] of events.entries()) {
+    if (event.type === 'harness:question_pending') {
+      const cards = harnessQuestionPendingToActionCards(event, eventId(event, index))
+      for (const card of cards) {
+        if (resolvedHarnessIds.has(card.id)) continue
+        timestamped.push({ sortKey: event.timestamp, item: card })
+      }
+      continue
+    }
+
     const item = eventToStreamItem(event, index)
+    if (item?.kind === 'action_card' && resolvedHarnessIds.has(item.id)) {
+      continue
+    }
     if (item) {
       timestamped.push({ sortKey: event.timestamp, item })
     }
@@ -407,6 +579,7 @@ export function eventsToStreamItems(input: NormalizeStreamInput): StreamItem[] {
 
   for (const [index, activity] of activityEvents.entries()) {
     if (activity.type === 'message') {
+      if (isHarnessMetaMessage(activity.content)) continue
       flushActivities(activity.timestamp)
       timestamped.push({
         sortKey: activity.timestamp,
@@ -426,6 +599,10 @@ export function eventsToStreamItems(input: NormalizeStreamInput): StreamItem[] {
   return timestamped.sort((a, b) => a.sortKey.localeCompare(b.sortKey)).map((entry) => entry.item)
 }
 
+function sortStreamItems(items: StreamItem[]): StreamItem[] {
+  return [...items].sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+}
+
 /** Append live activity events without re-parsing the persisted feed. */
 export function mergeLiveActivities(
   baseItems: StreamItem[],
@@ -433,8 +610,143 @@ export function mergeLiveActivities(
   options?: Pick<NormalizeStreamOptions, 'defaultAgentRole'>,
 ): StreamItem[] {
   if (activityEvents.length === 0) return baseItems
-  const tail = eventsToStreamItems({ events: [], activityEvents, options })
-  return [...baseItems, ...tail]
+
+  const persistedAgentTexts = new Set(
+    baseItems
+      .filter((item): item is AgentMessageItem => item.kind === 'agent_message')
+      .map((item) => item.text.trim()),
+  )
+  const persistedUserTexts = new Set(
+    baseItems
+      .filter((item): item is UserMessageItem => item.kind === 'user_message')
+      .map((item) => item.text.trim()),
+  )
+
+  const streamActivities = activityEvents.filter((activity) => {
+    if (activity.type === 'permission_request' || activity.type === 'question_request') {
+      return false
+    }
+    if (activity.type === 'message') {
+      const text = activity.content.trim()
+      if (isHarnessMetaMessage(text)) return false
+      if (persistedUserTexts.has(text)) return false
+      if (persistedAgentTexts.has(text)) return false
+    }
+    return true
+  })
+  const permissionCards = activityEvents
+    .filter((activity) => activity.type === 'permission_request')
+    .map((activity, index) => permissionRequestToActionCard(activity, index))
+  const questionCards = activityEvents.flatMap((activity, index) =>
+    activity.type === 'question_request' ? questionRequestToActionCards(activity, index) : [],
+  )
+
+  const tail =
+    streamActivities.length > 0 ? eventsToStreamItems({ events: [], activityEvents: streamActivities, options }) : []
+
+  return sortStreamItems([...baseItems, ...tail, ...permissionCards, ...questionCards])
+}
+
+function permissionRequestToActionCard(
+  activity: StreamActivityEvent,
+  index: number,
+): ActionCardItem {
+  const permissionId =
+    typeof activity.metadata?.permissionId === 'string' ? activity.metadata.permissionId : `perm-${index}`
+  const sessionId =
+    typeof activity.metadata?.sessionId === 'string' ? activity.metadata.sessionId : undefined
+
+  return {
+    kind: 'action_card',
+    id: `permission-${permissionId}`,
+    title: 'Permission required',
+    summary: activity.content.trim() || 'The agent needs approval to continue.',
+    severity: 'warning',
+    actions: [
+      {
+        id: 'once',
+        label: 'Allow once',
+        action: 'permission.reply',
+        payload: { permissionId, sessionId, response: 'once' },
+      },
+      {
+        id: 'always',
+        label: 'Always allow',
+        action: 'permission.reply',
+        payload: { sessionId, permissionId, response: 'always' },
+      },
+      {
+        id: 'reject',
+        label: 'Reject',
+        action: 'permission.reply',
+        payload: { sessionId, permissionId, response: 'reject' },
+      },
+    ],
+    createdAt: activity.timestamp,
+  }
+}
+
+function questionRequestToActionCards(
+  activity: StreamActivityEvent,
+  activityIndex: number,
+): ActionCardItem[] {
+  const requestId =
+    typeof activity.metadata?.requestId === 'string'
+      ? activity.metadata.requestId
+      : `question-${activityIndex}`
+  const sessionId =
+    typeof activity.metadata?.sessionId === 'string' ? activity.metadata.sessionId : undefined
+  const questions = Array.isArray(activity.metadata?.questions)
+    ? (activity.metadata.questions as OpenCodeQuestionInfo[])
+    : []
+
+  if (questions.length === 0) {
+    return [
+      {
+        kind: 'action_card',
+        id: `question-${requestId}`,
+        title: 'Agent question',
+        summary: activity.content.trim() || 'The agent needs clarification.',
+        severity: 'info',
+        actions: [
+          {
+            id: 'dismiss',
+            label: 'Dismiss',
+            action: 'question.reject',
+            payload: { requestId, sessionId },
+          },
+        ],
+        createdAt: activity.timestamp,
+      },
+    ]
+  }
+
+  const question = questions[0]!
+  const questionCount = questions.length
+
+  return questions.map((entry, questionIndex) => ({
+    kind: 'action_card' as const,
+    id: questionCount > 1 ? `question-${requestId}-${questionIndex}` : `question-${requestId}`,
+    title:
+      entry.header ||
+      (questionCount > 1 ? `Question ${questionIndex + 1} of ${questionCount}` : 'Agent question'),
+    summary: entry.question,
+    severity: 'info' as const,
+    options: entry.options.map((option) => ({
+      id: option.label,
+      label: option.label,
+      description: option.description,
+    })),
+    actions: [
+      {
+        id: 'reply',
+        label: 'Submit answer',
+        action: 'question.reply',
+        payload: { requestId, sessionId, questionIndex, questionCount },
+      },
+    ],
+    createdAt: activity.timestamp,
+  }))
 }
 
 /** Map a revision-inference payload to a stream action card (chat steering flow). */

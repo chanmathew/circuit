@@ -5,6 +5,9 @@ import type { Event } from '@opencode-ai/sdk'
 import {
   eventBelongsToSession,
   extractArtifactContentFromMessages,
+  formatLastAssistantTurn,
+  knownMessageIdsFromSession,
+  mapOpenCodeEventToActivity,
   parseOpenCodeModel,
 } from './opencode-client.js'
 
@@ -48,6 +51,60 @@ describe('extractArtifactContentFromMessages', () => {
         'plan',
       ),
     ).toBeUndefined()
+  })
+})
+
+describe('knownMessageIdsFromSession', () => {
+  it('collects message and part ids', () => {
+    const ids = knownMessageIdsFromSession([
+      {
+        info: { role: 'user', id: 'msg_1' },
+        parts: [{ type: 'text', text: 'hi', messageID: 'msg_1' }],
+      },
+    ])
+    expect(ids.has('msg_1')).toBe(true)
+  })
+})
+
+describe('formatLastAssistantTurn', () => {
+  it('returns only the latest assistant block', () => {
+    expect(
+      formatLastAssistantTurn([
+        { info: { role: 'user' }, parts: [{ type: 'text', text: 'hello' }] },
+        { info: { role: 'assistant' }, parts: [{ type: 'text', text: 'first' }] },
+        { info: { role: 'user' }, parts: [{ type: 'text', text: 'again' }] },
+        { info: { role: 'assistant' }, parts: [{ type: 'text', text: 'second reply' }] },
+      ]),
+    ).toBe('**Assistant:**\nsecond reply')
+  })
+})
+
+describe('mapOpenCodeEventToActivity', () => {
+  it('maps permission.updated to permission_request activity', () => {
+    const activity = mapOpenCodeEventToActivity({
+      type: 'permission.updated',
+      properties: {
+        id: 'perm_1',
+        type: 'write',
+        sessionID: 'ses_abc',
+        messageID: 'msg_1',
+        title: 'Write file src/index.ts',
+        metadata: {},
+        time: { created: Date.now() },
+      },
+    } as Event)
+
+    expect(activity).toEqual({
+      type: 'permission_request',
+      timestamp: expect.any(String),
+      content: 'Write file src/index.ts',
+      metadata: {
+        permissionId: 'perm_1',
+        sessionId: 'ses_abc',
+        permissionType: 'write',
+        pattern: undefined,
+      },
+    })
   })
 })
 

@@ -149,6 +149,15 @@ export function ActionCardItemView({
     )
     if (revisionAction) {
       context.onStreamAction?.('revision.infer', revisionAction.payload)
+      return
+    }
+
+    const questionAction = item.actions.find((action) => action.action === 'question.reply')
+    if (questionAction) {
+      context.onStreamAction?.('question.reply', {
+        ...questionAction.payload,
+        selectedLabel: optionLabel,
+      })
     }
   }
 

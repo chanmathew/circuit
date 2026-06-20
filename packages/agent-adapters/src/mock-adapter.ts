@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { getMockPhaseOutput } from './mock-fixtures.js'
 import { MOCK_CAPABILITIES } from './capabilities.js'
 import type { AgentAdapter } from './adapter.js'
-import type { AgentActivityEvent, PhaseRunRequest, PhaseRunResult } from './types.js'
+import type { AgentActivityEvent, ChatTurnRequest, ChatTurnResult, PhaseRunRequest, PhaseRunResult } from './types.js'
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -66,6 +66,43 @@ export class MockAgentAdapter implements AgentAdapter {
       filesChanged: [],
       commandsRun: [],
       artifactContent: output.artifactContent,
+      modelLabel: 'mock',
+    }
+  }
+
+  async runChatTurn(
+    request: ChatTurnRequest,
+    onActivity: (event: AgentActivityEvent) => void,
+  ): Promise<ChatTurnResult> {
+    const sessionId = request.sessionId ?? randomUUID()
+    const timestamp = new Date().toISOString()
+    let aborted = false
+
+    request.onSessionStarted?.(sessionId, () => {
+      aborted = true
+    })
+
+    onActivity({
+      type: 'message',
+      timestamp,
+      content: `Chat session ${sessionId.slice(0, 8)} (mock)`,
+      metadata: { harnessSessionId: sessionId },
+    })
+
+    onActivity({
+      type: 'message',
+      timestamp: new Date().toISOString(),
+      content: `Mock reply to: ${request.prompt.slice(0, 120)}${request.prompt.length > 120 ? '…' : ''}`,
+    })
+
+    await delay(300)
+    if (aborted) {
+      throw new Error('Session aborted by user')
+    }
+
+    return {
+      sessionId,
+      transcript: `**User:**\n${request.prompt}\n\n**Assistant:**\n(mock) Acknowledged.`,
       modelLabel: 'mock',
     }
   }

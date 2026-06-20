@@ -56,6 +56,8 @@ export interface TaskDto extends TaskRow {
   decisionResolutions: DecisionResolutionDto[]
   /** Required decisions from latest phase run — same source as server approve gate. */
   requiredDecisionsByPhase: Record<string, DecisionRequiredPayload[]>
+  /** Server-computed — draft task awaiting first composer message. */
+  needsIntake: boolean
 }
 
 export type TaskStreamUpdate =
@@ -83,6 +85,23 @@ export type TaskStreamUpdate =
       phaseRunId: string
       error: string
     }
+  | {
+      taskId: string
+      type: 'task_updated'
+    }
+  | {
+      taskId: string
+      type: 'harness_session_active'
+      sessionId: string
+      workspacePath: string
+    }
+  | {
+      taskId: string
+      type: 'harness_session_cleared'
+    }
+
+/** Composer mode before / during intake — chat is freeform, plan bootstraps structured workflow. */
+export type ComposerMode = 'chat' | 'plan'
 
 export interface ApplySteeringRevisionRequest {
   taskId: string
@@ -136,6 +155,57 @@ export interface ResolveDecisionRequest {
 export interface CreateTaskRequest {
   repoId: string
   description: string
+}
+
+export interface CreateDraftTaskRequest {
+  repoId: string
+}
+
+export interface SubmitTaskIntakeRequest {
+  taskId: string
+  text: string
+  mode?: ComposerMode
+}
+
+export interface CreateTaskFromIntakeRequest {
+  repoId: string
+  text: string
+  mode?: ComposerMode
+}
+
+export interface AbortSessionRequest {
+  taskId: string
+  sessionId: string
+  workspacePath: string
+}
+
+export type PermissionReply = 'once' | 'always' | 'reject'
+
+export interface ReplyPermissionRequest {
+  taskId: string
+  sessionId: string
+  permissionId: string
+  response: PermissionReply
+  workspacePath: string
+}
+
+export interface ReplyQuestionRequest {
+  taskId: string
+  requestId: string
+  sessionId: string
+  workspacePath: string
+  answers: string[][]
+}
+
+export interface RejectQuestionRequest {
+  taskId: string
+  requestId: string
+  workspacePath: string
+}
+
+export interface SendChatMessageRequest {
+  taskId: string
+  text: string
 }
 
 export interface ListTasksRequest {
@@ -203,6 +273,7 @@ export function toTaskDto(
       resolvedAt: string
     }[]
     requiredDecisionsByPhase: Record<string, DecisionRequiredPayload[]>
+    needsIntake: boolean
   },
 ): TaskDto {
   return {
@@ -220,6 +291,7 @@ export function toTaskDto(
       resolvedAt: row.resolvedAt,
     })),
     requiredDecisionsByPhase: task.requiredDecisionsByPhase,
+    needsIntake: task.needsIntake,
   }
 }
 
@@ -230,6 +302,10 @@ export interface CircuitApi {
   addRepo: (path?: string) => Promise<RepoDto | null>
   listTasks: (request?: ListTasksRequest) => Promise<TaskSummaryDto[]>
   createTask: (request: CreateTaskRequest) => Promise<TaskDto>
+  createDraftTask: (request: CreateDraftTaskRequest) => Promise<TaskDto>
+  createTaskFromIntake: (request: CreateTaskFromIntakeRequest) => Promise<TaskDto>
+  submitTaskIntake: (request: SubmitTaskIntakeRequest) => Promise<TaskDto>
+  sendChatMessage: (request: SendChatMessageRequest) => Promise<TaskDto>
   getTask: (taskId: string) => Promise<TaskDto>
   runPhase: (request: RunPhaseRequest) => Promise<TaskDto>
   approvePhase: (request: ApprovePhaseRequest) => Promise<TaskDto>
@@ -237,5 +313,9 @@ export interface CircuitApi {
   resolveDecision: (request: ResolveDecisionRequest) => Promise<TaskDto>
   recordSteering: (request: RecordSteeringRequest) => Promise<TaskDto>
   applySteeringRevision: (request: ApplySteeringRevisionRequest) => Promise<TaskDto>
+  replyPermission: (request: ReplyPermissionRequest) => Promise<void>
+  replyQuestion: (request: ReplyQuestionRequest) => Promise<void>
+  rejectQuestion: (request: RejectQuestionRequest) => Promise<void>
+  abortSession: (request: AbortSessionRequest) => Promise<void>
   onTaskStreamUpdate: (callback: (update: TaskStreamUpdate) => void) => () => void
 }

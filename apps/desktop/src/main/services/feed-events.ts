@@ -1,8 +1,12 @@
-import { parseTranscript, type CircuitEvent } from '@circuit/protocol'
+import {
+  harnessTranscriptToEvents,
+  parseTranscript,
+  type CircuitEvent,
+} from '@circuit/protocol'
 
 export function buildFeedEvents(
   taskId: string,
-  phaseRuns: { id: string; transcript: string; startedAt: string }[],
+  phaseRuns: { id: string; phase: string; transcript: string; startedAt: string }[],
 ): CircuitEvent[] {
   const events: CircuitEvent[] = []
 
@@ -23,6 +27,16 @@ export function buildFeedEvents(
 
     for (const event of parsed.events) {
       events.push(event)
+    }
+
+    if (run.phase === 'chat') {
+      events.push(
+        ...harnessTranscriptToEvents(run.transcript, {
+          taskId,
+          phaseRunId: run.id,
+          startedAt: run.startedAt,
+        }),
+      )
     }
 
     events.push({

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { openReference, referenceToContentView, referenceToInspectorSelection } from './content-view.js'
 import type { CircuitEvent } from './events.js'
-import { parseTranscript } from './parsers.js'
+import { parseHarnessSessionTranscript, parseTranscript } from './parsers.js'
 import { eventsToStreamItems, mergeLiveActivities, revisionInferenceToStreamItem } from './stream-normalizer.js'
 
 const TASK_ID = 'task-1'
@@ -281,6 +281,20 @@ describe('revisionInferenceToStreamItem', () => {
   })
 })
 
+describe('parseHarnessSessionTranscript', () => {
+  it('parses user and assistant blocks', () => {
+    const transcript = `**User:**
+hello
+
+**Assistant:**
+hi there`
+    expect(parseHarnessSessionTranscript(transcript)).toEqual([
+      { role: 'user', text: 'hello' },
+      { role: 'assistant', text: 'hi there' },
+    ])
+  })
+})
+
 describe('mergeLiveActivities', () => {
   it('appends live activity tail without re-processing persisted feed items', () => {
     const base = eventsToStreamItems({
@@ -299,6 +313,36 @@ describe('mergeLiveActivities', () => {
     expect(merged).toHaveLength(2)
     expect(merged[0]?.kind).toBe('user_message')
     expect(merged[1]?.kind).toBe('agent_message')
+  })
+
+  it('skips live messages already present in the persisted feed', () => {
+    const base = eventsToStreamItems({
+      events: [],
+      userMessages: [{ id: 'u1', text: 'Hello', createdAt: TS }],
+      activityEvents: [],
+    })
+    const withAgent = mergeLiveActivities(base, [
+      {
+        type: 'message',
+        timestamp: '2026-06-20T12:00:01.000Z',
+        content: 'Already saved',
+      },
+    ])
+    const merged = mergeLiveActivities(withAgent, [
+      {
+        type: 'message',
+        timestamp: '2026-06-20T12:00:02.000Z',
+        content: 'Already saved',
+      },
+      {
+        type: 'message',
+        timestamp: '2026-06-20T12:00:03.000Z',
+        content: 'New live only',
+      },
+    ])
+
+    expect(merged.filter((item) => item.kind === 'agent_message')).toHaveLength(2)
+    expect(merged.at(-1)).toMatchObject({ kind: 'agent_message', text: 'New live only' })
   })
 })
 

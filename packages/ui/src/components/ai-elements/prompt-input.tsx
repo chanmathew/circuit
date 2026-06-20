@@ -416,6 +416,7 @@ export type PromptInputActionAddAttachmentsProps = ComponentProps<
 
 export const PromptInputActionAddAttachments = ({
   label = "Add photos or files",
+  className,
   ...props
 }: PromptInputActionAddAttachmentsProps) => {
   const attachments = usePromptInputAttachments();
@@ -429,8 +430,13 @@ export const PromptInputActionAddAttachments = ({
   );
 
   return (
-    <DropdownMenuItem {...props} onSelect={handleSelect}>
-      <ImageIcon className="mr-2 size-4" /> {label}
+    <DropdownMenuItem
+      {...props}
+      className={cn("whitespace-nowrap", className)}
+      onSelect={handleSelect}
+    >
+      <ImageIcon className="size-4 shrink-0" />
+      <span>{label}</span>
     </DropdownMenuItem>
   );
 };
@@ -443,6 +449,7 @@ export type PromptInputActionAddScreenshotProps = ComponentProps<
 
 export const PromptInputActionAddScreenshot = ({
   label = "Take screenshot",
+  className,
   onSelect,
   ...props
 }: PromptInputActionAddScreenshotProps) => {
@@ -474,9 +481,13 @@ export const PromptInputActionAddScreenshot = ({
   );
 
   return (
-    <DropdownMenuItem {...props} onSelect={handleSelect}>
-      <Monitor className="mr-2 size-4" />
-      {label}
+    <DropdownMenuItem
+      {...props}
+      className={cn("whitespace-nowrap", className)}
+      onSelect={handleSelect}
+    >
+      <Monitor className="size-4 shrink-0" />
+      <span>{label}</span>
     </DropdownMenuItem>
   );
 };
@@ -921,7 +932,7 @@ export const PromptInput = ({
         ref={formRef}
         {...props}
       >
-        <InputGroup className="overflow-hidden">{children}</InputGroup>
+        <InputGroup className="rounded-md">{children}</InputGroup>
       </form>
     </>
   );
@@ -1055,7 +1066,10 @@ export const PromptInputTextarea = ({
 
   return (
     <InputGroupTextarea
-      className={cn("field-sizing-content max-h-48 min-h-16", className)}
+      className={cn(
+        "field-sizing-content max-h-48 min-h-16 px-3 py-2.5",
+        className
+      )}
       name="message"
       onCompositionEnd={handleCompositionEnd}
       onCompositionStart={handleCompositionStart}
@@ -1078,8 +1092,8 @@ export const PromptInputHeader = ({
   ...props
 }: PromptInputHeaderProps) => (
   <InputGroupAddon
-    align="block-end"
-    className={cn("order-first flex-wrap gap-1", className)}
+    align="block-start"
+    className={cn("order-first flex-wrap gap-1 pb-0", className)}
     {...props}
   />
 );
@@ -1095,7 +1109,7 @@ export const PromptInputFooter = ({
 }: PromptInputFooterProps) => (
   <InputGroupAddon
     align="block-end"
-    className={cn("justify-between gap-1", className)}
+    className={cn("items-center justify-between gap-2 overflow-visible", className)}
     {...props}
   />
 );
@@ -1107,7 +1121,10 @@ export const PromptInputTools = ({
   ...props
 }: PromptInputToolsProps) => (
   <div
-    className={cn("flex min-w-0 items-center gap-1", className)}
+    className={cn(
+      "flex min-w-0 flex-1 flex-nowrap items-center gap-1 overflow-visible",
+      className
+    )}
     {...props}
   />
 );
@@ -1176,10 +1193,11 @@ export type PromptInputActionMenuTriggerProps = PromptInputButtonProps;
 export const PromptInputActionMenuTrigger = ({
   className,
   children,
+  size = "icon-xs",
   ...props
 }: PromptInputActionMenuTriggerProps) => (
   <DropdownMenuTrigger asChild>
-    <PromptInputButton className={className} {...props}>
+    <PromptInputButton className={className} size={size} {...props}>
       {children ?? <PlusIcon className="size-4" />}
     </PromptInputButton>
   </DropdownMenuTrigger>
@@ -1192,7 +1210,11 @@ export const PromptInputActionMenuContent = ({
   className,
   ...props
 }: PromptInputActionMenuContentProps) => (
-  <DropdownMenuContent align="start" className={cn(className)} {...props} />
+  <DropdownMenuContent
+    align="start"
+    className={cn("w-auto min-w-52", className)}
+    {...props}
+  />
 );
 
 export type PromptInputActionMenuItemProps = ComponentProps<
@@ -1274,12 +1296,15 @@ export type PromptInputSelectTriggerProps = ComponentProps<
 
 export const PromptInputSelectTrigger = ({
   className,
+  size = "sm",
   ...props
 }: PromptInputSelectTriggerProps) => (
   <SelectTrigger
+    size={size}
     className={cn(
-      "border-none bg-transparent font-medium text-muted-foreground shadow-none transition-colors",
+      "h-8 w-auto shrink-0 whitespace-nowrap border-none bg-transparent px-2 py-0 font-medium text-muted-foreground shadow-none transition-colors",
       "hover:bg-accent hover:text-foreground aria-expanded:bg-accent aria-expanded:text-foreground",
+      "*:data-[slot=select-value]:truncate",
       className
     )}
     {...props}

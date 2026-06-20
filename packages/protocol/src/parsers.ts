@@ -120,3 +120,61 @@ export function parseTranscript(
 
   return { blocks, events, prose }
 }
+
+const HARNESS_SESSION_META_RE =
+  /^OpenCode (?:chat|session) [a-zA-Z0-9_-]+ · /i
+
+/** Session/model status lines from the adapter — not user-visible chat content. */
+export function isHarnessMetaMessage(content: string): boolean {
+  return HARNESS_SESSION_META_RE.test(content.trim())
+}
+
+export interface HarnessTranscriptMessage {
+  role: 'user' | 'assistant'
+  text: string
+}
+
+/** Parse OpenCode session export (`**User:**` / `**Assistant:**` blocks). */
+export function parseHarnessSessionTranscript(transcript: string): HarnessTranscriptMessage[] {
+  const messages: HarnessTranscriptMessage[] = []
+  const pattern = /\*\*(User|Assistant):\*\*\n([\s\S]*?)(?=\n\n\*\*(?:User|Assistant):\*\*|$)/g
+
+  for (const match of transcript.matchAll(pattern)) {
+    const roleRaw = match[1]
+    const text = match[2]?.trim() ?? ''
+    if (!text) continue
+
+    messages.push({
+      role: roleRaw === 'User' ? 'user' : 'assistant',
+      text,
+    })
+  }
+
+  return messages
+}
+
+/** Project harness chat transcript into feed events (latest assistant line only per run). */
+export function harnessTranscriptToEvents(
+  transcript: string,
+  context: { taskId: string; phaseRunId: string; startedAt: string },
+): CircuitEvent[] {
+  const assistantMessages = parseHarnessSessionTranscript(transcript).filter(
+    (message) => message.role === 'assistant',
+  )
+  const last = assistantMessages[assistantMessages.length - 1]
+  if (!last || isHarnessMetaMessage(last.text)) return []
+
+  return [
+    {
+      type: 'agent:activity',
+      taskId: context.taskId,
+      phaseRunId: context.phaseRunId,
+      timestamp: context.startedAt,
+      payload: {
+        role: 'driver',
+        text: last.text,
+        activityType: 'message',
+      },
+    },
+  ]
+}

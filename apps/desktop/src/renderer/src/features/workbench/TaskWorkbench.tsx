@@ -26,6 +26,9 @@ import {
 export interface TaskWorkbenchProps {
   task: TaskDto
   isRunning?: boolean
+  needsIntake?: boolean
+  /** Stream-only layout — intake or freeform chat without phase scaffolding. */
+  chatOnly?: boolean
   onRunPhase: (phaseName: string) => void
   onApprovePhase: (phaseName: string) => void
   onRequestRevision: (phaseName: string, note: string) => void
@@ -40,6 +43,8 @@ export interface TaskWorkbenchProps {
 export function TaskWorkbench({
   task,
   isRunning = false,
+  needsIntake = false,
+  chatOnly = false,
   onRunPhase,
   onApprovePhase,
   onRequestRevision,
@@ -142,6 +147,29 @@ export function TaskWorkbench({
     }))
   }
 
+  if (chatOnly) {
+    return (
+      <div className="flex h-full min-h-0 flex-col overflow-hidden">
+        <TaskWorkbenchHeader task={task} minimal />
+        <div className="min-h-0 flex-1">
+          <CircuitAgentStream
+            taskId={task.id}
+            workspacePath={task.repoPath}
+            feedEvents={task.feedEvents}
+            decisionResolutions={task.decisionResolutions}
+            needsIntake={needsIntake}
+            freeform={task.workflowType === 'freeform'}
+            isRunning={isRunning}
+            onResolveDecision={(decisionId, optionId, optionLabel, phase) => {
+              onResolveDecision(phase ?? task.currentPhase, decisionId, optionId, optionLabel)
+            }}
+            onOpenReference={handleOpenReference}
+          />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <TaskWorkbenchHeader task={task} />
@@ -150,8 +178,11 @@ export function TaskWorkbench({
         stream={
           <CircuitAgentStream
             taskId={task.id}
+            workspacePath={task.repoPath}
             feedEvents={task.feedEvents}
             decisionResolutions={task.decisionResolutions}
+            needsIntake={needsIntake}
+            freeform={task.workflowType === 'freeform'}
             isRunning={isRunning}
             onResolveDecision={(decisionId, optionId, optionLabel, phase) => {
               const resolvePhase = phase ?? actionPhase?.name

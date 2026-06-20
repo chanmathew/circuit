@@ -88,7 +88,14 @@ export type StreamItem =
 
 /** Live adapter activity normalized into stream groups or messages. */
 export type StreamActivityEvent = {
-  type: 'message' | 'tool_call' | 'file_read' | 'file_changed' | 'command'
+  type:
+    | 'message'
+    | 'tool_call'
+    | 'file_read'
+    | 'file_changed'
+    | 'command'
+    | 'permission_request'
+    | 'question_request'
   timestamp: string
   content: string
   metadata?: Record<string, unknown>

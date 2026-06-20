@@ -61,7 +61,10 @@ export {
 } from './workflow-events.js'
 export {
   blocksToEvents,
+  harnessTranscriptToEvents,
+  isHarnessMetaMessage,
   parseCircuitBlocks,
+  parseHarnessSessionTranscript,
   parseTranscript,
   stripCircuitBlocks,
 } from './parsers.js'

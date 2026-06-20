@@ -149,6 +149,9 @@ importers:
       electron:
         specifier: ^42.4.1
         version: 42.4.1
+      lucide-react:
+        specifier: 'catalog:'
+        version: 1.21.0(react@19.2.7)
       react:
         specifier: ^19.2.7
         version: 19.2.7
@@ -7625,7 +7628,7 @@ snapshots:
       pngjs: 7.0.0
       sirv: 3.0.2
       tinyrainbow: 3.1.0
-      vitest: 4.1.9(@opentelemetry/api@1.9.1)(@types/node@22.19.21)(@vitest/browser-preview@4.1.9)(vite@8.0.16(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4))
+      vitest: 4.1.9(@opentelemetry/api@1.9.1)(@types/node@24.13.2)(@vitest/browser-preview@4.1.9)(vite@8.0.16(@types/node@24.13.2)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.22.4))
       ws: 8.21.0
     transitivePeerDependencies:
       - bufferutil

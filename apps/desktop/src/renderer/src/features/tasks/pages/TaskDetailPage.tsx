@@ -3,10 +3,12 @@ import { Card, CardContent } from '@circuit/ui'
 import { TaskWorkbench } from '../../workbench/TaskWorkbench.js'
 import { useTask } from '../hooks/useTask.js'
 import { useTaskWorkflow } from '../hooks/useTaskWorkflow.js'
+import { TaskStreamProvider, useTaskStreamContext } from '../../stream/hooks/useTaskStreamLive.js'
 
-export function TaskDetailPage({ taskId }: { taskId: string }): React.ReactElement {
+function TaskDetailContent({ taskId }: { taskId: string }): React.ReactElement {
   const taskQuery = useTask(taskId)
   const workflowMutation = useTaskWorkflow(taskId)
+  const { phaseRunning, lastPhaseRunError } = useTaskStreamContext()
 
   if (taskQuery.isLoading) {
     return (
@@ -26,6 +28,9 @@ export function TaskDetailPage({ taskId }: { taskId: string }): React.ReactEleme
   }
 
   const task = taskQuery.data
+  const needsIntake = task.needsIntake
+  const isRunning = workflowMutation.isPending || task.status === 'running' || phaseRunning
+  const chatOnly = needsIntake || (task.workflowType === 'freeform' && task.phases.length === 0)
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -39,9 +44,19 @@ export function TaskDetailPage({ taskId }: { taskId: string }): React.ReactEleme
         </Card>
       )}
 
+      {lastPhaseRunError && (
+        <Card className="shrink-0 rounded-none border-x-0 border-t-0 border-destructive/30 bg-destructive/5 shadow-none">
+          <CardContent className="py-2 text-sm text-destructive">
+            Phase run failed: {lastPhaseRunError}
+          </CardContent>
+        </Card>
+      )}
+
       <TaskWorkbench
         task={task}
-        isRunning={workflowMutation.isPending}
+        isRunning={isRunning}
+        needsIntake={needsIntake}
+        chatOnly={chatOnly}
         onRunPhase={(phaseName) => workflowMutation.mutate({ type: 'run', phaseName })}
         onApprovePhase={(phaseName) => workflowMutation.mutate({ type: 'approve', phaseName })}
         onRequestRevision={(phaseName, note) =>
@@ -58,5 +73,13 @@ export function TaskDetailPage({ taskId }: { taskId: string }): React.ReactEleme
         }
       />
     </div>
+  )
+}
+
+export function TaskDetailPage({ taskId }: { taskId: string }): React.ReactElement {
+  return (
+    <TaskStreamProvider taskId={taskId}>
+      <TaskDetailContent taskId={taskId} />
+    </TaskStreamProvider>
   )
 }

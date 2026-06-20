@@ -1,52 +1,215 @@
+import { ListTodoIcon } from 'lucide-react'
 import { useState } from 'react'
 
+import type { ComposerMode } from '../../../../shared/api.js'
 import {
+  Badge,
+  ModelSelector,
+  ModelSelectorContent,
+  ModelSelectorEmpty,
+  ModelSelectorGroup,
+  ModelSelectorInput,
+  ModelSelectorItem,
+  ModelSelectorList,
+  ModelSelectorLogo,
+  ModelSelectorLogoGroup,
+  ModelSelectorName,
+  ModelSelectorTrigger,
   PromptInput,
+  PromptInputActionAddAttachments,
+  PromptInputActionAddScreenshot,
+  PromptInputActionMenu,
+  PromptInputActionMenuContent,
+  PromptInputActionMenuTrigger,
+  PromptInputBody,
+  PromptInputButton,
+  PromptInputFooter,
+  PromptInputHeader,
   PromptInputSubmit,
   PromptInputTextarea,
+  PromptInputTools,
+  usePromptInputAttachments,
   type PromptInputMessage,
 } from '@circuit/ui'
 
+/** Scaffold list — wire to harness model discovery later. */
+export const COMPOSER_MODELS = [
+  {
+    id: 'anthropic/claude-sonnet-4-20250514',
+    name: 'Claude Sonnet 4',
+    provider: 'anthropic',
+  },
+  { id: 'openai/gpt-4o', name: 'GPT-4o', provider: 'openai' },
+] as const
+
+export type ComposerModelId = (typeof COMPOSER_MODELS)[number]['id']
+
 export interface CircuitInputComposerProps {
   disabled?: boolean
+  isRunning?: boolean
   placeholder?: string
+  showModeSelector?: boolean
+  mode?: ComposerMode
+  onModeChange?: (mode: ComposerMode) => void
+  model?: ComposerModelId
+  onModelChange?: (model: ComposerModelId) => void
   onSend: (text: string) => void
+  onStop?: () => void
+}
+
+function ComposerAttachmentHeader(): React.ReactElement | null {
+  const attachments = usePromptInputAttachments()
+
+  if (attachments.files.length === 0) {
+    return null
+  }
+
+  return (
+    <PromptInputHeader>
+      <div className="flex flex-wrap gap-1">
+        {attachments.files.map((file) => (
+          <Badge key={file.id} variant="secondary" className="gap-1 pr-1 font-normal">
+            <span className="max-w-40 truncate">{file.filename ?? 'Attachment'}</span>
+            <button
+              type="button"
+              aria-label={`Remove ${file.filename ?? 'attachment'}`}
+              className="rounded-sm px-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+              onClick={() => attachments.remove(file.id)}
+            >
+              ×
+            </button>
+          </Badge>
+        ))}
+      </div>
+    </PromptInputHeader>
+  )
 }
 
 export function CircuitInputComposer({
   disabled = false,
+  isRunning = false,
   placeholder = 'Message the agent…',
+  showModeSelector = false,
+  mode = 'chat',
+  onModeChange,
+  model,
+  onModelChange,
   onSend,
+  onStop,
 }: CircuitInputComposerProps): React.ReactElement {
   const [draft, setDraft] = useState('')
+  const [modelMenuOpen, setModelMenuOpen] = useState(false)
+  const [internalModel, setInternalModel] = useState<ComposerModelId>(COMPOSER_MODELS[0].id)
+  const selectedModel = model ?? internalModel
+  const selectedModelData =
+    COMPOSER_MODELS.find((entry) => entry.id === selectedModel) ?? COMPOSER_MODELS[0]
+  const toolbarDisabled = disabled || isRunning
+  const planEnabled = mode === 'plan'
+
+  const handleModelChange = (value: ComposerModelId): void => {
+    onModelChange?.(value)
+    if (model === undefined) {
+      setInternalModel(value)
+    }
+    setModelMenuOpen(false)
+  }
 
   const handleSubmit = (message: PromptInputMessage): void => {
+    if (isRunning) {
+      onStop?.()
+      return
+    }
     const text = message.text.trim()
     if (!text) return
+    // Scaffold: attachments are collected in message.files but not forwarded yet.
     onSend(text)
     setDraft('')
   }
 
+  const submitStatus = isRunning ? 'streaming' : disabled ? 'submitted' : 'ready'
+
   return (
     <div className="shrink-0 border-t border-border p-3">
-      <PromptInput
-        onSubmit={handleSubmit}
-        className="relative w-full [&_[data-slot=input-group]]:rounded-md [&_[data-slot=input-group]]:border [&_[data-slot=input-group]]:border-border [&_[data-slot=input-group]]:bg-background"
-      >
-        <PromptInputTextarea
-          value={draft}
-          onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) =>
-            setDraft(event.currentTarget.value)
-          }
-          placeholder={placeholder}
-          disabled={disabled}
-          className="min-h-16 resize-none pr-12 text-sm"
-        />
-        <PromptInputSubmit
-          status="ready"
-          disabled={disabled || !draft.trim()}
-          className="absolute bottom-2 right-2"
-        />
+      <PromptInput onSubmit={handleSubmit} className="w-full" multiple>
+        <ComposerAttachmentHeader />
+        <PromptInputBody>
+          <PromptInputTextarea
+            value={draft}
+            onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) =>
+              setDraft(event.currentTarget.value)
+            }
+            placeholder={isRunning ? 'Agent running…' : placeholder}
+            disabled={disabled && !isRunning}
+            className="text-sm"
+          />
+        </PromptInputBody>
+        <PromptInputFooter>
+          <PromptInputTools>
+            <PromptInputActionMenu>
+              <PromptInputActionMenuTrigger disabled={toolbarDisabled} />
+              <PromptInputActionMenuContent>
+                <PromptInputActionAddAttachments disabled={toolbarDisabled} />
+                <PromptInputActionAddScreenshot disabled={toolbarDisabled} />
+              </PromptInputActionMenuContent>
+            </PromptInputActionMenu>
+
+            {showModeSelector && (
+              <PromptInputButton
+                type="button"
+                disabled={toolbarDisabled}
+                onClick={() => onModeChange?.(planEnabled ? 'chat' : 'plan')}
+                tooltip={{
+                  content: planEnabled
+                    ? 'Plan mode — bootstraps structured workflow'
+                    : 'Enable plan mode',
+                }}
+                variant={planEnabled ? 'default' : 'ghost'}
+              >
+                <ListTodoIcon className="size-4 shrink-0" />
+                <span>Plan</span>
+              </PromptInputButton>
+            )}
+
+            <ModelSelector open={modelMenuOpen} onOpenChange={setModelMenuOpen}>
+              <ModelSelectorTrigger asChild>
+                <PromptInputButton
+                  type="button"
+                  disabled={toolbarDisabled}
+                  tooltip="Select model"
+                >
+                  <ModelSelectorLogoGroup>
+                    <ModelSelectorLogo provider={selectedModelData.provider} />
+                  </ModelSelectorLogoGroup>
+                  <ModelSelectorName>{selectedModelData.name}</ModelSelectorName>
+                </PromptInputButton>
+              </ModelSelectorTrigger>
+              <ModelSelectorContent title="Select model">
+                <ModelSelectorInput placeholder="Search models…" />
+                <ModelSelectorList>
+                  <ModelSelectorEmpty>No models found.</ModelSelectorEmpty>
+                  <ModelSelectorGroup heading="Models">
+                    {COMPOSER_MODELS.map((entry) => (
+                      <ModelSelectorItem
+                        key={entry.id}
+                        value={entry.name}
+                        onSelect={() => handleModelChange(entry.id)}
+                      >
+                        <ModelSelectorLogo provider={entry.provider} />
+                        <ModelSelectorName>{entry.name}</ModelSelectorName>
+                      </ModelSelectorItem>
+                    ))}
+                  </ModelSelectorGroup>
+                </ModelSelectorList>
+              </ModelSelectorContent>
+            </ModelSelector>
+          </PromptInputTools>
+          <PromptInputSubmit
+            status={submitStatus}
+            disabled={!isRunning && (disabled || !draft.trim())}
+            onStop={onStop}
+            className="shrink-0"
+          />
+        </PromptInputFooter>
       </PromptInput>
     </div>
   )

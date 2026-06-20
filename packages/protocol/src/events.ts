@@ -22,6 +22,9 @@ export type CircuitEventType =
   | 'workflow:revision_requested'
   | 'workflow:revision_inference'
   | 'workflow:revision_applied'
+  | 'harness:permission_pending'
+  | 'harness:question_pending'
+  | 'harness:action_resolved'
 
 export interface CircuitEvent<T = unknown> {
   id?: string

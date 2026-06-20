@@ -29,9 +29,33 @@ export {
 } from './components/ai-elements/conversation.js'
 export { Message, MessageContent, MessageResponse } from './components/ai-elements/message.js'
 export {
+  ModelSelector,
+  ModelSelectorContent,
+  ModelSelectorEmpty,
+  ModelSelectorGroup,
+  ModelSelectorInput,
+  ModelSelectorItem,
+  ModelSelectorList,
+  ModelSelectorLogo,
+  ModelSelectorLogoGroup,
+  ModelSelectorName,
+  ModelSelectorTrigger,
+} from './components/ai-elements/model-selector.js'
+export {
   PromptInput,
-  PromptInputTextarea,
+  PromptInputActionAddAttachments,
+  PromptInputActionAddScreenshot,
+  PromptInputActionMenu,
+  PromptInputActionMenuContent,
+  PromptInputActionMenuTrigger,
+  PromptInputBody,
+  PromptInputButton,
+  PromptInputFooter,
+  PromptInputHeader,
   PromptInputSubmit,
+  PromptInputTextarea,
+  PromptInputTools,
+  usePromptInputAttachments,
   type PromptInputMessage,
 } from './components/ai-elements/prompt-input.js'
 export { cn } from './lib/utils.js'

@@ -8,6 +8,11 @@ import { useAddRepo, useRepos } from '../../features/repos/hooks/useRepos.js'
 import { useTasks } from '../../features/tasks/hooks/useTasks.js'
 import { ThemeToggle } from './ThemeToggle.js'
 
+/** Placeholder drafts abandoned before first message — hide from sidebar. */
+function isVisibleInSidebar(task: TaskSummaryDto): boolean {
+  return !(task.status === 'draft' && task.description.trim() === 'New task')
+}
+
 function ChevronIcon({ open }: { open: boolean }): React.ReactElement {
   return (
     <svg
@@ -47,6 +52,7 @@ export function ProjectTreeSidebar({
 }: ProjectTreeSidebarProps): React.ReactElement {
   const navigate = useNavigate()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const search = useRouterState({ select: (s) => s.location.search })
 
   const selectedTaskId = useMemo(() => {
     if (selectedTaskIdProp) return selectedTaskIdProp
@@ -54,12 +60,18 @@ export function ProjectTreeSidebar({
     return match?.[1]
   }, [selectedTaskIdProp, pathname])
 
+  const composingRepoId = useMemo(() => {
+    if (pathname !== '/compose') return undefined
+    const repoId = (search as { repoId?: string }).repoId
+    return typeof repoId === 'string' ? repoId : undefined
+  }, [pathname, search])
+
   const reposQuery = useRepos()
   const tasksQuery = useTasks()
   const addRepoMutation = useAddRepo()
 
   const repos = reposQuery.data ?? []
-  const tasks = tasksQuery.data ?? []
+  const tasks = (tasksQuery.data ?? []).filter(isVisibleInSidebar)
 
   const listError =
     reposQuery.isError || tasksQuery.isError
@@ -89,7 +101,7 @@ export function ProjectTreeSidebar({
   }
 
   const onNewTask = (repoId: string) => {
-    void navigate({ to: '/new-task', search: { repoId } })
+    void navigate({ to: '/compose', search: { repoId } })
   }
 
   return (
@@ -142,6 +154,7 @@ export function ProjectTreeSidebar({
               tasks={tasksByRepo.get(repo.id) ?? []}
               open={isExpanded(repo.id)}
               selectedTaskId={selectedTaskId}
+              composing={composingRepoId === repo.id}
               onToggle={() => toggleProject(repo.id)}
               onNewTask={() => onNewTask(repo.id)}
             />
@@ -173,6 +186,7 @@ function RepoSection({
   tasks,
   open,
   selectedTaskId,
+  composing,
   onToggle,
   onNewTask,
 }: {
@@ -180,6 +194,7 @@ function RepoSection({
   tasks: TaskSummaryDto[]
   open: boolean
   selectedTaskId?: string
+  composing?: boolean
   onToggle: () => void
   onNewTask: () => void
 }): React.ReactElement {
@@ -187,7 +202,12 @@ function RepoSection({
 
   return (
     <div className="rounded-md">
-      <div className="group flex items-center gap-0.5 rounded-md hover:bg-accent/50">
+      <div
+        className={cn(
+          'group flex items-center gap-0.5 rounded-md hover:bg-accent/50',
+          composing && 'bg-accent/40',
+        )}
+      >
         <Button
           type="button"
           variant="ghost"
@@ -225,6 +245,9 @@ function RepoSection({
 
       {open && (
         <div className="ml-3 border-l border-border pl-2 pb-1">
+          {composing && (
+            <div className="px-2 py-1.5 text-[10px] font-medium text-primary">New task…</div>
+          )}
           {tasks.map((task) => {
             const selected = task.id === selectedTaskId
             return (
@@ -248,7 +271,7 @@ function RepoSection({
               </Button>
             )
           })}
-          {tasks.length === 0 && (
+          {tasks.length === 0 && !composing && (
             <Button
               type="button"
               variant="ghost"

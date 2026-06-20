@@ -124,7 +124,7 @@ export function NewTaskPage({ repoIdFromSearch }: { repoIdFromSearch?: string })
                 }
                 disabled={!description.trim() || !repoId || createTaskMutation.isPending}
               >
-                {createTaskMutation.isPending ? 'Starting…' : 'Start task'}
+                {createTaskMutation.isPending ? 'Creating…' : 'Start task'}
               </Button>
             </div>
           </CardContent>

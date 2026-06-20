@@ -13,19 +13,36 @@ import {
   type ResolveDecisionRequest,
   type RunPhaseRequest,
   type RecordSteeringRequest,
+  type SendChatMessageRequest,
+  type AbortSessionRequest,
   type ApplySteeringRevisionRequest,
+  type CreateDraftTaskRequest,
+  type CreateTaskFromIntakeRequest,
+  type ReplyPermissionRequest,
+  type ReplyQuestionRequest,
+  type RejectQuestionRequest,
+  type SubmitTaskIntakeRequest,
 } from '../../shared/api.js'
 import { registerRepo, listRegisteredRepos } from '../services/repos.js'
 import { resolveDecision } from '../services/decisions.js'
-import { createTask, getTaskDetail, listAllTasks } from '../services/tasks.js'
+import { createTask, createDraftTask, getTaskDetail, listAllTasks } from '../services/tasks.js'
 import { applySteeringRevision, recordSteering } from '../services/workflow-events.js'
 import {
   approvePhase,
-  autoRunOnTaskCreate,
   getActiveAgentAdapterName,
   requestPhaseRevision,
-  runPhase,
+  createTaskFromIntake,
+  scheduleAutoRunOnTaskCreate,
+  schedulePhaseRun,
+  sendChatMessage,
+  submitTaskIntake,
 } from '../features/workflow/index.js'
+import { replyHarnessPermission } from '../features/workflow/reply-permission.js'
+import { replyHarnessQuestion } from '../features/workflow/reply-question.js'
+import { rejectHarnessQuestion } from '../features/workflow/reject-question.js'
+import { abortSession } from '../features/workflow/abort-session.js'
+import { requireHarnessSessionForTask } from '../features/workflow/require-harness-session.js'
+import { requireTaskWorkspacePath } from '../features/workflow/require-task-workspace.js'
 
 function toIpcError(error: unknown): Error {
   if (error instanceof CircuitError) {
@@ -86,11 +103,52 @@ export function registerIpcHandlers(): void {
     }
   })
 
-  ipcMain.handle('circuit:tasks:create', async (_event, request: CreateTaskRequest) => {
+  ipcMain.handle('circuit:tasks:create', (_event, request: CreateTaskRequest) => {
     try {
       const task = createTask(request)
-      await autoRunOnTaskCreate(task.id)
+      scheduleAutoRunOnTaskCreate(task.id)
       return toTaskDto(getTaskDetail(task.id))
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
+  ipcMain.handle('circuit:tasks:createDraft', (_event, request: CreateDraftTaskRequest) => {
+    try {
+      const task = createDraftTask(request.repoId)
+      return toTaskDto(task)
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
+  ipcMain.handle(
+    'circuit:tasks:createFromIntake',
+    (_event, request: CreateTaskFromIntakeRequest) => {
+      try {
+        const task = createTaskFromIntake(
+          request.repoId,
+          request.text,
+          request.mode ?? 'chat',
+        )
+        return toTaskDto(task)
+      } catch (error) {
+        throw toIpcError(error)
+      }
+    },
+  )
+
+  ipcMain.handle('circuit:tasks:submitIntake', (_event, request: SubmitTaskIntakeRequest) => {
+    try {
+      return toTaskDto(submitTaskIntake(request.taskId, request.text, request.mode ?? 'chat'))
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
+  ipcMain.handle('circuit:tasks:sendChatMessage', (_event, request: SendChatMessageRequest) => {
+    try {
+      return toTaskDto(sendChatMessage(request.taskId, request.text))
     } catch (error) {
       throw toIpcError(error)
     }
@@ -104,10 +162,10 @@ export function registerIpcHandlers(): void {
     }
   })
 
-  ipcMain.handle('circuit:tasks:runPhase', async (_event, request: RunPhaseRequest) => {
+  ipcMain.handle('circuit:tasks:runPhase', (_event, request: RunPhaseRequest) => {
     try {
-      const detail = await runPhase(request.taskId, request.phaseName)
-      return toTaskDto(detail)
+      schedulePhaseRun(request.taskId, request.phaseName)
+      return toTaskDto(getTaskDetail(request.taskId))
     } catch (error) {
       throw toIpcError(error)
     }
@@ -174,4 +232,62 @@ export function registerIpcHandlers(): void {
       }
     },
   )
+
+  ipcMain.handle('circuit:tasks:replyPermission', async (_event, request: ReplyPermissionRequest) => {
+    try {
+      requireTaskWorkspacePath(request.taskId, request.workspacePath)
+      requireHarnessSessionForTask(request.taskId, request.sessionId)
+      await replyHarnessPermission({
+        taskId: request.taskId,
+        sessionId: request.sessionId,
+        permissionId: request.permissionId,
+        response: request.response,
+        workspacePath: request.workspacePath,
+      })
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
+  ipcMain.handle('circuit:tasks:replyQuestion', async (_event, request: ReplyQuestionRequest) => {
+    try {
+      requireTaskWorkspacePath(request.taskId, request.workspacePath)
+      requireHarnessSessionForTask(request.taskId, request.sessionId)
+      await replyHarnessQuestion({
+        taskId: request.taskId,
+        requestId: request.requestId,
+        sessionId: request.sessionId,
+        workspacePath: request.workspacePath,
+        answers: request.answers,
+      })
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
+  ipcMain.handle('circuit:tasks:rejectQuestion', async (_event, request: RejectQuestionRequest) => {
+    try {
+      requireTaskWorkspacePath(request.taskId, request.workspacePath)
+      await rejectHarnessQuestion({
+        taskId: request.taskId,
+        requestId: request.requestId,
+        workspacePath: request.workspacePath,
+      })
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
+  ipcMain.handle('circuit:tasks:abortSession', async (_event, request: AbortSessionRequest) => {
+    try {
+      requireTaskWorkspacePath(request.taskId, request.workspacePath)
+      requireHarnessSessionForTask(request.taskId, request.sessionId)
+      await abortSession({
+        sessionId: request.sessionId,
+        workspacePath: request.workspacePath,
+      })
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
 }

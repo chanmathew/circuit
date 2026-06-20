@@ -1,19 +1,30 @@
 import { useCallback, useMemo, useState } from 'react'
 
 import type { ReferenceTarget, StreamAction } from '@circuit/protocol'
-
-import type { DecisionResolutionDto, FeedEventDto } from '../../../../shared/api.js'
+import type { ComposerMode, DecisionResolutionDto, FeedEventDto, PermissionReply } from '../../../../shared/api.js'
+import { useSubmitTaskIntake } from '../tasks/hooks/useSubmitTaskIntake.js'
 import { useApplySteeringRevision } from './hooks/useApplySteeringRevision.js'
+import { useAbortSession } from './hooks/useAbortSession.js'
 import { useRecordSteering } from './hooks/useRecordSteering.js'
+import { useReplyPermission } from './hooks/useReplyPermission.js'
+import { useReplyQuestion } from './hooks/useReplyQuestion.js'
+import { useRejectQuestion } from './hooks/useRejectQuestion.js'
+import { useSendChatMessage } from './hooks/useSendChatMessage.js'
 import { useTaskStreamItems, type LocalUserMessage } from './hooks/useTaskStreamItems.js'
 import { useTaskStreamLive } from './hooks/useTaskStreamLive.js'
+import { splitStreamItems } from './lib/split-stream-items.js'
 import { CircuitInputComposer } from './CircuitInputComposer.js'
+import { PendingActionsDock } from './PendingActionsDock.js'
 import { StreamList } from './StreamList.js'
 
 export interface CircuitAgentStreamProps {
   taskId: string
+  workspacePath: string
   feedEvents: FeedEventDto[]
   decisionResolutions?: DecisionResolutionDto[]
+  needsIntake?: boolean
+  /** Freeform task — composer sends to persistent harness chat session. */
+  freeform?: boolean
   isRunning?: boolean
   onResolveDecision?: (
     decisionId: string,
@@ -46,25 +57,67 @@ function latestSteeringText(feedEvents: FeedEventDto[]): string | undefined {
   return undefined
 }
 
+function markHarnessResolved(current: Set<string>, cardId: string): Set<string> {
+  const next = new Set(current)
+  next.add(cardId)
+  return next
+}
+
+function removePendingMessage(messages: LocalUserMessage[], text: string): LocalUserMessage[] {
+  return messages.filter((message) => message.text !== text)
+}
+
 export function CircuitAgentStream({
   taskId,
+  workspacePath,
   feedEvents,
   decisionResolutions = [],
-  isRunning = false,
+  needsIntake = false,
+  freeform = false,
+  isRunning: taskRunning = false,
   onResolveDecision,
   onOpenReference,
 }: CircuitAgentStreamProps): React.ReactElement {
   const [pendingMessages, setPendingMessages] = useState<LocalUserMessage[]>([])
-  const liveActivities = useTaskStreamLive(taskId)
+  const [composerMode, setComposerMode] = useState<ComposerMode>('chat')
+  const [resolvedHarnessIds, setResolvedHarnessIds] = useState<Set<string>>(() => new Set())
+  const { liveActivities, phaseRunning, harnessSession } = useTaskStreamLive(taskId)
   const recordSteering = useRecordSteering(taskId)
+  const sendChatMessage = useSendChatMessage(taskId)
+  const submitIntake = useSubmitTaskIntake(taskId)
   const applySteeringRevision = useApplySteeringRevision(taskId)
+  const replyPermission = useReplyPermission(taskId, workspacePath)
+  const replyQuestion = useReplyQuestion(taskId, workspacePath)
+  const rejectQuestion = useRejectQuestion(taskId, workspacePath)
+  const abortSession = useAbortSession(taskId)
+
+  const agentRunning = taskRunning || phaseRunning
 
   const optimisticMessages = useMemo(() => {
     const persisted = persistedSteeringTexts(feedEvents)
     return pendingMessages.filter((message) => !persisted.has(message.text))
   }, [feedEvents, pendingMessages])
 
-  const items = useTaskStreamItems(feedEvents, optimisticMessages, liveActivities)
+  const allItems = useTaskStreamItems(feedEvents, optimisticMessages, liveActivities)
+  const { chatItems, pendingActions: rawPendingActions } = useMemo(
+    () => splitStreamItems(allItems),
+    [allItems],
+  )
+  const pendingActions = useMemo(
+    () => rawPendingActions.filter((item) => !resolvedHarnessIds.has(item.id)),
+    [rawPendingActions, resolvedHarnessIds],
+  )
+
+  const composerBusy =
+    agentRunning ||
+    recordSteering.isPending ||
+    sendChatMessage.isPending ||
+    submitIntake.isPending ||
+    applySteeringRevision.isPending ||
+    replyPermission.isPending ||
+    replyQuestion.isPending ||
+    rejectQuestion.isPending ||
+    abortSession.isPending
 
   const handleSend = useCallback(
     (text: string) => {
@@ -79,10 +132,44 @@ export function CircuitAgentStream({
           createdAt: new Date().toISOString(),
         },
       ])
-      recordSteering.mutate(trimmed)
+
+      if (needsIntake) {
+        submitIntake.mutate(
+          { text: trimmed, mode: composerMode },
+          {
+            onSuccess: () => {
+              setPendingMessages((current) => removePendingMessage(current, trimmed))
+            },
+          },
+        )
+        return
+      }
+
+      if (freeform) {
+        sendChatMessage.mutate(trimmed, {
+          onSuccess: () => {
+            setPendingMessages((current) => removePendingMessage(current, trimmed))
+          },
+        })
+        return
+      }
+
+      recordSteering.mutate(trimmed, {
+        onSuccess: () => {
+          setPendingMessages((current) => removePendingMessage(current, trimmed))
+        },
+      })
     },
-    [recordSteering],
+    [composerMode, freeform, needsIntake, recordSteering, sendChatMessage, submitIntake],
   )
+
+  const handleStop = useCallback(() => {
+    if (!harnessSession) return
+    abortSession.mutate({
+      sessionId: harnessSession.sessionId,
+      workspacePath: harnessSession.workspacePath,
+    })
+  }, [abortSession, harnessSession])
 
   const handleStreamAction = useCallback(
     (action: StreamAction['action'], payload?: StreamAction['payload']): void => {
@@ -97,6 +184,77 @@ export function CircuitAgentStream({
           typeof optionLabel === 'string'
         ) {
           onResolveDecision?.(decisionId, optionId, optionLabel, phase)
+        }
+        return
+      }
+
+      if (action === 'permission.reply') {
+        const permissionId = payload?.permissionId
+        const sessionId = payload?.sessionId
+        const response = payload?.response
+        if (
+          typeof permissionId === 'string' &&
+          typeof sessionId === 'string' &&
+          (response === 'once' || response === 'always' || response === 'reject')
+        ) {
+          replyPermission.mutate(
+            {
+              permissionId,
+              sessionId,
+              response: response as PermissionReply,
+            },
+            {
+              onSuccess: () => {
+                setResolvedHarnessIds((current) =>
+                  markHarnessResolved(current, `permission-${permissionId}`),
+                )
+              },
+            },
+          )
+        }
+        return
+      }
+
+      if (action === 'question.reply') {
+        const requestId = payload?.requestId
+        const sessionId = payload?.sessionId
+        const selectedLabel = payload?.selectedLabel
+        if (
+          typeof requestId === 'string' &&
+          typeof sessionId === 'string' &&
+          typeof selectedLabel === 'string'
+        ) {
+          replyQuestion.mutate(
+            {
+              requestId,
+              sessionId,
+              answers: [[selectedLabel]],
+            },
+            {
+              onSuccess: () => {
+                setResolvedHarnessIds((current) =>
+                  markHarnessResolved(current, `question-${requestId}`),
+                )
+              },
+            },
+          )
+        }
+        return
+      }
+
+      if (action === 'question.reject') {
+        const requestId = payload?.requestId
+        if (typeof requestId === 'string') {
+          rejectQuestion.mutate(
+            { requestId },
+            {
+              onSuccess: () => {
+                setResolvedHarnessIds((current) =>
+                  markHarnessResolved(current, `question-${requestId}`),
+                )
+              },
+            },
+          )
         }
         return
       }
@@ -119,32 +277,64 @@ export function CircuitAgentStream({
         }
       }
     },
-    [applySteeringRevision, feedEvents, onResolveDecision],
+    [applySteeringRevision, feedEvents, onResolveDecision, rejectQuestion, replyPermission, replyQuestion],
   )
 
   const handleOpenReference = (target: ReferenceTarget): void => {
     onOpenReference?.(target)
   }
 
+  const intakePlaceholder =
+    composerMode === 'plan'
+      ? 'Describe the change — Plan mode bootstraps phases and artifacts'
+      : 'Message the agent — chat starts an OpenCode session on send'
+
+  const chatPlaceholder = 'Message the agent…'
+
   return (
     <aside className="flex h-full min-h-0 flex-col bg-card/30">
       <div className="shrink-0 border-b border-border px-3 py-2">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-          Agent stream
-        </p>
+        <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-2">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+            Agent stream
+          </p>
+          {agentRunning && (
+            <p className="text-[10px] font-medium text-primary">Agent running…</p>
+          )}
+        </div>
       </div>
 
-      <StreamList
-        items={items}
-        decisionResolutions={decisionResolutions}
-        onStreamAction={handleStreamAction}
-        onOpenReference={handleOpenReference}
-      />
+      <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col">
+        <StreamList
+          items={chatItems}
+          decisionResolutions={decisionResolutions}
+          emptyDescription={
+            needsIntake
+              ? intakePlaceholder
+              : undefined
+          }
+          onStreamAction={handleStreamAction}
+          onOpenReference={handleOpenReference}
+        />
 
-      <CircuitInputComposer
-        disabled={isRunning || recordSteering.isPending || applySteeringRevision.isPending}
-        onSend={handleSend}
-      />
+        <PendingActionsDock
+          items={pendingActions}
+          decisionResolutions={decisionResolutions}
+          onStreamAction={handleStreamAction}
+          onOpenReference={handleOpenReference}
+        />
+
+        <CircuitInputComposer
+          disabled={composerBusy && !agentRunning}
+          isRunning={agentRunning}
+          showModeSelector={needsIntake}
+          mode={composerMode}
+          onModeChange={setComposerMode}
+          placeholder={needsIntake ? intakePlaceholder : freeform ? chatPlaceholder : undefined}
+          onSend={handleSend}
+          onStop={harnessSession ? handleStop : undefined}
+        />
+      </div>
     </aside>
   )
 }
