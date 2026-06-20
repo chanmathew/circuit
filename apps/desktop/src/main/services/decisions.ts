@@ -7,24 +7,25 @@ import {
 
 import { getDb } from '../db.js'
 import { getTaskDetail, type TaskDetail } from './tasks.js'
-import { requiredDecisionsForPhaseFromRuns } from './feed-decisions.js'
+import { findRequiredDecision } from './feed-decisions.js'
 import { listPhaseRunsForTask } from '@circuit/db'
 
 export function resolveDecision(
   taskId: string,
-  phase: string,
+  _phase: string,
   decisionId: string,
   optionId: string,
   optionLabel: string,
 ): TaskDetail {
   const db = getDb()
   const phaseRuns = listPhaseRunsForTask(db, taskId)
-  const required = requiredDecisionsForPhaseFromRuns(taskId, phase, phaseRuns)
-  const decision = required.find((item) => item.decisionId === decisionId)
+  const found = findRequiredDecision(taskId, decisionId, phaseRuns)
 
-  if (!decision) {
+  if (!found) {
     throw new NotFoundError('Decision', decisionId)
   }
+
+  const { decision, phase: ownerPhase } = found
 
   const option = decision.options.find((item) => item.id === optionId)
   if (!option) {
@@ -35,7 +36,7 @@ export function resolveDecision(
   upsertDecisionResolution(db, {
     id: createId(),
     taskId,
-    phase,
+    phase: ownerPhase,
     decisionId,
     optionId,
     optionLabel: optionLabel || option.label,

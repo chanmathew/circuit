@@ -12,6 +12,7 @@ import {
   listPhaseRunsForTask,
   listPhasesForTask,
   listSlugsForRepo,
+  listWorkflowEventsForTask,
   listTasks,
   updatePhaseArtifactId,
   type ArtifactRow,
@@ -45,6 +46,7 @@ import {
 import { getDb } from '../db.js'
 import { buildFeedEvents } from './feed-events.js'
 import { decisionResolvedEvents, requiredDecisionsForPhaseFromRuns } from './feed-decisions.js'
+import { workflowEventsToFeedEvents } from './feed-workflow-events.js'
 
 export interface CreateTaskInput {
   repoId: string
@@ -260,6 +262,7 @@ function loadTaskDetail(taskId: string): TaskDetail | undefined {
   const artifacts = listArtifactsForTask(db, task.id)
   const phaseRuns = listPhaseRunsForTask(db, task.id)
   const decisionResolutionRows = listDecisionResolutionsForTask(db, task.id)
+  const workflowEventRows = listWorkflowEventsForTask(db, task.id)
   const feedEvents = [
     ...buildFeedEvents(
       task.id,
@@ -269,6 +272,7 @@ function loadTaskDetail(taskId: string): TaskDetail | undefined {
         startedAt: run.startedAt,
       })),
     ),
+    ...workflowEventsToFeedEvents(task.id, workflowEventRows),
     ...decisionResolvedEvents(
       task.id,
       decisionResolutionRows.map((row) => ({

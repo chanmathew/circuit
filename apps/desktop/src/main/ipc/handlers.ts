@@ -12,13 +12,17 @@ import {
   type RequestPhaseRevisionRequest,
   type ResolveDecisionRequest,
   type RunPhaseRequest,
+  type RecordSteeringRequest,
+  type ApplySteeringRevisionRequest,
 } from '../../shared/api.js'
 import { registerRepo, listRegisteredRepos } from '../services/repos.js'
 import { resolveDecision } from '../services/decisions.js'
 import { createTask, getTaskDetail, listAllTasks } from '../services/tasks.js'
+import { applySteeringRevision, recordSteering } from '../services/workflow-events.js'
 import {
   approvePhase,
   autoRunOnTaskCreate,
+  getActiveAgentAdapterName,
   requestPhaseRevision,
   runPhase,
 } from '../features/workflow/index.js'
@@ -37,6 +41,10 @@ function toIpcError(error: unknown): Error {
 
 export function registerIpcHandlers(): void {
   ipcMain.handle('circuit:ping', () => 'pong')
+
+  ipcMain.handle('circuit:app:getConfig', () => ({
+    agentAdapter: getActiveAgentAdapterName(),
+  }))
 
   ipcMain.handle('circuit:repos:list', () => {
     try {
@@ -140,4 +148,30 @@ export function registerIpcHandlers(): void {
       throw toIpcError(error)
     }
   })
+
+  ipcMain.handle('circuit:tasks:recordSteering', (_event, request: RecordSteeringRequest) => {
+    try {
+      return toTaskDto(recordSteering(request.taskId, request.text))
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
+  ipcMain.handle(
+    'circuit:tasks:applySteeringRevision',
+    (_event, request: ApplySteeringRevisionRequest) => {
+      try {
+        return toTaskDto(
+          applySteeringRevision(request.taskId, {
+            affectedPhase: request.affectedPhase,
+            optionId: request.optionId,
+            stalePhases: request.stalePhases,
+            steeringText: request.steeringText,
+          }),
+        )
+      } catch (error) {
+        throw toIpcError(error)
+      }
+    },
+  )
 }

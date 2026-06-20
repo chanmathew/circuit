@@ -5,11 +5,15 @@ import type {
   RequestPhaseRevisionRequest,
   ResolveDecisionRequest,
   RunPhaseRequest,
+  RecordSteeringRequest,
+  ApplySteeringRevisionRequest,
+  TaskStreamUpdate,
 } from '../../../shared/api.js'
 
 /** Typed wrapper over the preload bridge — single entry point for renderer IPC. */
 export const circuitApi = {
   ping: () => window.circuit.ping(),
+  getAppConfig: () => window.circuit.getAppConfig(),
   listRepos: () => window.circuit.listRepos(),
   addRepo: (path?: string) => window.circuit.addRepo(path),
   listTasks: (request?: ListTasksRequest) => window.circuit.listTasks(request),
@@ -20,4 +24,9 @@ export const circuitApi = {
   requestPhaseRevision: (request: RequestPhaseRevisionRequest) =>
     window.circuit.requestPhaseRevision(request),
   resolveDecision: (request: ResolveDecisionRequest) => window.circuit.resolveDecision(request),
+  recordSteering: (request: RecordSteeringRequest) => window.circuit.recordSteering(request),
+  applySteeringRevision: (request: ApplySteeringRevisionRequest) =>
+    window.circuit.applySteeringRevision(request),
+  onTaskStreamUpdate: (callback: (update: TaskStreamUpdate) => void) =>
+    window.circuit.onTaskStreamUpdate(callback),
 } as const

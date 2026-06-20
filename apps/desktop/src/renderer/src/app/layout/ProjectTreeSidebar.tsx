@@ -61,6 +61,12 @@ export function ProjectTreeSidebar({
   const repos = reposQuery.data ?? []
   const tasks = tasksQuery.data ?? []
 
+  const listError =
+    reposQuery.isError || tasksQuery.isError
+      ? [reposQuery.error, tasksQuery.error].find((e) => e instanceof Error)?.message ??
+        'Failed to load projects'
+      : null
+
   const tasksByRepo = useMemo(() => {
     const map = new Map<string, TaskSummaryDto[]>()
     for (const repo of repos) {
@@ -107,7 +113,13 @@ export function ProjectTreeSidebar({
 
       <ScrollArea className="flex-1 py-2">
         <div className="space-y-1 px-2">
-          {repos.length === 0 && !reposQuery.isLoading && (
+          {listError && (
+            <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+              {listError}
+            </div>
+          )}
+
+          {repos.length === 0 && !reposQuery.isLoading && !listError && (
             <div className="rounded-md border border-dashed border-border px-3 py-4 text-center">
               <p className="text-xs text-muted-foreground">No repos yet</p>
               <Button

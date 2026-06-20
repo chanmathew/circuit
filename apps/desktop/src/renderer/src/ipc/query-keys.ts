@@ -1,5 +1,8 @@
 /** TanStack Query key factory for Circuit IPC data. */
 export const queryKeys = {
+  app: {
+    config: ['app', 'config'] as const,
+  },
   repos: {
     all: ['repos'] as const,
   },

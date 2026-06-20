@@ -1,6 +1,7 @@
 import { Badge } from '@circuit/ui'
 
 import type { TaskDto } from '../../../../shared/api.js'
+import { useAppConfig } from '../app/hooks/useAppConfig.js'
 import { PhaseRail } from './PhaseRail.js'
 
 export interface TaskWorkbenchHeaderProps {
@@ -12,6 +13,9 @@ export function TaskWorkbenchHeader({
   task,
   actions,
 }: TaskWorkbenchHeaderProps): React.ReactElement {
+  const appConfig = useAppConfig()
+  const agentAdapter = appConfig.data?.agentAdapter ?? '…'
+
   return (
     <header className="shrink-0 border-b border-border bg-card">
       <div className="flex items-center gap-3 px-4 py-2.5">
@@ -32,6 +36,9 @@ export function TaskWorkbenchHeader({
           <p className="text-xs text-muted-foreground">No workflow phases</p>
         )}
         <div className="ml-auto flex shrink-0 items-center gap-2">
+          <Badge variant="secondary" className="font-mono text-[10px] lowercase">
+            {agentAdapter}
+          </Badge>
           <Badge variant="outline" className="text-[10px] capitalize">
             {task.status.replace(/_/g, ' ')}
           </Badge>

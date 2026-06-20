@@ -110,9 +110,12 @@ export function ActivityGroupItemView({ item }: { item: ActivityGroupItem }): Re
   )
 }
 
-function decisionIdFromItem(item: ActionCardItem): string | undefined {
+function decisionMetaFromItem(item: ActionCardItem): { decisionId?: string; phase?: string } {
   const payload = item.actions.find((action) => action.action === 'decision.resolve')?.payload
-  return typeof payload?.decisionId === 'string' ? payload.decisionId : undefined
+  return {
+    decisionId: typeof payload?.decisionId === 'string' ? payload.decisionId : undefined,
+    phase: typeof payload?.phase === 'string' ? payload.phase : undefined,
+  }
 }
 
 export function ActionCardItemView({
@@ -122,18 +125,31 @@ export function ActionCardItemView({
   item: ActionCardItem
   context: StreamItemContext
 }): React.ReactElement {
-  const decisionId = decisionIdFromItem(item)
+  const { decisionId, phase } = decisionMetaFromItem(item)
   const resolution = decisionId
     ? context.decisionResolutions?.find((entry) => entry.decisionId === decisionId)
     : undefined
 
   const handleOption = (optionId: string, optionLabel: string): void => {
-    if (!decisionId) return
-    context.onStreamAction?.('decision.resolve', {
-      decisionId,
-      optionId,
-      optionLabel,
-    })
+    if (decisionId) {
+      context.onStreamAction?.('decision.resolve', {
+        decisionId,
+        optionId,
+        optionLabel,
+        phase,
+      })
+      return
+    }
+
+    const revisionAction = item.actions.find(
+      (action) =>
+        action.action === 'revision.infer' &&
+        typeof action.payload?.optionId === 'string' &&
+        action.payload.optionId === optionId,
+    )
+    if (revisionAction) {
+      context.onStreamAction?.('revision.infer', revisionAction.payload)
+    }
   }
 
   const handleAction = (action: StreamAction): void => {

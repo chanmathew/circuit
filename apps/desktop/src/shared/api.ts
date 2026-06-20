@@ -1,5 +1,5 @@
 import type { ArtifactRow, PhaseRow, RepoRow, TaskRow } from '@circuit/db'
-import type { CircuitEvent, DecisionRequiredPayload } from '@circuit/protocol'
+import type { CircuitEvent, DecisionRequiredPayload, StreamActivityEvent } from '@circuit/protocol'
 import { getPhaseLabel } from '@circuit/workflow'
 import type { PhaseStatus } from '@circuit/workflow'
 
@@ -56,6 +56,47 @@ export interface TaskDto extends TaskRow {
   decisionResolutions: DecisionResolutionDto[]
   /** Required decisions from latest phase run — same source as server approve gate. */
   requiredDecisionsByPhase: Record<string, DecisionRequiredPayload[]>
+}
+
+export type TaskStreamUpdate =
+  | {
+      taskId: string
+      type: 'activity'
+      activity: StreamActivityEvent
+    }
+  | {
+      taskId: string
+      type: 'phase_run_started'
+      phaseName: string
+      phaseRunId: string
+    }
+  | {
+      taskId: string
+      type: 'phase_run_completed'
+      phaseName: string
+      phaseRunId: string
+    }
+  | {
+      taskId: string
+      type: 'phase_run_failed'
+      phaseName: string
+      phaseRunId: string
+      error: string
+    }
+
+export interface ApplySteeringRevisionRequest {
+  taskId: string
+  affectedPhase: string
+  optionId: string
+  stalePhases: string[]
+  steeringText?: string
+}
+
+export { TASK_STREAM_UPDATE_CHANNEL } from './channels.js'
+
+export interface RecordSteeringRequest {
+  taskId: string
+  text: string
 }
 
 export interface RunPhaseRequest {
@@ -184,6 +225,7 @@ export function toTaskDto(
 
 export interface CircuitApi {
   ping: () => Promise<string>
+  getAppConfig: () => Promise<{ agentAdapter: string }>
   listRepos: () => Promise<RepoDto[]>
   addRepo: (path?: string) => Promise<RepoDto | null>
   listTasks: (request?: ListTasksRequest) => Promise<TaskSummaryDto[]>
@@ -193,4 +235,7 @@ export interface CircuitApi {
   approvePhase: (request: ApprovePhaseRequest) => Promise<TaskDto>
   requestPhaseRevision: (request: RequestPhaseRevisionRequest) => Promise<TaskDto>
   resolveDecision: (request: ResolveDecisionRequest) => Promise<TaskDto>
+  recordSteering: (request: RecordSteeringRequest) => Promise<TaskDto>
+  applySteeringRevision: (request: ApplySteeringRevisionRequest) => Promise<TaskDto>
+  onTaskStreamUpdate: (callback: (update: TaskStreamUpdate) => void) => () => void
 }

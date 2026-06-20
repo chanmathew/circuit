@@ -1,10 +1,12 @@
 import { useMemo } from 'react'
 
-import { eventsToStreamItems, type StreamItem } from '@circuit/protocol'
+import { eventsToStreamItems, mergeLiveActivities, type StreamItem } from '@circuit/protocol'
+import type { StreamActivityEvent } from '@circuit/protocol'
 
 import type { FeedEventDto } from '../../../../../shared/api.js'
 
-export interface LocalUserMessage {
+/** Optimistic composer echo — cleared once steering appears in feedEvents. */
+export type LocalUserMessage = {
   id: string
   text: string
   createdAt: string
@@ -12,14 +14,24 @@ export interface LocalUserMessage {
 
 export function useTaskStreamItems(
   feedEvents: FeedEventDto[],
-  localMessages: LocalUserMessage[],
+  pendingUserMessages: LocalUserMessage[] = [],
+  liveActivities: StreamActivityEvent[] = [],
 ): StreamItem[] {
-  return useMemo(
+  const persistedItems = useMemo(
     () =>
       eventsToStreamItems({
         events: feedEvents,
-        userMessages: localMessages,
+        userMessages: pendingUserMessages.map((message) => ({
+          id: message.id,
+          text: message.text,
+          createdAt: message.createdAt,
+        })),
       }),
-    [feedEvents, localMessages],
+    [feedEvents, pendingUserMessages],
+  )
+
+  return useMemo(
+    () => mergeLiveActivities(persistedItems, liveActivities),
+    [persistedItems, liveActivities],
   )
 }

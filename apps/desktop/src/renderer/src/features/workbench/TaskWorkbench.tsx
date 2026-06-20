@@ -149,12 +149,14 @@ export function TaskWorkbench({
       <WorkbenchPanelLayout
         stream={
           <CircuitAgentStream
+            taskId={task.id}
             feedEvents={task.feedEvents}
-            decisionResolutions={phaseResolutions}
+            decisionResolutions={task.decisionResolutions}
             isRunning={isRunning}
-            onResolveDecision={(decisionId, optionId, optionLabel) => {
-              if (!actionPhase) return
-              onResolveDecision(actionPhase.name, decisionId, optionId, optionLabel)
+            onResolveDecision={(decisionId, optionId, optionLabel, phase) => {
+              const resolvePhase = phase ?? actionPhase?.name
+              if (!resolvePhase) return
+              onResolveDecision(resolvePhase, decisionId, optionId, optionLabel)
             }}
             onOpenReference={handleOpenReference}
           />

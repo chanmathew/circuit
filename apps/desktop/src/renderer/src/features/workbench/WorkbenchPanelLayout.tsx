@@ -30,13 +30,13 @@ export function WorkbenchPanelLayout({
 }: WorkbenchPanelLayoutProps): React.ReactElement {
   return (
     <PanelGroup direction="horizontal" className="min-h-0 flex-1">
-      <Panel defaultSize={24} minSize={16} maxSize={36} className="min-h-0 min-w-0">
+      <Panel defaultSize={32} minSize={18} maxSize={42} className="min-h-0 min-w-0">
         {stream}
       </Panel>
 
       <ResizeHandle />
 
-      <Panel defaultSize={51} minSize={32} className="min-h-0 min-w-0">
+      <Panel defaultSize={43} minSize={28} className="min-h-0 min-w-0">
         {content}
       </Panel>
 

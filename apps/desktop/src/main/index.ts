@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { closeDb, initDb } from './db.js'
+import { getActiveAgentAdapterName } from './features/workflow/adapter.js'
 import { registerIpcHandlers } from './ipc/handlers.js'
 
 const isDev = !app.isPackaged
@@ -43,6 +44,7 @@ function createWindow(): void {
 void app.whenReady().then(() => {
   initDb()
   registerIpcHandlers()
+  console.info(`[circuit] agent adapter: ${getActiveAgentAdapterName()}`)
   createWindow()
 
   app.on('activate', () => {

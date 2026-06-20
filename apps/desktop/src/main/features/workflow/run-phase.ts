@@ -1,6 +1,8 @@
 import { writeFileSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 
+import type { StreamActivityEvent } from '@circuit/protocol'
+
 import {
   getArtifactByTaskAndPhase,
   getPhaseByTaskAndName,
@@ -21,8 +23,14 @@ import {
 } from '@circuit/workflow/context-pack'
 
 import { getDb } from '../../db.js'
+import { broadcastTaskStreamUpdate } from '../../ipc/task-stream-broadcast.js'
 import { getTaskDetail, type TaskDetail } from '../../services/tasks.js'
 import { RUNNABLE_PHASE_STATUSES, workflowAdapter } from './adapter.js'
+
+function failureMessage(error: unknown): string {
+  if (error instanceof Error) return error.message
+  return String(error)
+}
 
 export async function runPhase(taskId: string, phaseName?: string): Promise<TaskDetail> {
   await workflowAdapter.connect()
@@ -60,67 +68,125 @@ export async function runPhase(taskId: string, phaseName?: string): Promise<Task
 
   const contextSection = serializeContextPackForPrompt(contextPack)
   const inputPrompt = buildPhasePrompt(targetName, contextSection)
-  const sessionId = randomUUID()
+  const sessionId = workflowAdapter.capabilities.ownsSessionId ? '' : randomUUID()
 
   const now = new Date().toISOString()
+  const runId = createId()
+  const startedAt = now
+  const previousPhaseStatus = phase.status as PhaseStatus
+  const previousTaskStatus = task.status
+
   updatePhase(db, phase.id, { status: 'running' })
   updateTask(db, taskId, { status: 'running', currentPhase: targetName, updatedAt: now })
 
-  const runId = createId()
-  const startedAt = now
+  broadcastTaskStreamUpdate({
+    taskId,
+    type: 'phase_run_started',
+    phaseName: targetName,
+    phaseRunId: runId,
+  })
 
-  const result = await workflowAdapter.runPhase(
-    {
+  try {
+    const result = await workflowAdapter.runPhase(
+      {
+        taskId,
+        phase: targetName,
+        prompt: inputPrompt,
+        workspacePath: task.workspacePath,
+        readOnly: targetName !== 'implement',
+        sessionId,
+        contextPack: {
+          hash: contextPack.hash,
+          files: contextPack.files,
+        },
+      },
+      (event) => {
+        const activity: StreamActivityEvent = {
+          type: event.type,
+          timestamp: event.timestamp,
+          content: event.content,
+          metadata: event.metadata,
+        }
+        broadcastTaskStreamUpdate({ taskId, type: 'activity', activity })
+      },
+    )
+
+    const artifactContent = result.artifactContent ?? `# ${targetName}\n\n_Awaiting agent run._\n`
+
+    writeFileSync(artifact.path, artifactContent, 'utf8')
+
+    updateArtifact(db, artifact.id, {
+      content: artifactContent,
+      status: 'needs_review',
+      updatedAt: new Date().toISOString(),
+    })
+
+    updatePhase(db, phase.id, { status: 'needs_review' })
+    updateTask(db, taskId, {
+      status: 'needs_review',
+      currentPhase: targetName,
+      updatedAt: new Date().toISOString(),
+    })
+
+    insertPhaseRun(db, {
+      id: runId,
       taskId,
       phase: targetName,
-      prompt: inputPrompt,
-      workspacePath: task.workspacePath,
-      readOnly: targetName !== 'implement',
-      sessionId,
-      contextPack: {
-        hash: contextPack.hash,
-        files: contextPack.files,
-      },
-    },
-    () => {
-      // Activity events are persisted via transcript + feed rebuild for MVP.
-    },
-  )
+      agent: workflowAdapter.name,
+      model: result.modelLabel ?? workflowAdapter.name,
+      status: 'completed',
+      inputPrompt,
+      transcript: result.transcript,
+      filesRead: JSON.stringify(result.filesRead),
+      filesChanged: JSON.stringify(result.filesChanged),
+      commandsRun: JSON.stringify(result.commandsRun),
+      sessionId: result.sessionId,
+      contextPackHash: result.contextPackHash,
+      startedAt,
+      completedAt: new Date().toISOString(),
+    })
 
-  const artifactContent = result.artifactContent ?? `# ${targetName}\n\n_Awaiting agent run._\n`
+    broadcastTaskStreamUpdate({
+      taskId,
+      type: 'phase_run_completed',
+      phaseName: targetName,
+      phaseRunId: runId,
+    })
 
-  writeFileSync(artifact.path, artifactContent, 'utf8')
+    return getTaskDetail(taskId)
+  } catch (error) {
+    const failedAt = new Date().toISOString()
+    const message = failureMessage(error)
 
-  updateArtifact(db, artifact.id, {
-    content: artifactContent,
-    status: 'needs_review',
-    updatedAt: new Date().toISOString(),
-  })
+    updatePhase(db, phase.id, { status: previousPhaseStatus })
+    updateTask(db, taskId, { status: previousTaskStatus, updatedAt: failedAt })
 
-  updatePhase(db, phase.id, { status: 'needs_review' })
-  updateTask(db, taskId, {
-    status: 'needs_review',
-    currentPhase: targetName,
-    updatedAt: new Date().toISOString(),
-  })
+    insertPhaseRun(db, {
+      id: runId,
+      taskId,
+      phase: targetName,
+      agent: workflowAdapter.name,
+      model: workflowAdapter.name,
+      status: 'failed',
+      inputPrompt,
+      transcript: message,
+      filesRead: JSON.stringify([]),
+      filesChanged: JSON.stringify([]),
+      commandsRun: JSON.stringify([]),
+      sessionId: sessionId || null,
+      contextPackHash: contextPack.hash,
+      startedAt,
+      completedAt: failedAt,
+    })
 
-  insertPhaseRun(db, {
-    id: runId,
-    taskId,
-    phase: targetName,
-    agent: workflowAdapter.name,
-    model: 'mock',
-    status: 'completed',
-    inputPrompt,
-    transcript: result.transcript,
-    filesRead: JSON.stringify(result.filesRead),
-    filesChanged: JSON.stringify(result.filesChanged),
-    commandsRun: JSON.stringify(result.commandsRun),
-    sessionId: result.sessionId,
-    contextPackHash: result.contextPackHash,
-    startedAt,
-    completedAt: new Date().toISOString(),
-  })
+    broadcastTaskStreamUpdate({
+      taskId,
+      type: 'phase_run_failed',
+      phaseName: targetName,
+      phaseRunId: runId,
+      error: message,
+    })
 
-  return getTaskDetail(taskId)
+    throw error
+  }
 }

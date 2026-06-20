@@ -1,4 +1,4 @@
-export { workflowAdapter, RUNNABLE_PHASE_STATUSES } from './adapter.js'
+export { workflowAdapter, getActiveAgentAdapterName, RUNNABLE_PHASE_STATUSES } from './adapter.js'
 export { assertCanApprove } from './approve-guard.js'
 export { runPhase } from './run-phase.js'
 export { approvePhase } from './approve-phase.js'
