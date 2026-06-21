@@ -64,9 +64,9 @@ Composer placeholder: `Ask a question or tell the agent what to change…`
 
 MVP revision heuristic: any non-question message during `needs_review` triggers revision. Smarter intent classification is deferred.
 
-### 5. Content action bar scope
+### 5. Content panel scope
 
-The content action bar retains **Run phase** only (ready / needs_revision). Approve and revision form controls are removed — review gates live in the workflow panel and chat.
+The content panel is read-only — artifacts, diffs, checks, and files for review. All workflow actions (Run phase, proceed, discard) live in the workflow panel; stream cards offer View + proceed shortcuts only.
 
 ## Consequences
 

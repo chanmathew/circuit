@@ -92,11 +92,11 @@ Workflow
     └── run title, status badge, dates, [View summary]
 ```
 
-When `not_started`: show **Enable workflow** CTA only (no Past section unless history exists from prior data).
+When `not_started` or terminal (no active run): show **Start workflow** CTA at top of panel. Inspector panel is always reachable via a toggle in the chat column (default collapsed).
 
-When active: **Current workflow** expanded; Past collapsed list below.
+When active: **Current workflow** expanded; Past list below (row tap drills into read-only detail with back navigation).
 
-When no active run but past runs exist: Past section primary; **Enable workflow** or **Start follow-up** at top.
+When no active run but past runs exist: **Start workflow** seeds from prior context; Past section lists completed/cancelled runs.
 
 ### 5. One active workflow per task
 
@@ -136,7 +136,7 @@ This artifact is the primary “View summary” target for past completed runs. 
 
 It does **not** reopen or reset the prior run’s phase rows. Prior run remains in Past workflows unchanged.
 
-Rename user-facing copy: ~~Start new workflow~~ → **Start follow-up workflow** when a completed/cancelled run exists; **Enable workflow** when none ever started.
+Rename user-facing copy: ~~Start new workflow~~ → **Start workflow** (follow-up seeds from prior runs when history exists; fresh enable when none).
 
 ### 8. Task-level workflow_status mapping (transitional)
 

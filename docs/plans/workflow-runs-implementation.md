@@ -298,7 +298,7 @@ Invoked from `approve-phase.ts` on final approve:
 | Event | Card |
 |-------|------|
 | `workflow:completed` | Workflow complete — [View summary] [Start follow-up] |
-| `workflow:cancelled` | Workflow cancelled — [View attempt] [Start follow-up] |
+| `workflow:cancelled` | _(suppressed — panel-only; browse Past workflows)_ |
 | Chat intent after terminal run | Structured follow-up? — [Start follow-up] [Just discuss] |
 | `workflow:follow_up_started` | Follow-up workflow started — [Open overview] |
 
