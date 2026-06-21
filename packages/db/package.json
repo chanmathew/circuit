@@ -12,8 +12,9 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "node scripts/migrate.mjs",
-    "db:studio": "pnpm rebuild better-sqlite3 && drizzle-kit studio"
+    "db:migrate": "pnpm rebuild better-sqlite3 && drizzle-kit migrate && pnpm --filter desktop rebuild:native",
+    "db:reset": "node scripts/reset-dev-db.mjs && pnpm rebuild better-sqlite3 && drizzle-kit migrate && pnpm --filter desktop rebuild:native",
+    "db:studio": "pnpm rebuild better-sqlite3 && drizzle-kit studio && pnpm --filter desktop rebuild:native"
   },
   "dependencies": {
     "better-sqlite3": "catalog:",

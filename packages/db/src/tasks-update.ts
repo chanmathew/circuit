@@ -9,7 +9,20 @@ export function updateTask(
   db: CircuitDb,
   taskId: string,
   patch: Partial<
-    Pick<TaskRow, 'status' | 'currentPhase' | 'updatedAt' | 'title' | 'description' | 'workflowType'>
+    Pick<
+      TaskRow,
+      | 'status'
+      | 'currentPhase'
+      | 'updatedAt'
+      | 'title'
+      | 'description'
+      | 'workflowType'
+      | 'interactionMode'
+      | 'workflowStatus'
+      | 'pausedAt'
+      | 'workspaceStrategy'
+      | 'workspacePath'
+    >
   >,
 ): TaskRow | undefined {
   db.update(tasks).set(patch).where(eq(tasks.id, taskId)).run()

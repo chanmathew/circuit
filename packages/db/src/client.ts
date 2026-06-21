@@ -22,9 +22,11 @@ export function createDb({ dbPath, migrationsFolder }: CreateDbOptions): {
 
   const sqlite = new Database(dbPath)
   sqlite.pragma('journal_mode = WAL')
-  sqlite.pragma('foreign_keys = ON')
-
+  // Table-rebuild migrations (e.g. default changes) must drop parent tables while
+  // child FKs exist — disable for the whole migrate pass, then re-enable.
+  sqlite.pragma('foreign_keys = OFF')
   migrateDb(sqlite, migrationsFolder)
+  sqlite.pragma('foreign_keys = ON')
 
   const db = drizzle(sqlite, { schema })
 

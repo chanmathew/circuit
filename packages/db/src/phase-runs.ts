@@ -27,3 +27,12 @@ export function listPhaseRunsForTask(db: CircuitDb, taskId: string): PhaseRunRow
     .orderBy(asc(phaseRuns.startedAt))
     .all()
 }
+
+export function listPhaseRunsForWorkflowRun(db: CircuitDb, workflowRunId: string): PhaseRunRow[] {
+  return db
+    .select()
+    .from(phaseRuns)
+    .where(eq(phaseRuns.workflowRunId, workflowRunId))
+    .orderBy(asc(phaseRuns.startedAt))
+    .all()
+}

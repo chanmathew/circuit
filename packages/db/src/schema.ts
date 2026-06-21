@@ -23,6 +23,26 @@ export const tasks = sqliteTable('tasks', {
   branchName: text('branch_name').notNull(),
   workspacePath: text('workspace_path').notNull(),
   workspaceStrategy: text('workspace_strategy').notNull(),
+  interactionMode: text('interaction_mode').notNull().default('chat'),
+  workflowStatus: text('workflow_status').notNull().default('not_started'),
+  pausedAt: text('paused_at'),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull(),
+})
+
+/** One structured workflow attempt per task. At most one active run per task (app-enforced). */
+export const workflowRuns = sqliteTable('workflow_runs', {
+  id: text('id').primaryKey(),
+  taskId: text('task_id')
+    .notNull()
+    .references(() => tasks.id),
+  status: text('status').notNull(), // active | completed | cancelled
+  workflowType: text('workflow_type').notNull(),
+  title: text('title').notNull(),
+  startedAt: text('started_at').notNull(),
+  completedAt: text('completed_at'),
+  cancelledAt: text('cancelled_at'),
+  currentPhaseId: text('current_phase_id'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 })
@@ -32,6 +52,7 @@ export const phases = sqliteTable('phases', {
   taskId: text('task_id')
     .notNull()
     .references(() => tasks.id),
+  workflowRunId: text('workflow_run_id').references(() => workflowRuns.id),
   name: text('name').notNull(),
   status: text('status').notNull(),
   order: integer('order').notNull(),
@@ -45,6 +66,7 @@ export const artifacts = sqliteTable('artifacts', {
   taskId: text('task_id')
     .notNull()
     .references(() => tasks.id),
+  workflowRunId: text('workflow_run_id').references(() => workflowRuns.id),
   phase: text('phase').notNull(),
   path: text('path').notNull(),
   title: text('title').notNull(),
@@ -60,6 +82,7 @@ export const phaseRuns = sqliteTable('phase_runs', {
   taskId: text('task_id')
     .notNull()
     .references(() => tasks.id),
+  workflowRunId: text('workflow_run_id').references(() => workflowRuns.id),
   phase: text('phase').notNull(),
   agent: text('agent').notNull(),
   model: text('model').notNull(),
@@ -80,6 +103,7 @@ export const decisionResolutions = sqliteTable('decision_resolutions', {
   taskId: text('task_id')
     .notNull()
     .references(() => tasks.id),
+  workflowRunId: text('workflow_run_id').references(() => workflowRuns.id),
   phase: text('phase').notNull(),
   decisionId: text('decision_id').notNull(),
   optionId: text('option_id').notNull(),
@@ -92,6 +116,7 @@ export const workflowEvents = sqliteTable('workflow_events', {
   taskId: text('task_id')
     .notNull()
     .references(() => tasks.id),
+  workflowRunId: text('workflow_run_id').references(() => workflowRuns.id),
   phaseRunId: text('phase_run_id'),
   actor: text('actor').notNull(),
   type: text('type').notNull(),
@@ -118,6 +143,7 @@ export const validationRuns = sqliteTable('validation_runs', {
   taskId: text('task_id')
     .notNull()
     .references(() => tasks.id),
+  workflowRunId: text('workflow_run_id').references(() => workflowRuns.id),
   command: text('command').notNull(),
   exitCode: integer('exit_code'),
   output: text('output').notNull(),

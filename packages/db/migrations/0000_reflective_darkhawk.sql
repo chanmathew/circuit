@@ -12,6 +12,17 @@ CREATE TABLE `artifacts` (
 	FOREIGN KEY (`task_id`) REFERENCES `tasks`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
+CREATE TABLE `decision_resolutions` (
+	`id` text PRIMARY KEY NOT NULL,
+	`task_id` text NOT NULL,
+	`phase` text NOT NULL,
+	`decision_id` text NOT NULL,
+	`option_id` text NOT NULL,
+	`option_label` text NOT NULL,
+	`resolved_at` text NOT NULL,
+	FOREIGN KEY (`task_id`) REFERENCES `tasks`(`id`) ON UPDATE no action ON DELETE no action
+);
+--> statement-breakpoint
 CREATE TABLE `phase_runs` (
 	`id` text PRIMARY KEY NOT NULL,
 	`task_id` text NOT NULL,
@@ -24,6 +35,8 @@ CREATE TABLE `phase_runs` (
 	`files_read` text NOT NULL,
 	`files_changed` text NOT NULL,
 	`commands_run` text NOT NULL,
+	`session_id` text,
+	`context_pack_hash` text,
 	`started_at` text NOT NULL,
 	`completed_at` text,
 	FOREIGN KEY (`task_id`) REFERENCES `tasks`(`id`) ON UPDATE no action ON DELETE no action
@@ -67,6 +80,9 @@ CREATE TABLE `tasks` (
 	`branch_name` text NOT NULL,
 	`workspace_path` text NOT NULL,
 	`workspace_strategy` text NOT NULL,
+	`interaction_mode` text DEFAULT 'chat' NOT NULL,
+	`workflow_status` text DEFAULT 'not_started' NOT NULL,
+	`paused_at` text,
 	`created_at` text NOT NULL,
 	`updated_at` text NOT NULL,
 	FOREIGN KEY (`repo_id`) REFERENCES `repos`(`id`) ON UPDATE no action ON DELETE no action
@@ -80,6 +96,20 @@ CREATE TABLE `validation_runs` (
 	`output` text NOT NULL,
 	`started_at` text NOT NULL,
 	`completed_at` text,
+	FOREIGN KEY (`task_id`) REFERENCES `tasks`(`id`) ON UPDATE no action ON DELETE no action
+);
+--> statement-breakpoint
+CREATE TABLE `workflow_events` (
+	`id` text PRIMARY KEY NOT NULL,
+	`task_id` text NOT NULL,
+	`phase_run_id` text,
+	`actor` text NOT NULL,
+	`type` text NOT NULL,
+	`summary` text,
+	`payload_json` text NOT NULL,
+	`external_session_id` text,
+	`external_message_id` text,
+	`created_at` text NOT NULL,
 	FOREIGN KEY (`task_id`) REFERENCES `tasks`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
