@@ -322,9 +322,51 @@ export function toTaskDto(
   }
 }
 
+export interface WorkspaceRootRequest {
+  workspacePath: string
+}
+
+/** @deprecated Use WorkspaceRootRequest */
+export type ListWorkspacePathsRequest = WorkspaceRootRequest
+
+export interface ReadWorkspaceFileRequest extends WorkspaceRootRequest {
+  path: string
+}
+
+export interface WorkspaceFileDto {
+  content: string
+  encoding: 'utf8' | 'binary'
+  size: number
+}
+
+export interface GitFileChangeDto {
+  path: string
+  status: 'added' | 'modified' | 'deleted' | 'renamed' | 'untracked'
+}
+
+export interface GitStatusDto {
+  branch: string
+  clean: boolean
+  changes: GitFileChangeDto[]
+}
+
+export interface GitDiffRequest extends WorkspaceRootRequest {
+  paths?: string[]
+  staged?: boolean
+}
+
+export interface OpenWorkspaceFileRequest extends WorkspaceRootRequest {
+  path: string
+}
+
 export interface CircuitApi {
   ping: () => Promise<string>
   getAppConfig: () => Promise<{ agentAdapter: string }>
+  listWorkspacePaths: (request: WorkspaceRootRequest) => Promise<string[]>
+  readWorkspaceFile: (request: ReadWorkspaceFileRequest) => Promise<WorkspaceFileDto>
+  getGitStatus: (request: WorkspaceRootRequest) => Promise<GitStatusDto>
+  getGitDiff: (request: GitDiffRequest) => Promise<string>
+  openWorkspaceFile: (request: OpenWorkspaceFileRequest) => Promise<void>
   listRepos: () => Promise<RepoDto[]>
   addRepo: (path?: string) => Promise<RepoDto | null>
   listTasks: (request?: ListTasksRequest) => Promise<TaskSummaryDto[]>

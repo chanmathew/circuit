@@ -1,6 +1,8 @@
-import { dialog, ipcMain } from 'electron'
+import { dialog, ipcMain, shell } from 'electron'
 
-import { CircuitError } from '@circuit/shared'
+import { getDiff, getStatus } from '@circuit/git'
+
+import { CircuitError, ValidationError } from '@circuit/shared'
 
 import {
   toArtifactDto,
@@ -28,7 +30,18 @@ import {
   type DiscardWorkflowDraftRequest,
   type GetWorkflowRunRequest,
   type StartFollowUpWorkflowRequest,
+  type GitDiffRequest,
+  type WorkspaceRootRequest,
+  type OpenWorkspaceFileRequest,
+  type ReadWorkspaceFileRequest,
 } from '../../shared/api.js'
+import {
+  listWorkspacePaths,
+  readWorkspaceFile,
+  resolveWorkspaceFileForOpen,
+  validateWorkspaceRelativePaths,
+} from '../services/workspace-files.js'
+import { requireRegisteredWorkspacePath } from '../services/require-registered-workspace.js'
 import { registerRepo, listRegisteredRepos } from '../services/repos.js'
 import { resolveDecision } from '../services/decisions.js'
 import { createDraftTask, getArtifactDetail, getTaskDetail, getWorkflowRunDetail, listAllTasks } from '../services/tasks.js'
@@ -371,6 +384,62 @@ export function registerIpcHandlers(): void {
         sessionId: request.sessionId,
         workspacePath: request.workspacePath,
       })
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
+  ipcMain.handle('circuit:workspace:listPaths', (_event, request: WorkspaceRootRequest) => {
+    try {
+      const workspacePath = requireRegisteredWorkspacePath(request.workspacePath)
+      return listWorkspacePaths(workspacePath)
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
+  ipcMain.handle('circuit:workspace:readFile', (_event, request: ReadWorkspaceFileRequest) => {
+    try {
+      const workspacePath = requireRegisteredWorkspacePath(request.workspacePath)
+      return readWorkspaceFile(workspacePath, request.path)
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
+  ipcMain.handle('circuit:git:status', async (_event, request: WorkspaceRootRequest) => {
+    try {
+      const workspacePath = requireRegisteredWorkspacePath(request.workspacePath)
+      return getStatus(workspacePath)
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
+  ipcMain.handle('circuit:git:diff', async (_event, request: GitDiffRequest) => {
+    try {
+      const workspacePath = requireRegisteredWorkspacePath(request.workspacePath)
+      const paths = request.paths?.length
+        ? validateWorkspaceRelativePaths(workspacePath, request.paths)
+        : undefined
+      return getDiff({
+        cwd: workspacePath,
+        paths,
+        staged: request.staged,
+      })
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
+  ipcMain.handle('circuit:shell:openWorkspaceFile', async (_event, request: OpenWorkspaceFileRequest) => {
+    try {
+      const workspacePath = requireRegisteredWorkspacePath(request.workspacePath)
+      const absolutePath = await resolveWorkspaceFileForOpen(workspacePath, request.path)
+      const error = await shell.openPath(absolutePath)
+      if (error) {
+        throw new ValidationError(`Could not open file: ${error}`)
+      }
     } catch (error) {
       throw toIpcError(error)
     }

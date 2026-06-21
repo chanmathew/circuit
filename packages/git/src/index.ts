@@ -1,6 +1,6 @@
 export interface GitFileChange {
   path: string
-  status: 'added' | 'modified' | 'deleted' | 'renamed'
+  status: 'added' | 'modified' | 'deleted' | 'renamed' | 'untracked'
 }
 
 export interface GitStatus {
@@ -20,13 +20,9 @@ export interface WorktreeOptions {
   worktreePath: string
 }
 
-export async function getStatus(_cwd: string): Promise<GitStatus> {
-  throw new Error('Git status not yet implemented')
-}
-
-export async function getDiff(_options: DiffOptions): Promise<string> {
-  throw new Error('Git diff not yet implemented')
-}
+export { getStatus } from './status.js'
+export { countUnifiedDiffLines, getDiff, type GetDiffOptions } from './diff.js'
+export { toPierreGitStatusEntries, type PierreGitStatusEntry } from './pierre-git-status.js'
 
 export async function createWorktree(_options: WorktreeOptions): Promise<void> {
   throw new Error('Git worktree creation not yet implemented')

@@ -19,6 +19,10 @@ import type {
   ApplySteeringRevisionRequest,
   StartPhaseRequest,
   SubmitTaskIntakeRequest,
+  GitDiffRequest,
+  ListWorkspacePathsRequest,
+  OpenWorkspaceFileRequest,
+  ReadWorkspaceFileRequest,
   TaskStreamUpdate,
 } from '../../../shared/api.js'
 
@@ -63,6 +67,14 @@ export const circuitApi = {
   replyQuestion: (request: ReplyQuestionRequest) => window.circuit.replyQuestion(request),
   rejectQuestion: (request: RejectQuestionRequest) => window.circuit.rejectQuestion(request),
   abortSession: (request: AbortSessionRequest) => window.circuit.abortSession(request),
+  listWorkspacePaths: (request: ListWorkspacePathsRequest) =>
+    window.circuit.listWorkspacePaths(request),
+  readWorkspaceFile: (request: ReadWorkspaceFileRequest) =>
+    window.circuit.readWorkspaceFile(request),
+  getGitStatus: (request: ListWorkspacePathsRequest) => window.circuit.getGitStatus(request),
+  getGitDiff: (request: GitDiffRequest) => window.circuit.getGitDiff(request),
+  openWorkspaceFile: (request: OpenWorkspaceFileRequest) =>
+    window.circuit.openWorkspaceFile(request),
   onTaskStreamUpdate: (callback: (update: TaskStreamUpdate) => void) =>
     window.circuit.onTaskStreamUpdate(callback),
 }

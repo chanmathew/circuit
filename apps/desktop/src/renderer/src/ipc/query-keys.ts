@@ -15,4 +15,12 @@ export const queryKeys = {
   artifacts: {
     detail: (artifactId: string) => ['artifacts', artifactId] as const,
   },
+  workspace: {
+    paths: (workspacePath: string) => ['workspace', workspacePath, 'paths'] as const,
+    file: (workspacePath: string, path: string) =>
+      ['workspace', workspacePath, 'file', path] as const,
+    gitStatus: (workspacePath: string) => ['workspace', workspacePath, 'git-status'] as const,
+    gitDiff: (workspacePath: string, pathsKey: string, staged?: boolean) =>
+      ['workspace', workspacePath, 'git-diff', pathsKey, staged ?? false] as const,
+  },
 } as const
