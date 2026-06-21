@@ -51,8 +51,6 @@ export interface EnableWorkflowInput {
   startPhase?: string
   /** When true, also run the first phase after enable (legacy; default false). */
   autoRunFirstPhase?: boolean
-  /** When true, skip active-run guard (caller cancelled first). */
-  skipActiveRunGuard?: boolean
 }
 
 function latestChatSessionId(taskId: string): string | undefined {
@@ -97,18 +95,14 @@ function resolveWorkspaceStrategy(
   return current as WorkspaceStrategy
 }
 
-function assertCanEnableWorkflow(
-  taskId: string,
-  task: { workflowStatus: string },
-  skipActiveRunGuard?: boolean,
-): void {
+function assertCanEnableWorkflow(taskId: string, task: { workflowStatus: string }): void {
   const db = getDb()
   const activeRun = getActiveWorkflowRunForTask(db, taskId)
-  if (activeRun && !skipActiveRunGuard) {
+  if (activeRun) {
     throw new ValidationError('An active workflow already exists on this task')
   }
 
-  if (isWorkflowActive(task.workflowStatus) && !skipActiveRunGuard) {
+  if (isWorkflowActive(task.workflowStatus)) {
     throw new ValidationError('Workflow is already active on this task')
   }
 }
@@ -262,7 +256,7 @@ export async function enableWorkflow(
   const task = getTaskById(db, taskId)
   if (!task) throw new NotFoundError('Task', taskId)
 
-  assertCanEnableWorkflow(taskId, task, input.skipActiveRunGuard)
+  assertCanEnableWorkflow(taskId, task)
 
   bootstrapWorkflowTicket(taskId, input)
 
@@ -350,31 +344,6 @@ export async function cancelWorkflow(taskId: string): Promise<TaskDetail> {
   )
 
   return getTaskDetail(taskId)
-}
-
-/** Cancel current active run then enable a new workflow. */
-export async function cancelAndEnableWorkflow(
-  taskId: string,
-  input: EnableWorkflowInput,
-): Promise<TaskDetail> {
-  const db = getDb()
-  if (getActiveWorkflowRunForTask(db, taskId)) {
-    await cancelWorkflow(taskId)
-  }
-  return enableWorkflow(taskId, { ...input, skipActiveRunGuard: true })
-}
-
-/** Cancel current active run then start follow-up. */
-export async function cancelAndStartFollowUp(
-  taskId: string,
-  input: Partial<EnableWorkflowInput> = {},
-): Promise<TaskDetail> {
-  const { startFollowUpWorkflow } = await import('./start-follow-up-workflow.js')
-  const db = getDb()
-  if (getActiveWorkflowRunForTask(db, taskId)) {
-    await cancelWorkflow(taskId)
-  }
-  return startFollowUpWorkflow(taskId, input)
 }
 
 export function getActiveRunTicket(taskId: string): string | undefined {

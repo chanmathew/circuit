@@ -13,7 +13,5 @@ export {
   enableWorkflow,
   startPhase,
   cancelWorkflow,
-  cancelAndEnableWorkflow,
-  cancelAndStartFollowUp,
   bootstrapWorkflowTicket,
 } from './start-workflow.js'

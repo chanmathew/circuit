@@ -35,10 +35,8 @@ import { createDraftTask, getArtifactDetail, getTaskDetail, getWorkflowRunDetail
 import { applySteeringRevision } from '../services/workflow-events.js'
 import {
   approvePhase,
-  cancelAndEnableWorkflow,
-  cancelAndStartFollowUp,
-  createTaskFromIntake,
   cancelWorkflow,
+  createTaskFromIntake,
   discardWorkflowDraft,
   enableWorkflow,
   enableWorkflowFromChat,
@@ -147,29 +145,6 @@ export function registerIpcHandlers(): void {
   async function handleEnableWorkflow(request: EnableWorkflowRequest) {
     const workflowType = request.workflowType as import('@circuit/workflow').WorkflowType | undefined
 
-    if (request.replaceActive) {
-      if (request.text?.trim()) {
-        return enableWorkflowFromChat(request.taskId, request.text, {
-          autoRunFirstPhase: request.autoRunFirstPhase,
-          replaceActive: true,
-        })
-      }
-
-      const description = request.description?.trim()
-      if (!description) {
-        return enableWorkflowFromChat(request.taskId, undefined, {
-          autoRunFirstPhase: request.autoRunFirstPhase,
-          replaceActive: true,
-        })
-      }
-
-      return cancelAndEnableWorkflow(request.taskId, {
-        description,
-        autoRunFirstPhase: request.autoRunFirstPhase,
-        workflowType,
-      })
-    }
-
     if (request.text?.trim()) {
       return enableWorkflowFromChat(request.taskId, request.text, {
         autoRunFirstPhase: request.autoRunFirstPhase,
@@ -232,15 +207,6 @@ export function registerIpcHandlers(): void {
     'circuit:tasks:startFollowUpWorkflow',
     async (_event, request: StartFollowUpWorkflowRequest) => {
       try {
-        if (request.replaceActive) {
-          return toTaskDto(
-            await cancelAndStartFollowUp(request.taskId, {
-              description: request.description,
-              workflowType: request.workflowType as import('@circuit/workflow').WorkflowType | undefined,
-            }),
-          )
-        }
-
         return toTaskDto(
           await startFollowUpWorkflow(request.taskId, {
             description: request.description,

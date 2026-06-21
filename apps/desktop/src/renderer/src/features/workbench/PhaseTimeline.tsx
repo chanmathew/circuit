@@ -17,6 +17,8 @@ export interface PhaseTimelineItem {
   name: string
   label: string
   status: string
+  /** Past run drill-in — phase has a persisted artifact even if status reads locked. */
+  hasArtifact?: boolean
 }
 
 export interface PhaseTimelineProps {
@@ -24,6 +26,8 @@ export interface PhaseTimelineProps {
   currentPhase?: string
   /** Live harness run — shows running before task detail catches up. */
   runningPhase?: string
+  /** Read-only past run — allow selecting phases that produced artifacts. */
+  readOnly?: boolean
   onSelectPhase?: (name: string) => void
 }
 
@@ -69,15 +73,19 @@ function PhaseTimelineRow({
   phase,
   isCurrent,
   runningPhase,
+  readOnly = false,
   onSelectPhase,
 }: {
   phase: PhaseTimelineItem
   isCurrent: boolean
   runningPhase?: string
+  readOnly?: boolean
   onSelectPhase?: (name: string) => void
 }): React.ReactElement {
   const status = effectivePhaseStatus(phase.status as PhaseStatus, phase.name, runningPhase)
   const pending = status === 'locked'
+  const selectable =
+    Boolean(onSelectPhase) && (!pending || (readOnly && phase.hasArtifact))
   const rowClassName = cn(
     'flex min-w-0 flex-1 items-center justify-between gap-3 rounded-md px-2 text-left',
     activePhaseBadgeClassName(isCurrent),
@@ -108,11 +116,11 @@ function PhaseTimelineRow({
         />
       </div>
 
-      {onSelectPhase && !pending ? (
+      {selectable ? (
         <button
           type="button"
           className={cn(rowClassName, 'h-full cursor-pointer py-1 hover:bg-accent/40')}
-          onClick={() => onSelectPhase(phase.name)}
+          onClick={() => onSelectPhase!(phase.name)}
           aria-current={isCurrent ? 'step' : undefined}
         >
           {labelBlock}
@@ -150,6 +158,7 @@ export function PhaseTimeline({
   phases,
   currentPhase,
   runningPhase,
+  readOnly = false,
   onSelectPhase,
 }: PhaseTimelineProps): React.ReactElement {
   if (phases.length === 0) {
@@ -191,6 +200,7 @@ export function PhaseTimeline({
           phase={phase}
           isCurrent={currentPhase === phase.name}
           runningPhase={runningPhase}
+          readOnly={readOnly}
           onSelectPhase={onSelectPhase}
         />
       ))}

@@ -29,8 +29,9 @@ function TaskDetailContent({ taskId }: { taskId: string }): React.ReactElement {
 
   const task = taskQuery.data
   const needsIntake = task.needsIntake
-  // Harness activity only — task.status "running" also means "workflow in progress" after approve.
+  // Harness activity plus task.status "running" after approve schedules the next phase in the background.
   const isRunning =
+    task.status === 'running' ||
     phaseRunning ||
     workflowMutation.isPending ||
     task.phases.some((phase) => phase.status === 'running')
@@ -60,8 +61,6 @@ function TaskDetailContent({ taskId }: { taskId: string }): React.ReactElement {
         task={task}
         isRunning={isRunning}
         needsIntake={needsIntake}
-        onRunPhase={(phaseName) => workflowMutation.mutate({ type: 'run', phaseName })}
-        onApprovePhase={(phaseName) => workflowMutation.mutate({ type: 'approve', phaseName })}
         onResolveDecision={(phase, decisionId, optionId, optionLabel) =>
           workflowMutation.mutate({
             type: 'resolve',

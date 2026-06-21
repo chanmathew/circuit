@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 
 import { eventsToStreamItems, mergeLiveActivities, type StreamItem } from '@circuit/protocol'
 import type { StreamActivityEvent } from '@circuit/protocol'
-import { getPhaseNextStepLabel } from '@circuit/workflow'
+import { getPhaseRunLabel } from '@circuit/workflow'
 import type { WorkflowType } from '@circuit/workflow'
 
 import type { ArtifactDto, FeedEventDto, PhaseDto } from '../../../../../shared/api.js'
@@ -35,7 +35,7 @@ export function useTaskStreamItems(
   const nextStepLabelsByPhase = useMemo(() => {
     if (!workflowType) return {}
     return Object.fromEntries(
-      phases.map((phase) => [phase.name, getPhaseNextStepLabel(phase.name, workflowType)]),
+      phases.map((phase) => [phase.name, getPhaseRunLabel(phase.name, workflowType)]),
     )
   }, [phases, workflowType])
 

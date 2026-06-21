@@ -88,6 +88,16 @@ function isArtifactReadyCard(item: ActionCardItem): boolean {
   return hasView && hasProceed
 }
 
+function proceedPhaseFromItem(item: ActionCardItem): string | undefined {
+  const approvePayload = item.actions.find((action) => action.action === 'phase.approve')?.payload
+  if (typeof approvePayload?.phase === 'string') return approvePayload.phase
+  if (typeof approvePayload?.phaseName === 'string') return approvePayload.phaseName
+
+  const openPayload = item.actions.find((action) => action.action === 'phase.open')?.payload
+  if (typeof openPayload?.phase === 'string') return openPayload.phase
+  return undefined
+}
+
 export function UserMessageItemView({ item }: { item: UserMessageItem }): React.ReactElement {
   return (
     <Message from="user">
@@ -113,7 +123,7 @@ export function AgentMessageItemView({ item }: { item: AgentMessageItem }): Reac
 
 export function ReasoningItemView({ item }: { item: ReasoningItem }): React.ReactElement {
   return (
-    <Reasoning isStreaming={item.isStreaming} defaultOpen={item.isStreaming || !item.collapsed}>
+    <Reasoning isStreaming={item.isStreaming} defaultOpen={false}>
       <ReasoningTrigger />
       <ReasoningContent>{item.text}</ReasoningContent>
     </Reasoning>
@@ -366,6 +376,16 @@ export function ActionCardItemView({
   const handleAction = (action: StreamAction): void => {
     if (action.action === 'reference.open' && action.payload?.target) {
       context.onOpenReference?.(action.payload.target as ReferenceTarget)
+      return
+    }
+    if (action.action === 'phase.approve') {
+      const phase =
+        (typeof action.payload?.phase === 'string' ? action.payload.phase : undefined) ??
+        (typeof action.payload?.phaseName === 'string' ? action.payload.phaseName : undefined) ??
+        proceedPhaseFromItem(item)
+      if (phase) {
+        context.onStreamAction?.('phase.approve', { phase })
+      }
       return
     }
     context.onStreamAction?.(action.action, action.payload)

@@ -1,7 +1,7 @@
 import type { DecisionRequiredPayload } from '@circuit/protocol'
 import {
   approveBlockedReason,
-  getPhaseNextStepLabel,
+  getPhaseRunLabel,
 } from '@circuit/workflow'
 import type { WorkflowType } from '@circuit/workflow'
 
@@ -26,5 +26,5 @@ export function canApprovePhase(
 }
 
 export function getProceedLabel(phaseName: string, workflowType: WorkflowType): string {
-  return getPhaseNextStepLabel(phaseName, workflowType)
+  return getPhaseRunLabel(phaseName, workflowType)
 }

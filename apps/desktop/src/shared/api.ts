@@ -111,8 +111,6 @@ export interface EnableWorkflowRequest {
   text?: string
   workflowType?: string
   autoRunFirstPhase?: boolean
-  /** Cancel the active run first, then enable a new workflow. */
-  replaceActive?: boolean
 }
 
 export interface StartPhaseRequest {
@@ -133,8 +131,6 @@ export interface StartFollowUpWorkflowRequest {
   taskId: string
   description?: string
   workflowType?: string
-  /** Cancel the active run first, then start follow-up. */
-  replaceActive?: boolean
 }
 
 export interface GetWorkflowRunRequest {

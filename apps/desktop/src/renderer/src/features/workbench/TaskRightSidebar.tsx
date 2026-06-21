@@ -1,18 +1,29 @@
 import {
   Badge,
   Button,
-  cn,
   ScrollArea,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from '@circuit/ui'
+import { cn } from '@circuit/ui/utils'
+import type React from 'react'
 import type { InspectorTab } from '@circuit/protocol'
 
 import type { ArtifactDto, TaskDto } from '../../../../shared/api.js'
+import {
+  INSPECTOR_TAB_TRIGGER_CLASS,
+  INSPECTOR_TABS,
+  INSPECTOR_TABS_LIST_CLASS,
+} from './lib/inspector-tabs.js'
 import type { CheckEntry, DiffEntry } from './lib/workbench-content.js'
 import { resolvePhaseArtifact } from './lib/workbench-content.js'
+import {
+  INSPECTOR_HEADER_ROW_CLASS,
+  INSPECTOR_TOGGLE_BUTTON_CLASS,
+  InspectorPanelToggle,
+} from './InspectorPanelToggle.js'
 import { WorkflowPanel } from './WorkflowPanel.js'
 
 function ArtifactTree({
@@ -166,6 +177,7 @@ export interface TaskRightSidebarProps {
   onSelectArtifact: (id: string) => void
   onSelectDiff: (id: string) => void
   onSelectCheck: (id: string) => void
+  onToggleInspector?: () => void
 }
 
 export function TaskRightSidebar({
@@ -181,6 +193,7 @@ export function TaskRightSidebar({
   onSelectArtifact,
   onSelectDiff,
   onSelectCheck,
+  onToggleInspector,
 }: TaskRightSidebarProps): React.ReactElement {
   const selectedDiffId = activeTab === 'changes' && changesKind === 'diff' ? selectedId : undefined
   const selectedCheckId =
@@ -193,29 +206,33 @@ export function TaskRightSidebar({
         onValueChange={(value) => onTabChange(value as InspectorTab)}
         className="flex min-h-0 flex-1 flex-col gap-0"
       >
-        <TabsList
-          variant="line"
-          className="h-auto w-full shrink-0 rounded-none border-b border-border bg-transparent p-0 gap-0"
+        <div
+          className={cn(
+            'flex shrink-0 items-stretch justify-between overflow-visible border-b border-border',
+            INSPECTOR_HEADER_ROW_CLASS,
+          )}
         >
-          <TabsTrigger
-            value="workflow"
-            className="flex-1 rounded-none border-0 py-2 text-[10px] uppercase shadow-none data-active:shadow-none"
-          >
-            Workflow
-          </TabsTrigger>
-          <TabsTrigger
-            value="files"
-            className="flex-1 rounded-none border-0 py-2 text-[10px] uppercase shadow-none data-active:shadow-none"
-          >
-            Files
-          </TabsTrigger>
-          <TabsTrigger
-            value="changes"
-            className="flex-1 rounded-none border-0 py-2 text-[10px] uppercase shadow-none data-active:shadow-none"
-          >
-            Changes
-          </TabsTrigger>
-        </TabsList>
+          <TabsList variant="line" className={INSPECTOR_TABS_LIST_CLASS}>
+            {INSPECTOR_TABS.map(({ value, label, icon: Icon }) => (
+              <TabsTrigger
+                key={value}
+                value={value}
+                className={INSPECTOR_TAB_TRIGGER_CLASS}
+                aria-label={label}
+                title={label}
+              >
+                <Icon className="size-4" aria-hidden />
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          {onToggleInspector ? (
+            <InspectorPanelToggle
+              open
+              onToggle={onToggleInspector}
+              className={cn(INSPECTOR_TOGGLE_BUTTON_CLASS, 'self-center')}
+            />
+          ) : null}
+        </div>
 
         <TabsContent value="workflow" className="mt-0 min-h-0 flex-1 overflow-hidden">
           <ScrollArea className="h-full">

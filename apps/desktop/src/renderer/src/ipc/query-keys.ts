@@ -12,4 +12,7 @@ export const queryKeys = {
     chatDelta: (taskId: string) => ['tasks', taskId, 'chat-delta'] as const,
     workflowRun: (taskId: string, runId: string) => ['tasks', taskId, 'workflow-run', runId] as const,
   },
+  artifacts: {
+    detail: (artifactId: string) => ['artifacts', artifactId] as const,
+  },
 } as const

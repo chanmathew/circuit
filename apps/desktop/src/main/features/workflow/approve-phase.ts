@@ -10,15 +10,15 @@ import {
   updateWorkflowRun,
 } from '@circuit/db'
 import { createId, NotFoundError, ValidationError } from '@circuit/shared'
-import { BALANCED_AUTO_RUN_AFTER_APPROVE, canTransition, type PhaseStatus } from '@circuit/workflow'
+import { canTransition, type PhaseStatus } from '@circuit/workflow'
 
 import { getDb } from '../../db.js'
 import { toWorkflowEventRow } from '../../services/feed-workflow-events.js'
 import { syncTaskWorkflowStatusFromRuns } from '../../services/sync-task-workflow-status.js'
 import { getTaskDetail, type TaskDetail } from '../../services/tasks.js'
 import { assertCanApprove } from './approve-guard.js'
+import { schedulePhaseRun } from './background-phase-runner.js'
 import { generateCompletionSummary } from './generate-completion-summary.js'
-import { runPhase } from './run-phase.js'
 
 export async function approvePhase(taskId: string, phaseName: string): Promise<TaskDetail> {
   assertCanApprove(taskId, phaseName)
@@ -55,14 +55,13 @@ export async function approvePhase(taskId: string, phaseName: string): Promise<T
     updatePhase(db, nextPhase.id, { status: 'ready' })
   }
 
-  const autoRunNext = BALANCED_AUTO_RUN_AFTER_APPROVE[phaseName]
   const isFinalPhase = !nextPhase
   const now = new Date().toISOString()
 
   updateTask(db, taskId, {
     currentPhase: nextPhase?.name ?? phaseName,
     updatedAt: now,
-    ...(isFinalPhase ? { status: 'completed' as const } : autoRunNext ? { status: 'running' as const } : {}),
+    ...(isFinalPhase ? { status: 'completed' as const } : { status: 'running' as const }),
   })
 
   updateWorkflowRun(db, activeRun.id, {
@@ -95,8 +94,8 @@ export async function approvePhase(taskId: string, phaseName: string): Promise<T
     )
   }
 
-  if (autoRunNext && !isFinalPhase) {
-    return runPhase(taskId, autoRunNext)
+  if (nextPhase) {
+    schedulePhaseRun(taskId, nextPhase.name)
   }
 
   return getTaskDetail(taskId)

@@ -1,9 +1,10 @@
-import { getPhaseLabel, getPhaseNextStepLabel } from '@circuit/workflow'
+import { getPhaseLabel, getPhaseRunLabel } from '@circuit/workflow'
 import type { PhaseStatus, WorkflowType } from '@circuit/workflow'
 import { Button } from '@circuit/ui'
 
 import type { PhaseDto, TaskDto } from '../../../../shared/api.js'
 import {
+  hasStartedPhase,
   isAwaitingFirstPhase,
 } from '../../../../shared/workflow-status.js'
 import { canDiscardWorkflowDraft } from '../../../../shared/workflow-run.js'
@@ -54,10 +55,12 @@ export function CurrentWorkflowSection({
   const firstPhase = task.currentPhase
   const firstPhaseLabel = getPhaseLabel(firstPhase)
   const awaitingFirstPhase = isAwaitingFirstPhase(task.workflowStatus, task.phases)
+  const startedPhase = hasStartedPhase(task.phases)
   const canRunCurrentPhase =
     currentStatus === 'ready' || currentStatus === 'needs_revision'
   const needsReview = currentStatus === 'needs_review'
   const canDiscard = canDiscardWorkflowDraft(task.activeWorkflowRun, task.phases)
+  const canCancel = startedPhase
   const workflowType = task.workflowType as WorkflowType
 
   const phaseResolutions = task.decisionResolutions.filter((entry) => entry.phase === firstPhase)
@@ -68,8 +71,7 @@ export function CurrentWorkflowSection({
   const canProceed =
     needsReview && canApprovePhase(requiredDecisions, phaseResolutions) && !isRunning
 
-  const nextStepLabel = getPhaseNextStepLabel(firstPhase, workflowType)
-  const reviewArtifact = task.artifacts.find((artifact) => artifact.phase === firstPhase)
+  const nextStepLabel = getPhaseRunLabel(firstPhase, workflowType)
 
   const phases = plannedPhasesFromDefinition(
     task.workflowType,
@@ -78,10 +80,6 @@ export function CurrentWorkflowSection({
 
   return (
     <section className="space-y-3">
-      <p className="px-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-        Current workflow
-      </p>
-
       {ticketArtifact && (
         <div className="rounded-md border border-border bg-card px-2.5 py-2">
           <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
@@ -114,18 +112,6 @@ export function CurrentWorkflowSection({
       <div className="shrink-0 space-y-2 border-t border-border pt-3">
         {needsReview && (
           <div className="space-y-2">
-            {reviewArtifact && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="w-full"
-                disabled={busy}
-                onClick={() => onSelectArtifact?.(reviewArtifact.id)}
-              >
-                View {reviewArtifact.title}
-              </Button>
-            )}
             {approveBlockedReason && (
               <p className="px-1 text-[11px] text-muted-foreground">{approveBlockedReason}</p>
             )}
@@ -138,13 +124,10 @@ export function CurrentWorkflowSection({
             >
               {nextStepLabel}
             </Button>
-            <p className="px-1 text-[10px] text-muted-foreground">
-              Need changes? Tell the agent in chat.
-            </p>
           </div>
         )}
 
-        {(awaitingFirstPhase || canRunCurrentPhase) && (
+        {(awaitingFirstPhase || canRunCurrentPhase) && !isRunning && (
           <Button
             type="button"
             size="sm"
@@ -158,30 +141,34 @@ export function CurrentWorkflowSection({
           </Button>
         )}
 
-        <div className="flex gap-2">
-          {canDiscard && (
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="flex-1"
-              disabled={busy}
-              onClick={() => discardDraft.mutate()}
-            >
-              Discard draft
-            </Button>
-          )}
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="flex-1"
-            disabled={busy}
-            onClick={() => cancelWorkflow.mutate()}
-          >
-            Cancel workflow
-          </Button>
-        </div>
+        {(canDiscard || canCancel) && (
+          <div className="flex justify-center pt-0.5">
+            {canDiscard && (
+              <Button
+                type="button"
+                variant="link"
+                size="sm"
+                className="h-auto text-xs text-muted-foreground hover:text-destructive"
+                disabled={busy}
+                onClick={() => discardDraft.mutate()}
+              >
+                Discard draft
+              </Button>
+            )}
+            {canCancel && (
+              <Button
+                type="button"
+                variant="link"
+                size="sm"
+                className="h-auto text-xs text-muted-foreground hover:text-destructive"
+                disabled={busy}
+                onClick={() => cancelWorkflow.mutate()}
+              >
+                Cancel workflow
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </section>
   )

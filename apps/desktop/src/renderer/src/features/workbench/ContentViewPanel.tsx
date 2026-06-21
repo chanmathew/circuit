@@ -1,6 +1,10 @@
+import { useQuery } from '@tanstack/react-query'
+
 import type { ContentView } from '@circuit/protocol'
 
 import type { ArtifactDto, TaskDto } from '../../../../shared/api.js'
+import { circuitApi } from '../../ipc/client.js'
+import { queryKeys } from '../../ipc/query-keys.js'
 import { ArtifactPanel } from './ArtifactPanel.js'
 import { CheckContentPanel } from './content/CheckContentPanel.js'
 import { DiffContentPanel } from './content/DiffContentPanel.js'
@@ -35,25 +39,16 @@ export function ContentViewPanel({
   switch (contentView.type) {
     case 'workflow_overview':
       return <WorkflowOverviewPanel task={task} isRunning={isRunning} />
-    case 'artifact': {
-      const artifact = resolveArtifactRef(artifacts, contentView.artifactId)
-      if (!artifact) {
-        return (
-          <div className="flex flex-1 flex-col items-center justify-center p-8 text-center text-sm text-muted-foreground">
-            <p>Artifact not found. Select one from the inspector.</p>
-          </div>
-        )
-      }
+    case 'artifact':
       return (
-        <ArtifactPanel
-          title={artifact.title}
-          relativePath={artifact.path.replace(repoPath, '.')}
-          content={artifact.content}
+        <ArtifactContentView
+          artifactId={contentView.artifactId}
+          artifacts={artifacts}
+          repoPath={repoPath}
           preview={preview}
           onPreviewChange={onPreviewChange}
         />
       )
-    }
     case 'diff':
       return <DiffContentPanel diff={diffs.find((entry) => entry.id === contentView.diffId)} />
     case 'check':
@@ -83,4 +78,53 @@ export function ContentViewPanel({
       )
     }
   }
+}
+
+function ArtifactContentView({
+  artifactId,
+  artifacts,
+  repoPath,
+  preview,
+  onPreviewChange,
+}: {
+  artifactId: string
+  artifacts: ArtifactDto[]
+  repoPath: string
+  preview: boolean
+  onPreviewChange: (preview: boolean) => void
+}): React.ReactElement {
+  const localArtifact = resolveArtifactRef(artifacts, artifactId)
+  const remoteQuery = useQuery({
+    queryKey: queryKeys.artifacts.detail(artifactId),
+    queryFn: () => circuitApi.getArtifact(artifactId),
+    enabled: !localArtifact,
+  })
+
+  const artifact = localArtifact ?? remoteQuery.data
+
+  if (!artifact) {
+    if (remoteQuery.isLoading) {
+      return (
+        <div className="flex flex-1 flex-col items-center justify-center p-8 text-center text-sm text-muted-foreground">
+          <p>Loading artifact…</p>
+        </div>
+      )
+    }
+
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center p-8 text-center text-sm text-muted-foreground">
+        <p>Artifact not found. Select one from the inspector.</p>
+      </div>
+    )
+  }
+
+  return (
+    <ArtifactPanel
+      title={artifact.title}
+      relativePath={artifact.path.replace(repoPath, '.')}
+      content={artifact.content}
+      preview={preview}
+      onPreviewChange={onPreviewChange}
+    />
+  )
 }

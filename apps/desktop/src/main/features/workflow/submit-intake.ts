@@ -55,7 +55,7 @@ export async function submitTaskIntake(taskId: string, text: string): Promise<Ta
 export async function enableWorkflowFromChat(
   taskId: string,
   text?: string,
-  options?: { autoRunFirstPhase?: boolean; replaceActive?: boolean },
+  options?: { autoRunFirstPhase?: boolean },
 ): Promise<TaskDetail> {
   const db = getDb()
   const task = getTaskById(db, taskId)
@@ -66,15 +66,8 @@ export async function enableWorkflowFromChat(
     recordSteering(taskId, text.trim())
   }
 
-  const input = {
+  return enableWorkflow(taskId, {
     description,
     autoRunFirstPhase: options?.autoRunFirstPhase ?? false,
-  }
-
-  if (options?.replaceActive) {
-    const { cancelAndEnableWorkflow } = await import('./start-workflow.js')
-    return cancelAndEnableWorkflow(taskId, input)
-  }
-
-  return enableWorkflow(taskId, input)
+  })
 }

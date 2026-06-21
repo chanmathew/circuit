@@ -4,14 +4,10 @@ import type { ContentNavigationState, InspectorTab, ReferenceTarget } from '@cir
 import { ScrollArea, cn } from '@circuit/ui'
 
 import type { TaskDto } from '../../../../shared/api.js'
-import {
-  hasStartedPhase,
-  isWorkflowActive,
-} from '../../../../shared/workflow-status.js'
+import { hasStartedPhase } from '../../../../shared/workflow-status.js'
 import { CircuitAgentStream } from '../stream/CircuitAgentStream.js'
 import { ContentViewPanel } from './ContentViewPanel.js'
 import { TaskRightSidebar } from './TaskRightSidebar.js'
-import { WorkbenchActionBar } from './WorkbenchActionBar.js'
 import { WorkbenchPanelLayout } from './WorkbenchPanelLayout.js'
 import {
   checksFromFeed,
@@ -27,8 +23,6 @@ export interface TaskWorkbenchProps {
   className?: string
   isRunning?: boolean
   needsIntake?: boolean
-  onRunPhase: (phaseName: string) => void
-  onApprovePhase: (phaseName: string) => void
   onResolveDecision: (
     phase: string,
     decisionId: string,
@@ -52,8 +46,6 @@ export function TaskWorkbench({
   className,
   isRunning = false,
   needsIntake = false,
-  onRunPhase,
-  onApprovePhase,
   onResolveDecision,
 }: TaskWorkbenchProps): React.ReactElement {
   const activePhase = task.phases.find((p) => p.name === task.currentPhase)
@@ -65,12 +57,10 @@ export function TaskWorkbench({
   const [contentVisible, setContentVisible] = useState(() =>
     shouldOpenContentPanel(defaultNavigationForTask(task)),
   )
-  const [inspectorPinned, setInspectorPinned] = useState(false)
+  const [inspectorOpen, setInspectorOpen] = useState(false)
   const [preview, setPreview] = useState(true)
 
-  const showInspector =
-    inspectorPinned ||
-    isWorkflowActive(task.workflowStatus)
+  const showInspector = inspectorOpen
 
   const navigationKey = `${task.id}:${task.workflowStatus}:${hasStartedPhase(task.phases)}`
 
@@ -78,7 +68,6 @@ export function TaskWorkbench({
     const nextNavigation = defaultNavigationForTask(task)
     setNavigation(nextNavigation)
     setContentVisible(shouldOpenContentPanel(nextNavigation))
-    setInspectorPinned(false)
   }, [navigationKey])
 
   useEffect(() => {
@@ -97,11 +86,6 @@ export function TaskWorkbench({
   const checks = useMemo(() => checksFromFeed(task.feedEvents), [task.feedEvents])
 
   const actionPhase = needsReviewPhase ?? activePhase
-
-  const canRun =
-    actionPhase &&
-    (actionPhase.status === 'ready' || actionPhase.status === 'needs_revision') &&
-    !isRunning
 
   const revealContent = (next: ContentNavigationState): void => {
     setContentVisible(true)
@@ -140,12 +124,30 @@ export function TaskWorkbench({
     }))
   }
 
-  const focusWorkflowPanel = (): void => {
-    setInspectorPinned(true)
+  const openInspector = (): void => {
+    setInspectorOpen(true)
     setNavigation((current) => ({
       ...current,
       inspector: { tab: 'workflow', selectedId: current.inspector.selectedId },
     }))
+  }
+
+  const toggleInspector = (): void => {
+    setInspectorOpen((current) => {
+      const next = !current
+      if (next) {
+        setNavigation((nav) => ({
+          ...nav,
+          inspector: { tab: 'workflow', selectedId: nav.inspector.selectedId },
+        }))
+      }
+      return next
+    })
+  }
+
+  const handleCollapsedInspectorTabSelect = (tab: InspectorTab): void => {
+    setInspectorOpen(true)
+    handleInspectorTabChange(tab)
   }
 
   const openWorkflowOverview = (): void => {
@@ -190,11 +192,9 @@ export function TaskWorkbench({
       workflowType={task.workflowType}
       isRunning={isRunning}
       needsReview={Boolean(needsReviewPhase)}
-      onFocusWorkflowPanel={focusWorkflowPanel}
+      onFocusWorkflowPanel={openInspector}
       onOpenWorkflowOverview={openWorkflowOverview}
       onOpenPhase={openPhaseArtifact}
-      onOpenArtifact={openArtifactById}
-      onApprovePhase={onApprovePhase}
       onResolveDecision={(decisionId, optionId, optionLabel, phase) => {
         const resolvePhase = phase ?? actionPhase?.name
         if (!resolvePhase) return
@@ -207,34 +207,29 @@ export function TaskWorkbench({
   return (
     <div className={cn('flex h-full min-h-0 flex-col overflow-hidden', className)}>
       <WorkbenchPanelLayout
-        layoutKey={`${task.id}-${contentVisible}-${showInspector}`}
+        layoutKey={task.id}
         showContent={contentVisible}
         showInspector={showInspector}
+        onToggleInspector={toggleInspector}
+        onInspectorExpand={() => setInspectorOpen(true)}
+        onInspectorCollapse={() => setInspectorOpen(false)}
+        inspectorActiveTab={navigation.inspector.tab}
+        onInspectorTabSelect={handleCollapsedInspectorTabSelect}
         stream={streamPanel}
         content={
-          <div className="flex h-full min-h-0 flex-col overflow-hidden">
-            <ScrollArea className="min-h-0 flex-1">
-              <ContentViewPanel
-                contentView={navigation.contentView}
-                task={task}
-                artifacts={task.artifacts}
-                repoPath={task.repoPath}
-                diffs={diffs}
-                checks={checks}
-                preview={preview}
-                isRunning={isRunning}
-                onPreviewChange={setPreview}
-              />
-            </ScrollArea>
-
-            <WorkbenchActionBar
-              actionPhase={actionPhase}
+          <ScrollArea className="h-full min-h-0">
+            <ContentViewPanel
+              contentView={navigation.contentView}
+              task={task}
+              artifacts={task.artifacts}
+              repoPath={task.repoPath}
+              diffs={diffs}
+              checks={checks}
+              preview={preview}
               isRunning={isRunning}
-              canRun={Boolean(canRun)}
-              showRunHint={Boolean(canRun && actionPhase && task.feedEvents.length === 0)}
-              onRunPhase={onRunPhase}
+              onPreviewChange={setPreview}
             />
-          </div>
+          </ScrollArea>
         }
         inspector={
           <TaskRightSidebar
@@ -247,9 +242,10 @@ export function TaskWorkbench({
             changesKind={navigation.inspector.changesKind}
             isRunning={isRunning}
             onTabChange={handleInspectorTabChange}
-            onSelectArtifact={handleSelectArtifact}
+            onSelectArtifact={openArtifactById}
             onSelectDiff={handleSelectDiff}
             onSelectCheck={handleSelectCheck}
+            onToggleInspector={toggleInspector}
           />
         }
       />

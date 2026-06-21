@@ -7,7 +7,7 @@ import type { DecisionResolutionDto, FeedEventDto, PermissionReply, PhaseDto, Ar
 import { useSubmitTaskIntake } from '../tasks/hooks/useSubmitTaskIntake.js'
 import { useApplySteeringRevision } from './hooks/useApplySteeringRevision.js'
 import { useAbortSession } from './hooks/useAbortSession.js'
-import { useStartFollowUpWorkflow } from './hooks/useStartFollowUpWorkflow.js'
+import { useApprovePhase } from './hooks/useApprovePhase.js'
 import { useReplyPermission } from './hooks/useReplyPermission.js'
 import { useReplyQuestion } from './hooks/useReplyQuestion.js'
 import { useRejectQuestion } from './hooks/useRejectQuestion.js'
@@ -41,8 +41,6 @@ export interface CircuitAgentStreamProps {
   onFocusWorkflowPanel?: () => void
   onOpenWorkflowOverview?: () => void
   onOpenPhase?: (phaseName: string) => void
-  onApprovePhase?: (phaseName: string) => void
-  onOpenArtifact?: (artifactId: string) => void
 }
 
 function persistedSteeringTexts(feedEvents: FeedEventDto[]): Set<string> {
@@ -93,15 +91,13 @@ export function CircuitAgentStream({
   onFocusWorkflowPanel,
   onOpenWorkflowOverview,
   onOpenPhase,
-  onOpenArtifact,
-  onApprovePhase,
 }: CircuitAgentStreamProps): React.ReactElement {
   const [pendingMessages, setPendingMessages] = useState<LocalUserMessage[]>([])
   const [resolvedHarnessIds, setResolvedHarnessIds] = useState<Set<string>>(() => new Set())
   const { liveActivities, phaseRunning, harnessSession } = useTaskStreamLive(taskId)
+  const approvePhase = useApprovePhase(taskId)
   const sendChatMessage = useSendChatMessage(taskId)
   const submitIntake = useSubmitTaskIntake(taskId)
-  const startFollowUp = useStartFollowUpWorkflow(taskId)
   const applySteeringRevision = useApplySteeringRevision(taskId)
   const replyPermission = useReplyPermission(taskId, workspacePath)
   const replyQuestion = useReplyQuestion(taskId, workspacePath)
@@ -150,7 +146,8 @@ export function CircuitAgentStream({
     replyPermission.isPending ||
     replyQuestion.isPending ||
     rejectQuestion.isPending ||
-    abortSession.isPending
+    abortSession.isPending ||
+    approvePhase.isPending
 
   const handleSend = useCallback(
     (text: string) => {
@@ -307,25 +304,6 @@ export function CircuitAgentStream({
         return
       }
 
-      if (action === 'workflow.focusPanel') {
-        onFocusWorkflowPanel?.()
-        return
-      }
-
-      if (action === 'workflow.viewSummary') {
-        const artifactId = payload?.artifactId
-        if (typeof artifactId === 'string') {
-          onOpenArtifact?.(artifactId)
-        }
-        return
-      }
-
-      if (action === 'workflow.startFollowUp') {
-        startFollowUp.mutate({})
-        onFocusWorkflowPanel?.()
-        return
-      }
-
       if (action === 'phase.open') {
         const phase = payload?.phase
         if (typeof phase === 'string') {
@@ -335,26 +313,30 @@ export function CircuitAgentStream({
       }
 
       if (action === 'phase.approve') {
-        const phase = payload?.phase
-        if (typeof phase === 'string') {
-          onApprovePhase?.(phase)
+        const phase =
+          typeof payload?.phase === 'string'
+            ? payload.phase
+            : typeof payload?.phaseName === 'string'
+              ? payload.phaseName
+              : undefined
+        if (phase) {
+          approvePhase.mutate(phase)
+          onFocusWorkflowPanel?.()
         }
         return
       }
     },
     [
       applySteeringRevision,
+      approvePhase,
       feedEvents,
-      onApprovePhase,
       onFocusWorkflowPanel,
-      onOpenArtifact,
       onOpenPhase,
       onOpenWorkflowOverview,
       onResolveDecision,
       rejectQuestion,
       replyPermission,
       replyQuestion,
-      startFollowUp,
     ],
   )
 
