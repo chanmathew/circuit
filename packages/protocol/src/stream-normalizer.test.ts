@@ -495,6 +495,48 @@ describe('eventsToStreamItems', () => {
     })
   })
 
+  it('suppresses workflow cancelled events from the chat stream', () => {
+    const events: CircuitEvent[] = [
+      {
+        type: 'workflow:cancelled',
+        taskId: TASK_ID,
+        timestamp: TS,
+        payload: { workflowRunId: 'run-cancelled' },
+      },
+    ]
+
+    expect(eventsToStreamItems({ events })).toEqual([])
+  })
+
+  it('suppresses workflow follow-up started events from the chat stream', () => {
+    const events: CircuitEvent[] = [
+      {
+        type: 'workflow:follow_up_started',
+        taskId: TASK_ID,
+        timestamp: TS,
+        payload: { priorRunId: 'run-1', newRunId: 'run-2' },
+      },
+    ]
+
+    expect(eventsToStreamItems({ events })).toEqual([])
+  })
+
+  it('suppresses workflow completed events from the chat stream', () => {
+    const events: CircuitEvent[] = [
+      {
+        type: 'workflow:completed',
+        taskId: TASK_ID,
+        timestamp: TS,
+        payload: {
+          workflowRunId: 'run-complete',
+          completionSummaryArtifactId: 'artifact-summary',
+        },
+      },
+    ]
+
+    expect(eventsToStreamItems({ events })).toEqual([])
+  })
+
   it('maps workflow enable and phase lifecycle events to stream action cards', () => {
     const events: CircuitEvent[] = [
       {
@@ -577,6 +619,79 @@ describe('revisionInferenceToStreamItem', () => {
         expect.arrayContaining([{ id: 'revise', label: 'Revise Design', recommended: true }]),
       )
     }
+  })
+
+  it('maps harness question pending events to action cards', () => {
+    const items = eventsToStreamItems({
+      events: [
+        {
+          type: 'harness:question_pending',
+          taskId: TASK_ID,
+          timestamp: TS,
+          payload: {
+            cardId: 'question-req-1',
+            requestId: 'req-1',
+            sessionId: 'ses-1',
+            questions: [
+              {
+                header: 'Scope',
+                question: 'Should this include admin users?',
+                options: [{ label: 'Yes' }, { label: 'No' }],
+              },
+            ],
+          },
+        },
+      ],
+    })
+
+    expect(items).toHaveLength(1)
+    expect(items[0]).toMatchObject({
+      kind: 'action_card',
+      id: 'question-req-1',
+      title: 'Scope',
+      summary: 'Should this include admin users?',
+    })
+  })
+
+  it('maps question_request in turn activities to action cards', () => {
+    const items = eventsToStreamItems({
+      events: [
+        {
+          type: 'harness:turn_activities',
+          taskId: TASK_ID,
+          phaseRunId: RUN_ID,
+          timestamp: TS,
+          payload: {
+            activities: [
+              {
+                type: 'question_request',
+                timestamp: TS,
+                content: 'Which database should we target?',
+                metadata: {
+                  requestId: 'call_q1',
+                  sessionId: 'ses-1',
+                  questions: [
+                    {
+                      header: 'Database',
+                      question: 'Which database should we target?',
+                      options: [{ label: 'Postgres' }, { label: 'SQLite' }],
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      ],
+    })
+
+    expect(items).toEqual([
+      expect.objectContaining({
+        kind: 'action_card',
+        id: 'question-call_q1',
+        title: 'Database',
+      }),
+    ])
   })
 })
 
@@ -808,6 +923,42 @@ Run the questions phase using the context above.`
         text: 'Here are clarifying questions for the ticket.',
       }),
     ])
+  })
+
+  it('renders live question requests as action cards', () => {
+    const base = eventsToStreamItems({ events: [] })
+    const merged = mergeLiveActivities(base, [
+      {
+        type: 'question_request',
+        timestamp: TS,
+        content: 'Which API should we use?',
+        metadata: {
+          requestId: 'req-1',
+          sessionId: 'ses-1',
+          questions: [
+            {
+              header: 'API choice',
+              question: 'Which API should we use?',
+              options: [
+                { label: 'REST', description: 'Existing stack' },
+                { label: 'GraphQL', description: 'New approach' },
+              ],
+            },
+          ],
+        },
+      },
+    ])
+
+    const card = merged.find((item) => item.kind === 'action_card')
+    expect(card).toMatchObject({
+      kind: 'action_card',
+      id: 'question-req-1',
+      title: 'API choice',
+      summary: 'Which API should we use?',
+    })
+    if (card?.kind === 'action_card') {
+      expect(card.actions[0]?.action).toBe('question.reply')
+    }
   })
 })
 

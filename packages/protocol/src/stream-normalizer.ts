@@ -56,6 +56,7 @@ type ActivityAppendState = {
   pendingActivities: StreamActivityEvent[]
   knownAgentTexts: Set<string>
   sequence: number
+  harnessCardIndex: number
 }
 
 function pushTimestamped(
@@ -175,6 +176,26 @@ function appendActivitiesToStream(
         subagentRunToItem(activity, state.reasoningIndex++),
         state,
       )
+      continue
+    }
+
+    if (activity.type === 'permission_request') {
+      flushActivities(itemSortKey)
+      pushTimestamped(
+        timestamped,
+        itemSortKey,
+        permissionRequestToActionCard(activity, state.harnessCardIndex++),
+        state,
+      )
+      continue
+    }
+
+    if (activity.type === 'question_request') {
+      flushActivities(itemSortKey)
+      const cards = questionRequestToActionCards(activity, state.harnessCardIndex++)
+      for (const card of cards) {
+        pushTimestamped(timestamped, itemSortKey, card, state)
+      }
       continue
     }
 
@@ -530,91 +551,6 @@ function isWorkflowPhase(phase: string | undefined): phase is string {
   return Boolean(phase && phase !== CHAT_PHASE)
 }
 
-function workflowCompletedToActionCard(event: CircuitEvent, id: string): ActionCardItem {
-  const payload = event.payload as {
-    workflowRunId?: string
-    completionSummaryArtifactId?: string
-  }
-  return {
-    kind: 'action_card',
-    id,
-    title: 'Workflow complete',
-    summary: 'Structured workflow finished — review the completion summary or start a follow-up.',
-    severity: 'info',
-    actions: [
-      ...(payload.completionSummaryArtifactId
-        ? [
-            {
-              id: 'view-summary',
-              label: 'View summary',
-              action: 'workflow.viewSummary',
-              payload: { artifactId: payload.completionSummaryArtifactId },
-            },
-          ]
-        : []),
-      {
-        id: 'follow-up',
-        label: 'Start follow-up',
-        action: 'workflow.startFollowUp',
-        payload: { workflowRunId: payload.workflowRunId },
-      },
-      {
-        id: 'panel',
-        label: 'Open panel',
-        action: 'workflow.focusPanel',
-      },
-    ],
-    createdAt: event.timestamp,
-    eventId: event.id,
-  }
-}
-
-function workflowCancelledToActionCard(event: CircuitEvent, id: string): ActionCardItem {
-  const payload = event.payload as { workflowRunId?: string }
-  return {
-    kind: 'action_card',
-    id,
-    title: 'Workflow cancelled',
-    summary: 'Partial outputs were kept — browse the attempt or start a follow-up workflow.',
-    severity: 'warning',
-    actions: [
-      {
-        id: 'view-attempt',
-        label: 'View attempt',
-        action: 'workflow.focusPanel',
-        payload: { workflowRunId: payload.workflowRunId },
-      },
-      {
-        id: 'follow-up',
-        label: 'Start follow-up',
-        action: 'workflow.startFollowUp',
-        payload: { workflowRunId: payload.workflowRunId },
-      },
-    ],
-    createdAt: event.timestamp,
-    eventId: event.id,
-  }
-}
-
-function workflowFollowUpStartedToActionCard(event: CircuitEvent, id: string): ActionCardItem {
-  return {
-    kind: 'action_card',
-    id,
-    title: 'Follow-up workflow started',
-    summary: 'A new workflow run is attached — open the overview to begin.',
-    severity: 'info',
-    actions: [
-      {
-        id: 'open-overview',
-        label: 'Open overview',
-        action: 'workflow.openOverview',
-      },
-    ],
-    createdAt: event.timestamp,
-    eventId: event.id,
-  }
-}
-
 function workflowEnabledToActionCard(event: CircuitEvent, id: string): ActionCardItem {
   const payload = event.payload as WorkflowEnabledPayload
   return {
@@ -649,7 +585,7 @@ function phaseCompletedToActionCard(
   const artifactTitle =
     options.artifactTitlesByPhase?.[payload.phase] ?? `${phaseLabel.toLowerCase()} artifact`
   const nextStepLabel =
-    options.nextStepLabelsByPhase?.[payload.phase] ?? `Proceed with ${phaseLabel.toLowerCase()}`
+    options.nextStepLabelsByPhase?.[payload.phase] ?? `Run ${phaseLabel}`
 
   return {
     kind: 'action_card',
@@ -965,11 +901,9 @@ function eventToStreamItem(
     case 'workflow:enabled':
       return workflowEnabledToActionCard(event, id)
     case 'workflow:completed':
-      return workflowCompletedToActionCard(event, id)
     case 'workflow:cancelled':
-      return workflowCancelledToActionCard(event, id)
     case 'workflow:follow_up_started':
-      return workflowFollowUpStartedToActionCard(event, id)
+      return null
     case 'phase:completed':
       return phaseCompletedToActionCard(event, id, options)
     case 'harness:permission_pending':
@@ -1021,7 +955,9 @@ function groupActivityEvents(
     (activity) =>
       activity.type !== 'message' &&
       activity.type !== 'reasoning' &&
-      activity.type !== 'subagent_run',
+      activity.type !== 'subagent_run' &&
+      activity.type !== 'permission_request' &&
+      activity.type !== 'question_request',
   )
   return buildActivityGroup(toolActivities, groupId, { title })
 }
@@ -1040,6 +976,7 @@ export function eventsToStreamItems(input: NormalizeStreamInput): StreamItem[] {
     pendingActivities: [],
     knownAgentTexts: new Set<string>(),
     sequence: 0,
+    harnessCardIndex: 0,
   }
   const turnActivityRunIds = phaseRunIdsWithTurnActivities(events)
 

@@ -6,6 +6,8 @@ import { describe, expect, it } from 'vitest'
 
 import {
   enrichActivitiesWithFileDiffs,
+  mapQuestionToolPartToActivity,
+  mapSessionPartToActivity,
   mapTaskToolToSubagentRun,
   sessionMessagesToActivities,
   summarizeActivities,
@@ -155,5 +157,63 @@ describe('upsertTraceActivity', () => {
     expect(trace).toHaveLength(1)
     expect(trace[0]?.content).toBe('Reading README.md')
     expect(trace[0]?.metadata?.status).toBe('completed')
+  })
+})
+
+describe('mapQuestionToolPartToActivity', () => {
+  it('maps OpenCode question tool parts to question_request activities', () => {
+    const activity = mapQuestionToolPartToActivity({
+      callId: 'call_q1',
+      sessionID: 'ses-1',
+      timestamp: '2026-06-20T12:00:00.000Z',
+      state: {
+        status: 'running',
+        input: {
+          questions: [
+            {
+              header: 'API choice',
+              question: 'Which API should we use?',
+              options: [{ label: 'REST' }, { label: 'GraphQL' }],
+            },
+          ],
+        },
+      },
+    })
+
+    expect(activity).toMatchObject({
+      type: 'question_request',
+      content: 'Which API should we use?',
+      metadata: {
+        requestId: 'call_q1',
+        sessionId: 'ses-1',
+        questions: [
+          {
+            header: 'API choice',
+            question: 'Which API should we use?',
+            options: [{ label: 'REST' }, { label: 'GraphQL' }],
+          },
+        ],
+      },
+    })
+  })
+
+  it('maps question tool parts during session replay', () => {
+    const activity = mapSessionPartToActivity(
+      {
+        type: 'tool',
+        tool: 'question',
+        callID: 'call_q2',
+        sessionID: 'ses-1',
+        state: {
+          status: 'running',
+          input: {
+            questions: [{ question: 'Proceed with migration?', options: [{ label: 'Yes' }] }],
+          },
+        },
+      },
+      '2026-06-20T12:00:00.000Z',
+    )
+
+    expect(activity?.type).toBe('question_request')
   })
 })

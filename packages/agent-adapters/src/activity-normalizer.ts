@@ -119,6 +119,8 @@ export function summarizeActivities(activities: AgentActivityEvent[]): string {
 type SessionPart = OpenCodeSessionMessage['parts'][number] & {
   id?: string
   callID?: string
+  messageID?: string
+  sessionID?: string
   tool?: string
   filename?: string
   url?: string
@@ -334,6 +336,73 @@ export function enrichActivitiesWithFileDiffs(
   })
 }
 
+type QuestionToolInput = {
+  header?: string
+  question?: string
+  prompt?: string
+  options?: Array<{ label: string; description?: string }>
+}
+
+function normalizeQuestionToolInput(
+  raw: unknown,
+): Array<{ header: string; question: string; options: Array<{ label: string; description?: string }> }> {
+  if (!Array.isArray(raw)) return []
+
+  return raw.flatMap((entry) => {
+    if (!entry || typeof entry !== 'object') return []
+    const question = entry as QuestionToolInput
+    const text =
+      typeof question.question === 'string'
+        ? question.question
+        : typeof question.prompt === 'string'
+          ? question.prompt
+          : ''
+    if (!text.trim()) return []
+
+    const options = Array.isArray(question.options)
+      ? question.options.filter(
+          (option): option is { label: string; description?: string } =>
+            Boolean(option && typeof option.label === 'string' && option.label.trim()),
+        )
+      : []
+
+    return [
+      {
+        header: typeof question.header === 'string' ? question.header : '',
+        question: text,
+        options,
+      },
+    ]
+  })
+}
+
+/** Map OpenCode `question` tool parts to harness clarification cards. */
+export function mapQuestionToolPartToActivity(input: {
+  callId?: string
+  sessionID?: string
+  messageID?: string
+  state?: SessionPart['state']
+  timestamp: string
+}): AgentActivityEvent | null {
+  const questions = normalizeQuestionToolInput(input.state?.input?.questions)
+  if (questions.length === 0) return null
+
+  const requestId = input.callId ?? input.messageID
+  const first = questions[0]!
+
+  return {
+    type: 'question_request',
+    timestamp: input.timestamp,
+    content: first.question,
+    metadata: {
+      requestId,
+      sessionId: input.sessionID,
+      questions,
+      status: input.state?.status,
+    },
+  }
+}
+
 export function mapSessionPartToActivity(
   part: SessionPart,
   timestamp: string,
@@ -378,6 +447,15 @@ export function mapSessionPartToActivity(
         timestamp,
         callId: part.callID ?? part.id,
         messageID: part.messageID,
+      })
+    }
+    if (tool === 'question') {
+      return mapQuestionToolPartToActivity({
+        callId: part.callID ?? part.id,
+        sessionID: part.sessionID,
+        messageID: part.messageID,
+        state: part.state,
+        timestamp,
       })
     }
     const status = asRunStatus(part.state?.status) ?? 'completed'
@@ -430,6 +508,17 @@ export function mapOpenCodeToolPartToActivity(part: {
       sessionID: part.sessionID,
       messageID: part.messageID,
     })
+  }
+  if (tool === 'question') {
+    const timestamp = new Date().toISOString()
+    const activity = mapQuestionToolPartToActivity({
+      callId: part.callId,
+      sessionID: part.sessionID,
+      messageID: part.messageID,
+      state: part.state,
+      timestamp,
+    })
+    if (activity) return activity
   }
   const status = asRunStatus(part.state.status) ?? 'running'
   const title = part.state.title

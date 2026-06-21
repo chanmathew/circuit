@@ -5,6 +5,7 @@ import type { AgentActivityEvent } from './types.js'
 
 import {
   mapOpenCodeToolPartToActivity,
+  mapQuestionToolPartToActivity,
   normalizeActivityEvent,
   sessionMessagesToActivities,
 } from './activity-normalizer.js'
@@ -24,9 +25,10 @@ type OpenCodeQuestionInfo = {
 type OpenCodeQuestionAskedEvent = {
   type: 'question.asked' | 'question.v2.asked'
   properties: {
-    id: string
+    id?: string
     sessionID: string
     questions: OpenCodeQuestionInfo[]
+    tool?: { callID?: string; messageID?: string }
   }
 }
 
@@ -169,6 +171,16 @@ export function mapOpenCodeEventToActivity(event: Event): AgentActivityEvent | n
       })
     }
     if (part.type === 'tool') {
+      if (part.tool === 'question') {
+        const activity = mapQuestionToolPartToActivity({
+          callId: 'callID' in part && typeof part.callID === 'string' ? part.callID : undefined,
+          sessionID: part.sessionID,
+          messageID: part.messageID,
+          state: part.state ?? {},
+          timestamp,
+        })
+        if (activity) return normalizeActivityEvent(activity)
+      }
       return normalizeActivityEvent(
         mapOpenCodeToolPartToActivity({
           tool: part.tool,
@@ -217,7 +229,18 @@ export function mapOpenCodeEventToActivity(event: Event): AgentActivityEvent | n
 
   const questionProperties = parseQuestionAskedProperties(event)
   if (questionProperties) {
-    const { id: requestId, sessionID: sessionId, questions } = questionProperties
+    const toolMeta =
+      typeof questionProperties.tool === 'object' && questionProperties.tool !== null
+        ? (questionProperties.tool as { callID?: string })
+        : undefined
+    const requestId =
+      typeof questionProperties.id === 'string'
+        ? questionProperties.id
+        : typeof toolMeta?.callID === 'string'
+          ? toolMeta.callID
+          : undefined
+    const sessionId = questionProperties.sessionID
+    const questions = questionProperties.questions
     const first = questions[0]
     return {
       type: 'question_request',
