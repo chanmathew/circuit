@@ -1,7 +1,7 @@
 "use client";
 
 import { Collapsible } from "radix-ui";
-import { ChevronDownIcon } from "lucide-react";
+import { ChevronDownIcon, Loader2 } from "lucide-react";
 import { cjk } from "@streamdown/cjk";
 import { code } from "@streamdown/code";
 import { math } from "@streamdown/math";
@@ -115,15 +115,19 @@ export const ReasoningTrigger = memo(function ReasoningTrigger({
     <Collapsible.Trigger
       data-slot="reasoning-trigger"
       className={cn(
-        "flex w-full items-center gap-1.5 px-0 py-0.5 text-left text-xs font-normal text-muted-foreground hover:text-foreground/80",
+        "flex w-full items-center justify-between gap-2 px-0 py-0.5 text-left text-xs font-normal text-muted-foreground hover:text-foreground/80",
         className,
       )}
       {...props}
     >
       {children ?? (
         <>
-          <ChevronDownIcon className="size-2.5 shrink-0 text-muted-foreground/70 transition-transform [[data-state=closed]_&]:-rotate-90" />
-          <span>{getThinkingMessage(isStreaming, duration)}</span>
+          <span className="min-w-0 flex-1">{getThinkingMessage(isStreaming, duration)}</span>
+          {isStreaming ? (
+            <Loader2 className="size-2.5 shrink-0 animate-spin text-primary" />
+          ) : (
+            <ChevronDownIcon className="size-2.5 shrink-0 text-muted-foreground/70 transition-transform [[data-state=closed]_&]:-rotate-90" />
+          )}
         </>
       )}
     </Collapsible.Trigger>
@@ -145,7 +149,7 @@ export const ReasoningContent = memo(function ReasoningContent({
     <Collapsible.Content
       data-slot="reasoning-content"
       className={cn(
-        "ml-1 max-h-48 overflow-y-auto border-l border-border/50 py-1 pl-2.5 text-xs leading-relaxed text-muted-foreground",
+        "max-h-48 overflow-y-auto py-1 text-xs leading-relaxed text-muted-foreground",
         className,
       )}
       {...props}
