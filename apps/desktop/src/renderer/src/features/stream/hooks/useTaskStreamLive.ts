@@ -43,7 +43,6 @@ export function useTaskStreamLive(taskId: string): TaskStreamLiveState {
       }
 
       if (update.type === 'phase_run_completed') {
-        setLiveActivities([])
         setPhaseRunning(false)
         setHarnessSession(null)
         setLastPhaseRunError(null)
@@ -51,7 +50,6 @@ export function useTaskStreamLive(taskId: string): TaskStreamLiveState {
       }
 
       if (update.type === 'phase_run_failed') {
-        setLiveActivities([])
         setPhaseRunning(false)
         setHarnessSession(null)
         setLastPhaseRunError(

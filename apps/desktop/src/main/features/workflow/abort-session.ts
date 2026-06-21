@@ -9,5 +9,9 @@ export interface AbortSessionInput {
 export async function abortSession(input: AbortSessionInput): Promise<void> {
   signalSessionAbort(input.sessionId)
   const adapter = requireOpenCodeAdapter()
-  await adapter.abortSession(input)
+  try {
+    await adapter.abortSession(input)
+  } catch {
+    // Local cancel already rejected the in-flight run — OpenCode abort is best-effort.
+  }
 }

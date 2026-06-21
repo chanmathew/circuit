@@ -1,7 +1,5 @@
-import { ListTodoIcon } from 'lucide-react'
 import { useState } from 'react'
 
-import type { ComposerMode } from '../../../../shared/api.js'
 import {
   Badge,
   ModelSelector,
@@ -48,9 +46,6 @@ export interface CircuitInputComposerProps {
   disabled?: boolean
   isRunning?: boolean
   placeholder?: string
-  showModeSelector?: boolean
-  mode?: ComposerMode
-  onModeChange?: (mode: ComposerMode) => void
   model?: ComposerModelId
   onModelChange?: (model: ComposerModelId) => void
   onSend: (text: string) => void
@@ -89,9 +84,6 @@ export function CircuitInputComposer({
   disabled = false,
   isRunning = false,
   placeholder = 'Message the agent…',
-  showModeSelector = false,
-  mode = 'chat',
-  onModeChange,
   model,
   onModelChange,
   onSend,
@@ -104,7 +96,6 @@ export function CircuitInputComposer({
   const selectedModelData =
     COMPOSER_MODELS.find((entry) => entry.id === selectedModel) ?? COMPOSER_MODELS[0]
   const toolbarDisabled = disabled || isRunning
-  const planEnabled = mode === 'plan'
 
   const handleModelChange = (value: ComposerModelId): void => {
     onModelChange?.(value)
@@ -121,7 +112,6 @@ export function CircuitInputComposer({
     }
     const text = message.text.trim()
     if (!text) return
-    // Scaffold: attachments are collected in message.files but not forwarded yet.
     onSend(text)
     setDraft('')
   }
@@ -152,23 +142,6 @@ export function CircuitInputComposer({
                 <PromptInputActionAddScreenshot disabled={toolbarDisabled} />
               </PromptInputActionMenuContent>
             </PromptInputActionMenu>
-
-            {showModeSelector && (
-              <PromptInputButton
-                type="button"
-                disabled={toolbarDisabled}
-                onClick={() => onModeChange?.(planEnabled ? 'chat' : 'plan')}
-                tooltip={{
-                  content: planEnabled
-                    ? 'Plan mode — bootstraps structured workflow'
-                    : 'Enable plan mode',
-                }}
-                variant={planEnabled ? 'default' : 'ghost'}
-              >
-                <ListTodoIcon className="size-4 shrink-0" />
-                <span>Plan</span>
-              </PromptInputButton>
-            )}
 
             <ModelSelector open={modelMenuOpen} onOpenChange={setModelMenuOpen}>
               <ModelSelectorTrigger asChild>

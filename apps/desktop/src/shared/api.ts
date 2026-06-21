@@ -3,6 +3,9 @@ import type { CircuitEvent, DecisionRequiredPayload, StreamActivityEvent } from 
 import { getPhaseLabel } from '@circuit/workflow'
 import type { PhaseStatus } from '@circuit/workflow'
 
+export type { WorkflowRunDetailDto, WorkflowRunDto, WorkflowRunStatus } from './workflow-run.js'
+import type { WorkflowRunDetailDto, WorkflowRunDto } from './workflow-run.js'
+
 export interface RepoDto {
   id: string
   name: string
@@ -58,6 +61,8 @@ export interface TaskDto extends TaskRow {
   requiredDecisionsByPhase: Record<string, DecisionRequiredPayload[]>
   /** Server-computed — draft task awaiting first composer message. */
   needsIntake: boolean
+  activeWorkflowRun?: WorkflowRunDto
+  pastWorkflowRuns?: WorkflowRunDto[]
 }
 
 export type TaskStreamUpdate =
@@ -100,8 +105,42 @@ export type TaskStreamUpdate =
       type: 'harness_session_cleared'
     }
 
-/** Composer mode before / during intake — chat is freeform, plan bootstraps structured workflow. */
-export type ComposerMode = 'chat' | 'plan'
+export interface EnableWorkflowRequest {
+  taskId: string
+  description?: string
+  text?: string
+  workflowType?: string
+  autoRunFirstPhase?: boolean
+  /** Cancel the active run first, then enable a new workflow. */
+  replaceActive?: boolean
+}
+
+export interface StartPhaseRequest {
+  taskId: string
+  phaseName?: string
+}
+
+export interface CancelWorkflowRequest {
+  taskId: string
+  stopRun?: boolean
+}
+
+export interface DiscardWorkflowDraftRequest {
+  taskId: string
+}
+
+export interface StartFollowUpWorkflowRequest {
+  taskId: string
+  description?: string
+  workflowType?: string
+  /** Cancel the active run first, then start follow-up. */
+  replaceActive?: boolean
+}
+
+export interface GetWorkflowRunRequest {
+  taskId: string
+  runId: string
+}
 
 export interface ApplySteeringRevisionRequest {
   taskId: string
@@ -112,11 +151,6 @@ export interface ApplySteeringRevisionRequest {
 }
 
 export { TASK_STREAM_UPDATE_CHANNEL } from './channels.js'
-
-export interface RecordSteeringRequest {
-  taskId: string
-  text: string
-}
 
 export interface RunPhaseRequest {
   taskId: string
@@ -152,11 +186,6 @@ export interface ResolveDecisionRequest {
   optionLabel: string
 }
 
-export interface CreateTaskRequest {
-  repoId: string
-  description: string
-}
-
 export interface CreateDraftTaskRequest {
   repoId: string
 }
@@ -164,13 +193,11 @@ export interface CreateDraftTaskRequest {
 export interface SubmitTaskIntakeRequest {
   taskId: string
   text: string
-  mode?: ComposerMode
 }
 
 export interface CreateTaskFromIntakeRequest {
   repoId: string
   text: string
-  mode?: ComposerMode
 }
 
 export interface AbortSessionRequest {
@@ -274,6 +301,8 @@ export function toTaskDto(
     }[]
     requiredDecisionsByPhase: Record<string, DecisionRequiredPayload[]>
     needsIntake: boolean
+    activeWorkflowRun?: WorkflowRunDto
+    pastWorkflowRuns?: WorkflowRunDto[]
   },
 ): TaskDto {
   return {
@@ -292,6 +321,8 @@ export function toTaskDto(
     })),
     requiredDecisionsByPhase: task.requiredDecisionsByPhase,
     needsIntake: task.needsIntake,
+    activeWorkflowRun: task.activeWorkflowRun,
+    pastWorkflowRuns: task.pastWorkflowRuns ?? [],
   }
 }
 
@@ -301,17 +332,22 @@ export interface CircuitApi {
   listRepos: () => Promise<RepoDto[]>
   addRepo: (path?: string) => Promise<RepoDto | null>
   listTasks: (request?: ListTasksRequest) => Promise<TaskSummaryDto[]>
-  createTask: (request: CreateTaskRequest) => Promise<TaskDto>
   createDraftTask: (request: CreateDraftTaskRequest) => Promise<TaskDto>
   createTaskFromIntake: (request: CreateTaskFromIntakeRequest) => Promise<TaskDto>
   submitTaskIntake: (request: SubmitTaskIntakeRequest) => Promise<TaskDto>
+  enableWorkflow: (request: EnableWorkflowRequest) => Promise<TaskDto>
+  startPhase: (request: StartPhaseRequest) => Promise<TaskDto>
+  cancelWorkflow: (request: CancelWorkflowRequest) => Promise<TaskDto>
+  discardWorkflowDraft: (request: DiscardWorkflowDraftRequest) => Promise<TaskDto>
+  startFollowUpWorkflow: (request: StartFollowUpWorkflowRequest) => Promise<TaskDto>
+  getWorkflowRun: (request: GetWorkflowRunRequest) => Promise<WorkflowRunDetailDto>
   sendChatMessage: (request: SendChatMessageRequest) => Promise<TaskDto>
   getTask: (taskId: string) => Promise<TaskDto>
+  getArtifact: (artifactId: string) => Promise<ArtifactDto>
   runPhase: (request: RunPhaseRequest) => Promise<TaskDto>
   approvePhase: (request: ApprovePhaseRequest) => Promise<TaskDto>
   requestPhaseRevision: (request: RequestPhaseRevisionRequest) => Promise<TaskDto>
   resolveDecision: (request: ResolveDecisionRequest) => Promise<TaskDto>
-  recordSteering: (request: RecordSteeringRequest) => Promise<TaskDto>
   applySteeringRevision: (request: ApplySteeringRevisionRequest) => Promise<TaskDto>
   replyPermission: (request: ReplyPermissionRequest) => Promise<void>
   replyQuestion: (request: ReplyQuestionRequest) => Promise<void>

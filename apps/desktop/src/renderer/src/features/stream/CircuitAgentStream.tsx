@@ -1,11 +1,13 @@
+import { Shimmer } from '@circuit/ui'
 import { useCallback, useMemo, useState } from 'react'
 
+import type { WorkflowType } from '@circuit/workflow'
 import type { ReferenceTarget, StreamAction } from '@circuit/protocol'
-import type { ComposerMode, DecisionResolutionDto, FeedEventDto, PermissionReply } from '../../../../shared/api.js'
+import type { DecisionResolutionDto, FeedEventDto, PermissionReply, PhaseDto, ArtifactDto } from '../../../../shared/api.js'
 import { useSubmitTaskIntake } from '../tasks/hooks/useSubmitTaskIntake.js'
 import { useApplySteeringRevision } from './hooks/useApplySteeringRevision.js'
 import { useAbortSession } from './hooks/useAbortSession.js'
-import { useRecordSteering } from './hooks/useRecordSteering.js'
+import { useStartFollowUpWorkflow } from './hooks/useStartFollowUpWorkflow.js'
 import { useReplyPermission } from './hooks/useReplyPermission.js'
 import { useReplyQuestion } from './hooks/useReplyQuestion.js'
 import { useRejectQuestion } from './hooks/useRejectQuestion.js'
@@ -21,11 +23,14 @@ export interface CircuitAgentStreamProps {
   taskId: string
   workspacePath: string
   feedEvents: FeedEventDto[]
+  phases?: PhaseDto[]
+  artifacts?: ArtifactDto[]
   decisionResolutions?: DecisionResolutionDto[]
   needsIntake?: boolean
-  /** Freeform task — composer sends to persistent harness chat session. */
-  freeform?: boolean
+  workflowStatus?: string
+  workflowType?: string
   isRunning?: boolean
+  needsReview?: boolean
   onResolveDecision?: (
     decisionId: string,
     optionId: string,
@@ -33,6 +38,11 @@ export interface CircuitAgentStreamProps {
     phase?: string,
   ) => void
   onOpenReference?: (target: ReferenceTarget) => void
+  onFocusWorkflowPanel?: () => void
+  onOpenWorkflowOverview?: () => void
+  onOpenPhase?: (phaseName: string) => void
+  onApprovePhase?: (phaseName: string) => void
+  onOpenArtifact?: (artifactId: string) => void
 }
 
 function persistedSteeringTexts(feedEvents: FeedEventDto[]): Set<string> {
@@ -71,20 +81,27 @@ export function CircuitAgentStream({
   taskId,
   workspacePath,
   feedEvents,
+  phases = [],
+  artifacts = [],
   decisionResolutions = [],
   needsIntake = false,
-  freeform = false,
+  workflowType,
   isRunning: taskRunning = false,
+  needsReview = false,
   onResolveDecision,
   onOpenReference,
+  onFocusWorkflowPanel,
+  onOpenWorkflowOverview,
+  onOpenPhase,
+  onOpenArtifact,
+  onApprovePhase,
 }: CircuitAgentStreamProps): React.ReactElement {
   const [pendingMessages, setPendingMessages] = useState<LocalUserMessage[]>([])
-  const [composerMode, setComposerMode] = useState<ComposerMode>('chat')
   const [resolvedHarnessIds, setResolvedHarnessIds] = useState<Set<string>>(() => new Set())
   const { liveActivities, phaseRunning, harnessSession } = useTaskStreamLive(taskId)
-  const recordSteering = useRecordSteering(taskId)
   const sendChatMessage = useSendChatMessage(taskId)
   const submitIntake = useSubmitTaskIntake(taskId)
+  const startFollowUp = useStartFollowUpWorkflow(taskId)
   const applySteeringRevision = useApplySteeringRevision(taskId)
   const replyPermission = useReplyPermission(taskId, workspacePath)
   const replyQuestion = useReplyQuestion(taskId, workspacePath)
@@ -98,10 +115,27 @@ export function CircuitAgentStream({
     return pendingMessages.filter((message) => !persisted.has(message.text))
   }, [feedEvents, pendingMessages])
 
-  const allItems = useTaskStreamItems(feedEvents, optimisticMessages, liveActivities)
+  const allItems = useTaskStreamItems(
+    feedEvents,
+    optimisticMessages,
+    liveActivities,
+    phases,
+    workflowType as WorkflowType | undefined,
+    artifacts,
+  )
   const { chatItems, pendingActions: rawPendingActions } = useMemo(
     () => splitStreamItems(allItems),
     [allItems],
+  )
+  const hasVisibleLiveStream = useMemo(
+    () =>
+      chatItems.some(
+        (item) =>
+          (item.kind === 'activity_group' && item.live === true) ||
+          (item.kind === 'reasoning' && item.isStreaming) ||
+          (item.kind === 'subagent_run' && item.live === true),
+      ),
+    [chatItems],
   )
   const pendingActions = useMemo(
     () => rawPendingActions.filter((item) => !resolvedHarnessIds.has(item.id)),
@@ -110,7 +144,6 @@ export function CircuitAgentStream({
 
   const composerBusy =
     agentRunning ||
-    recordSteering.isPending ||
     sendChatMessage.isPending ||
     submitIntake.isPending ||
     applySteeringRevision.isPending ||
@@ -135,7 +168,7 @@ export function CircuitAgentStream({
 
       if (needsIntake) {
         submitIntake.mutate(
-          { text: trimmed, mode: composerMode },
+          { text: trimmed },
           {
             onSuccess: () => {
               setPendingMessages((current) => removePendingMessage(current, trimmed))
@@ -145,22 +178,13 @@ export function CircuitAgentStream({
         return
       }
 
-      if (freeform) {
-        sendChatMessage.mutate(trimmed, {
-          onSuccess: () => {
-            setPendingMessages((current) => removePendingMessage(current, trimmed))
-          },
-        })
-        return
-      }
-
-      recordSteering.mutate(trimmed, {
+      sendChatMessage.mutate(trimmed, {
         onSuccess: () => {
           setPendingMessages((current) => removePendingMessage(current, trimmed))
         },
       })
     },
-    [composerMode, freeform, needsIntake, recordSteering, sendChatMessage, submitIntake],
+    [needsIntake, sendChatMessage, submitIntake],
   )
 
   const handleStop = useCallback(() => {
@@ -275,44 +299,86 @@ export function CircuitAgentStream({
             steeringText: latestSteeringText(feedEvents),
           })
         }
+        return
+      }
+
+      if (action === 'workflow.openOverview') {
+        onOpenWorkflowOverview?.()
+        return
+      }
+
+      if (action === 'workflow.focusPanel') {
+        onFocusWorkflowPanel?.()
+        return
+      }
+
+      if (action === 'workflow.viewSummary') {
+        const artifactId = payload?.artifactId
+        if (typeof artifactId === 'string') {
+          onOpenArtifact?.(artifactId)
+        }
+        return
+      }
+
+      if (action === 'workflow.startFollowUp') {
+        startFollowUp.mutate({})
+        onFocusWorkflowPanel?.()
+        return
+      }
+
+      if (action === 'phase.open') {
+        const phase = payload?.phase
+        if (typeof phase === 'string') {
+          onOpenPhase?.(phase)
+        }
+        return
+      }
+
+      if (action === 'phase.approve') {
+        const phase = payload?.phase
+        if (typeof phase === 'string') {
+          onApprovePhase?.(phase)
+        }
+        return
       }
     },
-    [applySteeringRevision, feedEvents, onResolveDecision, rejectQuestion, replyPermission, replyQuestion],
+    [
+      applySteeringRevision,
+      feedEvents,
+      onApprovePhase,
+      onFocusWorkflowPanel,
+      onOpenArtifact,
+      onOpenPhase,
+      onOpenWorkflowOverview,
+      onResolveDecision,
+      rejectQuestion,
+      replyPermission,
+      replyQuestion,
+      startFollowUp,
+    ],
   )
 
   const handleOpenReference = (target: ReferenceTarget): void => {
     onOpenReference?.(target)
   }
 
-  const intakePlaceholder =
-    composerMode === 'plan'
-      ? 'Describe the change — Plan mode bootstraps phases and artifacts'
-      : 'Message the agent — chat starts an OpenCode session on send'
-
+  const intakePlaceholder = 'Message the agent — chat starts an OpenCode session on send'
+  const reviewPlaceholder = 'Ask a question or tell the agent what to change…'
   const chatPlaceholder = 'Message the agent…'
 
   return (
     <aside className="flex h-full min-h-0 flex-col bg-card/30">
-      <div className="shrink-0 border-b border-border px-3 py-2">
-        <div className="mx-auto flex w-full max-w-2xl items-center justify-between gap-2">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Agent stream
-          </p>
-          {agentRunning && (
-            <p className="text-[10px] font-medium text-primary">Agent running…</p>
-          )}
-        </div>
-      </div>
-
       <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col">
+        {agentRunning && !hasVisibleLiveStream && (
+          <div className="px-3 py-1 text-xs">
+            <Shimmer duration={1.5}>Agent is thinking…</Shimmer>
+          </div>
+        )}
+
         <StreamList
           items={chatItems}
           decisionResolutions={decisionResolutions}
-          emptyDescription={
-            needsIntake
-              ? intakePlaceholder
-              : undefined
-          }
+          emptyDescription={needsIntake ? intakePlaceholder : undefined}
           onStreamAction={handleStreamAction}
           onOpenReference={handleOpenReference}
         />
@@ -327,10 +393,9 @@ export function CircuitAgentStream({
         <CircuitInputComposer
           disabled={composerBusy && !agentRunning}
           isRunning={agentRunning}
-          showModeSelector={needsIntake}
-          mode={composerMode}
-          onModeChange={setComposerMode}
-          placeholder={needsIntake ? intakePlaceholder : freeform ? chatPlaceholder : undefined}
+          placeholder={
+            needsIntake ? intakePlaceholder : needsReview ? reviewPlaceholder : chatPlaceholder
+          }
           onSend={handleSend}
           onStop={harnessSession ? handleStop : undefined}
         />

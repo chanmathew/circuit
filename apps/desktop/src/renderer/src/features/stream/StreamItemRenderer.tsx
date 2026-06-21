@@ -5,7 +5,9 @@ import {
   ActionCardItemView,
   ActivityGroupItemView,
   AgentMessageItemView,
+  ReasoningItemView,
   ReferenceCardItemView,
+  SubagentRunItemView,
   UserMessageItemView,
   type StreamItemContext,
 } from './StreamItemViews.js'
@@ -34,8 +36,12 @@ export function StreamItemRenderer({
       return <UserMessageItemView item={item} />
     case 'agent_message':
       return <AgentMessageItemView item={item} />
+    case 'reasoning':
+      return <ReasoningItemView item={item} />
     case 'activity_group':
       return <ActivityGroupItemView item={item} />
+    case 'subagent_run':
+      return <SubagentRunItemView item={item} />
     case 'action_card':
       return <ActionCardItemView item={item} context={context} />
     case 'reference_card':

@@ -2,7 +2,7 @@ import type { PhaseStatus } from '@circuit/workflow'
 
 export function phaseStatusLabel(status: PhaseStatus): string {
   const labels: Record<PhaseStatus, string> = {
-    locked: 'Locked',
+    locked: 'Pending',
     ready: 'Ready',
     running: 'Running',
     needs_review: 'Needs review',

@@ -1,4 +1,4 @@
-import { Button, Textarea } from '@circuit/ui'
+import { Button } from '@circuit/ui'
 
 import type { PhaseDto } from '../../../../shared/api.js'
 
@@ -6,45 +6,18 @@ export interface WorkbenchActionBarProps {
   actionPhase?: PhaseDto
   isRunning: boolean
   canRun: boolean
-  canApprove: boolean
-  canRevise: boolean
-  approveBlockedReason?: string | null
-  proceedLabel?: string
   showRunHint: boolean
-  revisionOpen: boolean
-  revisionNote: string
-  onRevisionNoteChange: (value: string) => void
   onRunPhase: (phaseName: string) => void
-  onApprovePhase: (phaseName: string) => void
-  onOpenRevision: () => void
-  onCloseRevision: () => void
-  onSubmitRevision: (phaseName: string, note: string) => void
 }
 
 export function WorkbenchActionBar({
   actionPhase,
   isRunning,
   canRun,
-  canApprove,
-  canRevise,
-  approveBlockedReason,
-  proceedLabel,
   showRunHint,
-  revisionOpen,
-  revisionNote,
-  onRevisionNoteChange,
   onRunPhase,
-  onApprovePhase,
-  onOpenRevision,
-  onCloseRevision,
-  onSubmitRevision,
 }: WorkbenchActionBarProps): React.ReactElement | null {
-  const approveDisabled = isRunning || Boolean(approveBlockedReason)
-  const hasActions =
-    (canRun && actionPhase) ||
-    (canApprove && actionPhase) ||
-    (canRevise && actionPhase) ||
-    showRunHint
+  const hasActions = (canRun && actionPhase) || showRunHint
 
   if (!hasActions) return null
 
@@ -56,62 +29,11 @@ export function WorkbenchActionBar({
         </p>
       )}
 
-      {canApprove && actionPhase && approveBlockedReason && !revisionOpen && (
-        <p className="border-b border-border/60 bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
-          {approveBlockedReason}
-        </p>
-      )}
-
       <div className="flex flex-wrap items-center gap-2 px-4 py-3">
         {canRun && actionPhase && (
           <Button type="button" disabled={isRunning} onClick={() => onRunPhase(actionPhase.name)}>
             {isRunning ? 'Running…' : `Run ${actionPhase.label}`}
           </Button>
-        )}
-
-        {canApprove && actionPhase && !revisionOpen && (
-          <>
-            <Button
-              type="button"
-              disabled={approveDisabled}
-              onClick={() => onApprovePhase(actionPhase.name)}
-            >
-              {proceedLabel ?? `Approve ${actionPhase.label}`}
-            </Button>
-            {canRevise && (
-              <Button
-                type="button"
-                variant="outline"
-                disabled={isRunning}
-                onClick={onOpenRevision}
-              >
-                Request revision
-              </Button>
-            )}
-          </>
-        )}
-
-        {revisionOpen && actionPhase && (
-          <div className="flex w-full flex-col gap-3">
-            <Textarea
-              value={revisionNote}
-              onChange={(e) => onRevisionNoteChange(e.target.value)}
-              placeholder="What should change?"
-              className="min-h-20 bg-background"
-            />
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                disabled={!revisionNote.trim() || isRunning}
-                onClick={() => onSubmitRevision(actionPhase.name, revisionNote.trim())}
-              >
-                Submit revision
-              </Button>
-              <Button type="button" variant="outline" onClick={onCloseRevision}>
-                Cancel
-              </Button>
-            </div>
-          </div>
         )}
       </div>
     </div>

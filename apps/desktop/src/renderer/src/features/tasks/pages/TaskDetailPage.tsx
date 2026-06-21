@@ -29,11 +29,14 @@ function TaskDetailContent({ taskId }: { taskId: string }): React.ReactElement {
 
   const task = taskQuery.data
   const needsIntake = task.needsIntake
-  const isRunning = workflowMutation.isPending || task.status === 'running' || phaseRunning
-  const chatOnly = needsIntake || (task.workflowType === 'freeform' && task.phases.length === 0)
+  // Harness activity only — task.status "running" also means "workflow in progress" after approve.
+  const isRunning =
+    phaseRunning ||
+    workflowMutation.isPending ||
+    task.phases.some((phase) => phase.status === 'running')
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
       {workflowMutation.isError && (
         <Card className="shrink-0 rounded-none border-x-0 border-t-0 border-destructive/30 bg-destructive/5 shadow-none">
           <CardContent className="py-2 text-sm text-destructive">
@@ -53,15 +56,12 @@ function TaskDetailContent({ taskId }: { taskId: string }): React.ReactElement {
       )}
 
       <TaskWorkbench
+        className="min-h-0 flex-1"
         task={task}
         isRunning={isRunning}
         needsIntake={needsIntake}
-        chatOnly={chatOnly}
         onRunPhase={(phaseName) => workflowMutation.mutate({ type: 'run', phaseName })}
         onApprovePhase={(phaseName) => workflowMutation.mutate({ type: 'approve', phaseName })}
-        onRequestRevision={(phaseName, note) =>
-          workflowMutation.mutate({ type: 'revise', phaseName, note })
-        }
         onResolveDecision={(phase, decisionId, optionId, optionLabel) =>
           workflowMutation.mutate({
             type: 'resolve',
@@ -79,7 +79,9 @@ function TaskDetailContent({ taskId }: { taskId: string }): React.ReactElement {
 export function TaskDetailPage({ taskId }: { taskId: string }): React.ReactElement {
   return (
     <TaskStreamProvider taskId={taskId}>
-      <TaskDetailContent taskId={taskId} />
+      <div className="flex h-full min-h-0 flex-col overflow-hidden">
+        <TaskDetailContent taskId={taskId} />
+      </div>
     </TaskStreamProvider>
   )
 }

@@ -12,6 +12,8 @@ import type { InspectorTab } from '@circuit/protocol'
 
 import type { ArtifactDto, TaskDto } from '../../../../shared/api.js'
 import type { CheckEntry, DiffEntry } from './lib/workbench-content.js'
+import { resolvePhaseArtifact } from './lib/workbench-content.js'
+import { WorkflowPanel } from './WorkflowPanel.js'
 
 function ArtifactTree({
   artifacts,
@@ -22,9 +24,19 @@ function ArtifactTree({
   selectedId?: string
   onSelect: (id: string) => void
 }): React.ReactElement {
+  const fileArtifacts = artifacts.filter((artifact) => artifact.phase !== 'ticket')
+
+  if (fileArtifacts.length === 0) {
+    return (
+      <p className="px-2 py-4 text-center text-xs text-muted-foreground">
+        Phase artifacts appear here after the first phase run.
+      </p>
+    )
+  }
+
   return (
     <ul className="space-y-0.5">
-      {artifacts.map((artifact) => (
+      {fileArtifacts.map((artifact) => (
         <li key={artifact.id}>
           <Button
             type="button"
@@ -149,6 +161,7 @@ export interface TaskRightSidebarProps {
   activeTab: InspectorTab
   selectedId?: string
   changesKind?: 'diff' | 'check'
+  isRunning?: boolean
   onTabChange: (tab: InspectorTab) => void
   onSelectArtifact: (id: string) => void
   onSelectDiff: (id: string) => void
@@ -163,6 +176,7 @@ export function TaskRightSidebar({
   activeTab,
   selectedId,
   changesKind,
+  isRunning = false,
   onTabChange,
   onSelectArtifact,
   onSelectDiff,
@@ -174,11 +188,6 @@ export function TaskRightSidebar({
 
   return (
     <aside className="flex h-full min-h-0 flex-col bg-card/50">
-      <div className="shrink-0 border-b border-border px-3 py-2">
-        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-          Inspector
-        </p>
-      </div>
       <Tabs
         value={activeTab}
         onValueChange={(value) => onTabChange(value as InspectorTab)}
@@ -189,16 +198,10 @@ export function TaskRightSidebar({
           className="h-auto w-full shrink-0 rounded-none border-b border-border bg-transparent p-0 gap-0"
         >
           <TabsTrigger
-            value="artifacts"
+            value="workflow"
             className="flex-1 rounded-none border-0 py-2 text-[10px] uppercase shadow-none data-active:shadow-none"
           >
-            Artifacts
-          </TabsTrigger>
-          <TabsTrigger
-            value="changes"
-            className="flex-1 rounded-none border-0 py-2 text-[10px] uppercase shadow-none data-active:shadow-none"
-          >
-            Changes
+            Workflow
           </TabsTrigger>
           <TabsTrigger
             value="files"
@@ -206,14 +209,34 @@ export function TaskRightSidebar({
           >
             Files
           </TabsTrigger>
+          <TabsTrigger
+            value="changes"
+            className="flex-1 rounded-none border-0 py-2 text-[10px] uppercase shadow-none data-active:shadow-none"
+          >
+            Changes
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="artifacts" className="mt-0 min-h-0 flex-1 overflow-hidden">
+        <TabsContent value="workflow" className="mt-0 min-h-0 flex-1 overflow-hidden">
+          <ScrollArea className="h-full">
+            <WorkflowPanel
+              task={task}
+              isRunning={isRunning}
+              onSelectArtifact={onSelectArtifact}
+              onSelectPhase={(phaseName) => {
+                const artifact = resolvePhaseArtifact(task, phaseName)
+                if (artifact) onSelectArtifact(artifact.id)
+              }}
+            />
+          </ScrollArea>
+        </TabsContent>
+
+        <TabsContent value="files" className="mt-0 min-h-0 flex-1 overflow-hidden">
           <ScrollArea className="h-full">
             <div className="p-2">
               <ArtifactTree
                 artifacts={artifacts}
-                selectedId={activeTab === 'artifacts' ? selectedId : undefined}
+                selectedId={activeTab === 'files' ? selectedId : undefined}
                 onSelect={onSelectArtifact}
               />
             </div>
@@ -232,12 +255,6 @@ export function TaskRightSidebar({
               onSelectCheck={onSelectCheck}
             />
           </ScrollArea>
-        </TabsContent>
-
-        <TabsContent value="files" className="mt-0 min-h-0 flex-1">
-          <div className="p-4 text-center text-xs text-muted-foreground">
-            Changed files will appear here during implement and review.
-          </div>
         </TabsContent>
       </Tabs>
     </aside>

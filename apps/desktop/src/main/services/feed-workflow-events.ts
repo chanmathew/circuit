@@ -19,6 +19,7 @@ export function workflowEventsToFeedEvents(
 export function toWorkflowEventRow(input: {
   id: string
   taskId: string
+  workflowRunId?: string
   phaseRunId?: string
   actor: WorkflowEventActor
   type: string
@@ -30,6 +31,7 @@ export function toWorkflowEventRow(input: {
 }): {
   id: string
   taskId: string
+  workflowRunId: string | null
   phaseRunId: string | null
   actor: string
   type: string
@@ -42,6 +44,7 @@ export function toWorkflowEventRow(input: {
   return {
     id: input.id,
     taskId: input.taskId,
+    workflowRunId: input.workflowRunId ?? null,
     phaseRunId: input.phaseRunId ?? null,
     actor: input.actor,
     type: input.type,

@@ -3,16 +3,16 @@ import { dialog, ipcMain } from 'electron'
 import { CircuitError } from '@circuit/shared'
 
 import {
+  toArtifactDto,
+  toPhaseDto,
   toRepoDto,
   toTaskDto,
   toTaskSummaryDto,
   type ApprovePhaseRequest,
-  type CreateTaskRequest,
   type ListTasksRequest,
   type RequestPhaseRevisionRequest,
   type ResolveDecisionRequest,
   type RunPhaseRequest,
-  type RecordSteeringRequest,
   type SendChatMessageRequest,
   type AbortSessionRequest,
   type ApplySteeringRevisionRequest,
@@ -22,19 +22,31 @@ import {
   type ReplyQuestionRequest,
   type RejectQuestionRequest,
   type SubmitTaskIntakeRequest,
+  type EnableWorkflowRequest,
+  type StartPhaseRequest,
+  type CancelWorkflowRequest,
+  type DiscardWorkflowDraftRequest,
+  type GetWorkflowRunRequest,
+  type StartFollowUpWorkflowRequest,
 } from '../../shared/api.js'
 import { registerRepo, listRegisteredRepos } from '../services/repos.js'
 import { resolveDecision } from '../services/decisions.js'
-import { createTask, createDraftTask, getTaskDetail, listAllTasks } from '../services/tasks.js'
-import { applySteeringRevision, recordSteering } from '../services/workflow-events.js'
+import { createDraftTask, getArtifactDetail, getTaskDetail, getWorkflowRunDetail, listAllTasks } from '../services/tasks.js'
+import { applySteeringRevision } from '../services/workflow-events.js'
 import {
   approvePhase,
+  cancelAndEnableWorkflow,
+  cancelAndStartFollowUp,
+  createTaskFromIntake,
+  cancelWorkflow,
+  discardWorkflowDraft,
+  enableWorkflow,
+  enableWorkflowFromChat,
   getActiveAgentAdapterName,
   requestPhaseRevision,
-  createTaskFromIntake,
-  scheduleAutoRunOnTaskCreate,
-  schedulePhaseRun,
   sendChatMessage,
+  startFollowUpWorkflow,
+  startPhase,
   submitTaskIntake,
 } from '../features/workflow/index.js'
 import { replyHarnessPermission } from '../features/workflow/reply-permission.js'
@@ -103,16 +115,6 @@ export function registerIpcHandlers(): void {
     }
   })
 
-  ipcMain.handle('circuit:tasks:create', (_event, request: CreateTaskRequest) => {
-    try {
-      const task = createTask(request)
-      scheduleAutoRunOnTaskCreate(task.id)
-      return toTaskDto(getTaskDetail(task.id))
-    } catch (error) {
-      throw toIpcError(error)
-    }
-  })
-
   ipcMain.handle('circuit:tasks:createDraft', (_event, request: CreateDraftTaskRequest) => {
     try {
       const task = createDraftTask(request.repoId)
@@ -124,13 +126,9 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle(
     'circuit:tasks:createFromIntake',
-    (_event, request: CreateTaskFromIntakeRequest) => {
+    async (_event, request: CreateTaskFromIntakeRequest) => {
       try {
-        const task = createTaskFromIntake(
-          request.repoId,
-          request.text,
-          request.mode ?? 'chat',
-        )
+        const task = await createTaskFromIntake(request.repoId, request.text)
         return toTaskDto(task)
       } catch (error) {
         throw toIpcError(error)
@@ -138,9 +136,131 @@ export function registerIpcHandlers(): void {
     },
   )
 
-  ipcMain.handle('circuit:tasks:submitIntake', (_event, request: SubmitTaskIntakeRequest) => {
+  ipcMain.handle('circuit:tasks:submitIntake', async (_event, request: SubmitTaskIntakeRequest) => {
     try {
-      return toTaskDto(submitTaskIntake(request.taskId, request.text, request.mode ?? 'chat'))
+      return toTaskDto(await submitTaskIntake(request.taskId, request.text))
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
+  async function handleEnableWorkflow(request: EnableWorkflowRequest) {
+    const workflowType = request.workflowType as import('@circuit/workflow').WorkflowType | undefined
+
+    if (request.replaceActive) {
+      if (request.text?.trim()) {
+        return enableWorkflowFromChat(request.taskId, request.text, {
+          autoRunFirstPhase: request.autoRunFirstPhase,
+          replaceActive: true,
+        })
+      }
+
+      const description = request.description?.trim()
+      if (!description) {
+        return enableWorkflowFromChat(request.taskId, undefined, {
+          autoRunFirstPhase: request.autoRunFirstPhase,
+          replaceActive: true,
+        })
+      }
+
+      return cancelAndEnableWorkflow(request.taskId, {
+        description,
+        autoRunFirstPhase: request.autoRunFirstPhase,
+        workflowType,
+      })
+    }
+
+    if (request.text?.trim()) {
+      return enableWorkflowFromChat(request.taskId, request.text, {
+        autoRunFirstPhase: request.autoRunFirstPhase,
+      })
+    }
+
+    const description = request.description?.trim()
+    if (!description) {
+      return enableWorkflowFromChat(request.taskId, undefined, {
+        autoRunFirstPhase: request.autoRunFirstPhase,
+      })
+    }
+
+    return enableWorkflow(request.taskId, {
+      description,
+      autoRunFirstPhase: request.autoRunFirstPhase,
+      workflowType,
+    })
+  }
+
+  ipcMain.handle('circuit:tasks:enableWorkflow', async (_event, request: EnableWorkflowRequest) => {
+    try {
+      return toTaskDto(await handleEnableWorkflow(request))
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
+  ipcMain.handle('circuit:tasks:startPhase', (_event, request: StartPhaseRequest) => {
+    try {
+      return toTaskDto(startPhase(request.taskId, request.phaseName))
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
+  ipcMain.handle('circuit:tasks:cancelWorkflow', async (_event, request: CancelWorkflowRequest) => {
+    try {
+      if (request.stopRun === false) {
+        // stopRun reserved for future use — cancel always best-effort aborts active harness.
+      }
+      return toTaskDto(await cancelWorkflow(request.taskId))
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
+  ipcMain.handle(
+    'circuit:tasks:discardWorkflowDraft',
+    (_event, request: DiscardWorkflowDraftRequest) => {
+      try {
+        return toTaskDto(discardWorkflowDraft(request.taskId))
+      } catch (error) {
+        throw toIpcError(error)
+      }
+    },
+  )
+
+  ipcMain.handle(
+    'circuit:tasks:startFollowUpWorkflow',
+    async (_event, request: StartFollowUpWorkflowRequest) => {
+      try {
+        if (request.replaceActive) {
+          return toTaskDto(
+            await cancelAndStartFollowUp(request.taskId, {
+              description: request.description,
+              workflowType: request.workflowType as import('@circuit/workflow').WorkflowType | undefined,
+            }),
+          )
+        }
+
+        return toTaskDto(
+          await startFollowUpWorkflow(request.taskId, {
+            description: request.description,
+            workflowType: request.workflowType as import('@circuit/workflow').WorkflowType | undefined,
+          }),
+        )
+      } catch (error) {
+        throw toIpcError(error)
+      }
+    },
+  )
+
+  ipcMain.handle('circuit:tasks:getWorkflowRun', (_event, request: GetWorkflowRunRequest) => {
+    try {
+      const detail = getWorkflowRunDetail(request.taskId, request.runId)
+      return {
+        ...detail.run,
+        phases: detail.phases.map(toPhaseDto),
+        artifacts: detail.artifacts.map(toArtifactDto),
+      }
     } catch (error) {
       throw toIpcError(error)
     }
@@ -162,10 +282,17 @@ export function registerIpcHandlers(): void {
     }
   })
 
+  ipcMain.handle('circuit:artifacts:get', (_event, artifactId: string) => {
+    try {
+      return toArtifactDto(getArtifactDetail(artifactId))
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
   ipcMain.handle('circuit:tasks:runPhase', (_event, request: RunPhaseRequest) => {
     try {
-      schedulePhaseRun(request.taskId, request.phaseName)
-      return toTaskDto(getTaskDetail(request.taskId))
+      return toTaskDto(startPhase(request.taskId, request.phaseName))
     } catch (error) {
       throw toIpcError(error)
     }
@@ -202,14 +329,6 @@ export function registerIpcHandlers(): void {
         request.optionLabel,
       )
       return toTaskDto(detail)
-    } catch (error) {
-      throw toIpcError(error)
-    }
-  })
-
-  ipcMain.handle('circuit:tasks:recordSteering', (_event, request: RecordSteeringRequest) => {
-    try {
-      return toTaskDto(recordSteering(request.taskId, request.text))
     } catch (error) {
       throw toIpcError(error)
     }

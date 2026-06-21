@@ -2,12 +2,13 @@ import { writeFileSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 
 import {
+  getActiveWorkflowRunForTask,
   getArtifactByTaskAndPhase,
   getPhaseByTaskAndName,
   getTaskById,
-  getTicketArtifactForTask,
+  getTicketArtifactForRun,
   insertPhaseRun,
-  listArtifactsForTask,
+  listArtifactsForWorkflowRun,
   updateArtifact,
   updatePhase,
   updateTask,
@@ -21,6 +22,7 @@ import {
 } from '@circuit/workflow/context-pack'
 
 import { getDb } from '../../db.js'
+import { broadcastTaskStreamUpdate } from '../../ipc/task-stream-broadcast.js'
 import { getTaskDetail, type TaskDetail } from '../../services/tasks.js'
 import { RUNNABLE_PHASE_STATUSES, workflowAdapter } from './adapter.js'
 import {
@@ -31,6 +33,7 @@ import {
   createSessionStartedHandler,
   failureMessage,
 } from './harness-run-orchestrator.js'
+import { persistHarnessTurnActivities } from './persist-harness-activities.js'
 import { isPhaseRunAborted } from './phase-run-errors.js'
 import { acquirePhaseRunLock, releasePhaseRunLock } from './phase-run-lock.js'
 
@@ -46,19 +49,24 @@ export async function runPhase(taskId: string, phaseName?: string): Promise<Task
     const task = getTaskById(db, taskId)
     if (!task) throw new NotFoundError('Task', taskId)
 
+    const activeRun = getActiveWorkflowRunForTask(db, taskId)
+    if (!activeRun) {
+      throw new ValidationError('Enable a workflow before running a phase')
+    }
+
     const targetName = phaseName ?? task.currentPhase
-    const phase = getPhaseByTaskAndName(db, taskId, targetName)
+    const phase = getPhaseByTaskAndName(db, taskId, targetName, activeRun.id)
     if (!phase) throw new NotFoundError('Phase', targetName)
 
     if (!RUNNABLE_PHASE_STATUSES.has(phase.status as PhaseStatus)) {
       throw new ValidationError(`Phase "${targetName}" is not runnable (status: ${phase.status})`)
     }
 
-    const artifact = getArtifactByTaskAndPhase(db, taskId, targetName)
+    const artifact = getArtifactByTaskAndPhase(db, taskId, targetName, activeRun.id)
     if (!artifact) throw new NotFoundError('Artifact', targetName)
 
-    const ticket = getTicketArtifactForTask(db, taskId)
-    const approvedArtifacts = listArtifactsForTask(db, taskId).filter(
+    const ticket = getTicketArtifactForRun(db, activeRun.id)
+    const approvedArtifacts = listArtifactsForWorkflowRun(db, activeRun.id).filter(
       (item) => item.status === 'approved' && item.phase !== targetName,
     )
 
@@ -116,6 +124,7 @@ export async function runPhase(taskId: string, phaseName?: string): Promise<Task
       updateArtifact(db, artifact.id, {
         content: artifactContent,
         status: 'needs_review',
+        version: artifact.version + 1,
         updatedAt: new Date().toISOString(),
       })
 
@@ -129,6 +138,7 @@ export async function runPhase(taskId: string, phaseName?: string): Promise<Task
       insertPhaseRun(db, {
         id: runId,
         taskId,
+        workflowRunId: activeRun.id,
         phase: targetName,
         agent: workflowAdapter.name,
         model: result.modelLabel ?? workflowAdapter.name,
@@ -144,20 +154,31 @@ export async function runPhase(taskId: string, phaseName?: string): Promise<Task
         completedAt: new Date().toISOString(),
       })
 
+      if (result.activities?.length) {
+        persistHarnessTurnActivities(taskId, runId, result.activities)
+      }
+
       broadcastHarnessRunCompleted(taskId, targetName, runId)
 
       return getTaskDetail(taskId)
     } catch (error) {
       const failedAt = new Date().toISOString()
-      const message = failureMessage(error)
       const aborted = isPhaseRunAborted(error)
 
       updatePhase(db, phase.id, { status: previousPhaseStatus })
       updateTask(db, taskId, { status: previousTaskStatus, updatedAt: failedAt })
 
+      if (aborted) {
+        broadcastTaskStreamUpdate({ taskId, type: 'harness_session_cleared' })
+        return getTaskDetail(taskId)
+      }
+
+      const message = failureMessage(error)
+
       insertPhaseRun(db, {
         id: runId,
         taskId,
+        workflowRunId: activeRun.id,
         phase: targetName,
         agent: workflowAdapter.name,
         model: workflowAdapter.name,
@@ -174,10 +195,6 @@ export async function runPhase(taskId: string, phaseName?: string): Promise<Task
       })
 
       broadcastHarnessRunFailed(taskId, targetName, runId, message)
-
-      if (aborted) {
-        return getTaskDetail(taskId)
-      }
 
       throw error
     } finally {

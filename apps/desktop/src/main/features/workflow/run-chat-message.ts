@@ -2,6 +2,7 @@ import { getTaskById, insertPhaseRun, listPhaseRunsForTask, updateTask } from '@
 import { createId, NotFoundError, ValidationError } from '@circuit/shared'
 
 import { getDb } from '../../db.js'
+import { broadcastTaskStreamUpdate } from '../../ipc/task-stream-broadcast.js'
 import { getTaskDetail, type TaskDetail } from '../../services/tasks.js'
 import { workflowAdapter } from './adapter.js'
 import {
@@ -12,6 +13,7 @@ import {
   createSessionStartedHandler,
   failureMessage,
 } from './harness-run-orchestrator.js'
+import { persistHarnessTurnActivities } from './persist-harness-activities.js'
 import { isPhaseRunAborted } from './phase-run-errors.js'
 import { acquirePhaseRunLock, releasePhaseRunLock } from './phase-run-lock.js'
 
@@ -42,12 +44,8 @@ export async function runChatMessage(taskId: string, text: string): Promise<Task
     const task = getTaskById(db, taskId)
     if (!task) throw new NotFoundError('Task', taskId)
 
-    if (task.workflowType !== 'freeform') {
-      throw new ValidationError('Chat harness runs require a freeform task')
-    }
-
     if (!workflowAdapter.runChatTurn) {
-      throw new ValidationError('Active adapter does not support freeform chat')
+      throw new ValidationError('Active adapter does not support chat')
     }
 
     const existingSessionId = getChatSessionId(taskId)
@@ -97,15 +95,25 @@ export async function runChatMessage(taskId: string, text: string): Promise<Task
         updatedAt: new Date().toISOString(),
       })
 
+      if (result.activities?.length) {
+        persistHarnessTurnActivities(taskId, runId, result.activities)
+      }
+
       broadcastHarnessRunCompleted(taskId, CHAT_PHASE, runId)
 
       return getTaskDetail(taskId)
     } catch (error) {
       const failedAt = new Date().toISOString()
-      const message = failureMessage(error)
       const aborted = isPhaseRunAborted(error)
 
       updateTask(db, taskId, { status: previousTaskStatus, updatedAt: failedAt })
+
+      if (aborted) {
+        broadcastTaskStreamUpdate({ taskId, type: 'harness_session_cleared' })
+        return getTaskDetail(taskId)
+      }
+
+      const message = failureMessage(error)
 
       insertPhaseRun(db, {
         id: runId,
@@ -126,10 +134,6 @@ export async function runChatMessage(taskId: string, text: string): Promise<Task
       })
 
       broadcastHarnessRunFailed(taskId, CHAT_PHASE, runId, message)
-
-      if (aborted) {
-        return getTaskDetail(taskId)
-      }
 
       throw error
     } finally {

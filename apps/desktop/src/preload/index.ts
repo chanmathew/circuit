@@ -9,18 +9,25 @@ const circuitApi: CircuitApi = {
   listRepos: () => ipcRenderer.invoke('circuit:repos:list'),
   addRepo: (path?: string) => ipcRenderer.invoke('circuit:repos:add', path),
   listTasks: (request) => ipcRenderer.invoke('circuit:tasks:list', request),
-  createTask: (request) => ipcRenderer.invoke('circuit:tasks:create', request),
   createDraftTask: (request) => ipcRenderer.invoke('circuit:tasks:createDraft', request),
   createTaskFromIntake: (request) =>
     ipcRenderer.invoke('circuit:tasks:createFromIntake', request),
   submitTaskIntake: (request) => ipcRenderer.invoke('circuit:tasks:submitIntake', request),
+  enableWorkflow: (request) => ipcRenderer.invoke('circuit:tasks:enableWorkflow', request),
+  startPhase: (request) => ipcRenderer.invoke('circuit:tasks:startPhase', request),
+  cancelWorkflow: (request) => ipcRenderer.invoke('circuit:tasks:cancelWorkflow', request),
+  discardWorkflowDraft: (request) =>
+    ipcRenderer.invoke('circuit:tasks:discardWorkflowDraft', request),
+  startFollowUpWorkflow: (request) =>
+    ipcRenderer.invoke('circuit:tasks:startFollowUpWorkflow', request),
+  getWorkflowRun: (request) => ipcRenderer.invoke('circuit:tasks:getWorkflowRun', request),
   sendChatMessage: (request) => ipcRenderer.invoke('circuit:tasks:sendChatMessage', request),
   getTask: (taskId) => ipcRenderer.invoke('circuit:tasks:get', taskId),
+  getArtifact: (artifactId) => ipcRenderer.invoke('circuit:artifacts:get', artifactId),
   runPhase: (request) => ipcRenderer.invoke('circuit:tasks:runPhase', request),
   approvePhase: (request) => ipcRenderer.invoke('circuit:tasks:approvePhase', request),
   requestPhaseRevision: (request) => ipcRenderer.invoke('circuit:tasks:requestRevision', request),
   resolveDecision: (request) => ipcRenderer.invoke('circuit:tasks:resolveDecision', request),
-  recordSteering: (request) => ipcRenderer.invoke('circuit:tasks:recordSteering', request),
   applySteeringRevision: (request) =>
     ipcRenderer.invoke('circuit:tasks:applySteeringRevision', request),
   replyPermission: (request) => ipcRenderer.invoke('circuit:tasks:replyPermission', request),

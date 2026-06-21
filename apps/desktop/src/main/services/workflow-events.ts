@@ -1,11 +1,12 @@
 import { writeFileSync } from 'node:fs'
 
 import {
+  getActiveWorkflowRunForTask,
   getArtifactByTaskAndPhase,
   getPhaseByTaskAndName,
   getTaskById,
   insertWorkflowEvent,
-  listPhasesForTask,
+  listPhasesForWorkflowRun,
   updateArtifact,
   updatePhase,
   updateTask,
@@ -60,17 +61,20 @@ export function recordSteering(taskId: string, text: string): TaskDetail {
     throw new NotFoundError('Task', taskId)
   }
 
-  const phases = listPhasesForTask(db, taskId)
+  const activeRun = getActiveWorkflowRunForTask(db, taskId)
+  const phases = activeRun ? listPhasesForWorkflowRun(db, activeRun.id) : []
   const createdAt = new Date().toISOString()
 
-  const inference = inferRevisionFromSteering({
-    text: trimmed,
-    workflowType: task.workflowType as WorkflowType,
-    phases: phases.map((phase) => ({
-      name: phase.name,
-      status: phase.status as PhaseStatus,
-    })),
-  })
+  const inference =
+    activeRun &&
+    inferRevisionFromSteering({
+      text: trimmed,
+      workflowType: task.workflowType as WorkflowType,
+      phases: phases.map((phase) => ({
+        name: phase.name,
+        status: phase.status as PhaseStatus,
+      })),
+    })
 
   const steeringPayload: WorkflowSteeringPayload = {
     rawText: trimmed,
@@ -91,7 +95,7 @@ export function recordSteering(taskId: string, text: string): TaskDetail {
     }),
   )
 
-  if (inference) {
+  if (inference && activeRun) {
     insertWorkflowEvent(
       db,
       toWorkflowEventRow({
@@ -128,7 +132,12 @@ export function applySteeringRevision(
     return getTaskDetail(taskId)
   }
 
-  const phase = getPhaseByTaskAndName(db, taskId, input.affectedPhase)
+  const activeRun = getActiveWorkflowRunForTask(db, taskId)
+  if (!activeRun) {
+    return getTaskDetail(taskId)
+  }
+
+  const phase = getPhaseByTaskAndName(db, taskId, input.affectedPhase, activeRun.id)
   if (!phase) throw new NotFoundError('Phase', input.affectedPhase)
 
   const note =
@@ -136,7 +145,7 @@ export function applySteeringRevision(
     `Steering revision (${input.optionId}) on ${input.affectedPhase}.`
 
   if (input.optionId === 'note') {
-    const artifact = getArtifactByTaskAndPhase(db, taskId, input.affectedPhase)
+    const artifact = getArtifactByTaskAndPhase(db, taskId, input.affectedPhase, activeRun.id)
     if (artifact) {
       const suffix = `\n\n---\n\n**Steering note:** ${note}\n`
       const content = artifact.content.includes('**Steering note:**')
@@ -163,7 +172,7 @@ export function applySteeringRevision(
     throw new ValidationError(`Unknown steering option: ${input.optionId}`)
   }
 
-  const phases = listPhasesForTask(db, taskId)
+  const phases = listPhasesForWorkflowRun(db, activeRun.id)
   const workflowPhases = phases.map((row) => ({
     id: row.id,
     taskId: row.taskId,
@@ -190,7 +199,7 @@ export function applySteeringRevision(
     })
   }
 
-  const artifact = getArtifactByTaskAndPhase(db, taskId, input.affectedPhase)
+  const artifact = getArtifactByTaskAndPhase(db, taskId, input.affectedPhase, activeRun.id)
   if (artifact) {
     const suffix = `\n\n---\n\n**Revision requested:** ${note}\n`
     const content = artifact.content.includes('**Revision requested:**')
@@ -224,4 +233,13 @@ export function applySteeringRevision(
   )
 
   return getTaskDetail(taskId)
+}
+
+/** Explicit chat → workflow apply (records steering and surfaces revision inference). */
+export function applyChatToWorkflow(taskId: string, text: string): TaskDetail {
+  const trimmed = text.trim()
+  if (!trimmed) {
+    throw new ValidationError('Chat text cannot be empty')
+  }
+  return recordSteering(taskId, trimmed)
 }

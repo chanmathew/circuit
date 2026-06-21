@@ -20,19 +20,33 @@ export const Conversation = ({ className, ...props }: ConversationProps) => (
   />
 );
 
-export type ConversationContentProps = ComponentProps<
-  typeof StickToBottom.Content
->;
+export type ConversationContentProps = ComponentProps<"div"> & {
+  scrollClassName?: string;
+};
 
 export const ConversationContent = ({
   className,
+  scrollClassName,
+  children,
   ...props
-}: ConversationContentProps) => (
-  <StickToBottom.Content
-    className={cn("flex flex-col gap-8 p-4", className)}
-    {...props}
-  />
-);
+}: ConversationContentProps) => {
+  const context = useStickToBottomContext();
+
+  return (
+    <div
+      ref={context.scrollRef}
+      className={cn("conversation-scroll size-full overflow-y-auto", scrollClassName)}
+    >
+      <div
+        ref={context.contentRef}
+        className={cn("flex flex-col gap-8 p-4", className)}
+        {...props}
+      >
+        {children}
+      </div>
+    </div>
+  );
+};
 
 export type ConversationEmptyStateProps = ComponentProps<"div"> & {
   title?: string;

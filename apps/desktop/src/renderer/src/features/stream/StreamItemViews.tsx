@@ -1,3 +1,6 @@
+import { useState } from 'react'
+import { CheckIcon, CopyIcon } from 'lucide-react'
+
 import {
   Badge,
   Button,
@@ -8,28 +11,31 @@ import {
   CardTitle,
   cn,
   Message,
+  MessageAction,
+  MessageActions,
   MessageContent,
   MessageResponse,
+  Reasoning,
+  ReasoningContent,
+  ReasoningTrigger,
+  Shimmer,
+  Task,
+  TaskContent,
+  TaskTrigger,
 } from '@circuit/ui'
 import type {
   ActionCardItem,
   ActivityGroupItem,
   AgentMessageItem,
-  AgentRole,
+  ReasoningItem,
   ReferenceCardItem,
   ReferenceTarget,
   StreamAction,
+  SubagentRunItem,
   UserMessageItem,
 } from '@circuit/protocol'
 
 import type { DecisionResolutionDto } from '../../../../shared/api.js'
-
-const ROLE_LABELS: Record<AgentRole, string> = {
-  driver: 'Driver',
-  oracle: 'Oracle',
-  scout: 'Scout',
-  builder: 'Builder',
-}
 
 const STATUS_DOT: Record<ActivityGroupItem['items'][number]['status'], string> = {
   running: 'bg-primary animate-pulse',
@@ -46,8 +52,28 @@ const SEVERITY_BORDER: Record<NonNullable<ActionCardItem['severity']>, string> =
   no_ship: 'border-destructive',
 }
 
-function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+const messageActionsClassName =
+  'w-full justify-start opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100'
+
+function CopyMessageAction({ text }: { text: string }): React.ReactElement {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = (): void => {
+    void navigator.clipboard.writeText(text).then(() => {
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 2000)
+    })
+  }
+
+  return (
+    <MessageAction
+      tooltip={copied ? 'Copied' : 'Copy'}
+      label={copied ? 'Copied' : 'Copy'}
+      onClick={handleCopy}
+    >
+      {copied ? <CheckIcon className="size-3" /> : <CopyIcon className="size-3" />}
+    </MessageAction>
+  )
 }
 
 export interface StreamItemContext {
@@ -56,57 +82,233 @@ export interface StreamItemContext {
   onOpenReference?: (target: ReferenceTarget) => void
 }
 
+function isArtifactReadyCard(item: ActionCardItem): boolean {
+  const hasView = item.actions.some((action) => action.action === 'phase.open')
+  const hasProceed = item.actions.some((action) => action.action === 'phase.approve')
+  return hasView && hasProceed
+}
+
 export function UserMessageItemView({ item }: { item: UserMessageItem }): React.ReactElement {
   return (
-    <div className="flex flex-col gap-1">
-      <p className="px-1 text-[10px] font-medium text-muted-foreground">You</p>
-      <Message from="user">
-        <MessageContent>
-          <MessageResponse>{item.text}</MessageResponse>
-        </MessageContent>
-      </Message>
-      <span className="px-1 text-right font-mono text-[9px] text-muted-foreground">
-        {formatTime(item.createdAt)}
-      </span>
-    </div>
+    <Message from="user">
+      <MessageContent>
+        <MessageResponse>{item.text}</MessageResponse>
+      </MessageContent>
+    </Message>
   )
 }
 
 export function AgentMessageItemView({ item }: { item: AgentMessageItem }): React.ReactElement {
   return (
-    <div className="flex flex-col gap-1">
-      <p className="px-1 text-[10px] font-medium text-muted-foreground">
-        {ROLE_LABELS[item.role]}
-      </p>
-      <Message from="assistant">
-        <MessageContent>
-          <MessageResponse>{item.text}</MessageResponse>
-        </MessageContent>
-      </Message>
-      <span className="px-1 font-mono text-[9px] text-muted-foreground">
-        {formatTime(item.createdAt)}
+    <Message from="assistant">
+      <MessageContent>
+        <MessageResponse>{item.text}</MessageResponse>
+      </MessageContent>
+      <MessageActions className={messageActionsClassName}>
+        <CopyMessageAction text={item.text} />
+      </MessageActions>
+    </Message>
+  )
+}
+
+export function ReasoningItemView({ item }: { item: ReasoningItem }): React.ReactElement {
+  return (
+    <Reasoning isStreaming={item.isStreaming} defaultOpen={item.isStreaming || !item.collapsed}>
+      <ReasoningTrigger />
+      <ReasoningContent>{item.text}</ReasoningContent>
+    </Reasoning>
+  )
+}
+
+function liveCategoryLabel(item: ActivityGroupItem): string {
+  const running = item.items.find((entry) => entry.status === 'running')
+  const label = running?.label ?? item.title
+  if (/^Edit|^Writ|^Patch/i.test(label)) return 'Editing'
+  if (/^Run|^Ran|command/i.test(label)) return 'Running'
+  if (/^Search|^Grep|^Glob|^List/i.test(label)) return 'Searching'
+  return 'Exploring'
+}
+
+function DiffBadges({
+  additions,
+  deletions,
+}: {
+  additions?: number
+  deletions?: number
+}): React.ReactElement | null {
+  if ((additions ?? 0) <= 0 && (deletions ?? 0) <= 0) return null
+
+  return (
+    <span className="flex shrink-0 items-center gap-1 font-mono text-xs tabular-nums">
+      {additions !== undefined && additions > 0 && (
+        <span className="text-emerald-600 dark:text-emerald-400">+{additions}</span>
+      )}
+      {deletions !== undefined && deletions > 0 && (
+        <span className="text-red-500 dark:text-red-400">−{deletions}</span>
+      )}
+    </span>
+  )
+}
+
+function ActivityRow({
+  entry,
+  isLive,
+  showDot,
+}: {
+  entry: ActivityGroupItem['items'][number]
+  isLive: boolean
+  showDot: boolean
+}): React.ReactElement {
+  return (
+    <div className="flex items-baseline gap-1.5 py-px text-xs text-muted-foreground">
+      {!isLive && showDot && (
+        <span
+          className={cn('mt-[0.2em] size-1 shrink-0 rounded-full', STATUS_DOT[entry.status])}
+        />
+      )}
+      <span className="flex min-w-0 flex-1 items-baseline gap-1">
+        {entry.status === 'running' ? (
+          <Shimmer duration={1.5}>{entry.label}</Shimmer>
+        ) : (
+          <span className="truncate">{entry.label}</span>
+        )}
+        {entry.detail && (
+          <span className="shrink-0 text-muted-foreground/60">{entry.detail}</span>
+        )}
+        <DiffBadges additions={entry.additions} deletions={entry.deletions} />
       </span>
     </div>
   )
 }
 
-export function ActivityGroupItemView({ item }: { item: ActivityGroupItem }): React.ReactElement {
+function LiveActivityPanel({
+  item,
+}: {
+  item: ActivityGroupItem
+}): React.ReactElement {
+  const hasRunning = item.items.some((entry) => entry.status === 'running')
+  const category = liveCategoryLabel(item)
+  const visibleItems = item.items.slice(-4)
+
   return (
-    <Card size="sm" className="gap-2 py-3 shadow-none ring-0">
-      <CardHeader className="gap-0 px-4 py-0">
-        <CardTitle className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-          {item.title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-1 px-4">
+    <div className="space-y-1">
+      <div className="sticky top-0 z-10 bg-background/95 pb-1 shadow-[0_6px_10px_-6px] shadow-background">
+        <p className="text-xs font-medium text-foreground/90">{category}</p>
+      </div>
+      <div className="relative max-h-28 overflow-hidden">
+        <div
+          className={cn(
+            'space-y-0.5',
+            item.items.length > 3 &&
+              'pointer-events-none [mask-image:linear-gradient(to_bottom,transparent,black_28%,black)]',
+          )}
+        >
+          {visibleItems.map((entry, index) => (
+            <ActivityRow
+              key={`${entry.label}-${index}`}
+              entry={entry}
+              isLive
+              showDot={false}
+            />
+          ))}
+        </div>
+      </div>
+      {!hasRunning && (
+        <Shimmer duration={1.5} className="text-xs text-muted-foreground">
+          Planning next moves
+        </Shimmer>
+      )}
+    </div>
+  )
+}
+
+export function ActivityGroupItemView({ item }: { item: ActivityGroupItem }): React.ReactElement {
+  const isLive = item.live === true
+  if (isLive) {
+    return <LiveActivityPanel item={item} />
+  }
+
+  const display = item.display ?? (item.items.length <= 3 ? 'flat' : 'summary')
+  const hasRunning = item.items.some((entry) => entry.status === 'running')
+  const defaultOpen =
+    display === 'flat' ? true : isLive || hasRunning || item.collapsed !== true
+
+  if (display === 'flat') {
+    return (
+      <div className="space-y-0">
         {item.items.map((entry, index) => (
-          <div key={`${entry.label}-${index}`} className="flex items-center gap-2 text-xs">
-            <span className={cn('size-1.5 shrink-0 rounded-full', STATUS_DOT[entry.status])} />
-            <span className="text-foreground">{entry.label}</span>
-          </div>
+          <ActivityRow
+            key={`${entry.label}-${index}`}
+            entry={entry}
+            isLive={isLive}
+            showDot
+          />
         ))}
-      </CardContent>
-    </Card>
+      </div>
+    )
+  }
+
+  const titleContent =
+    isLive && hasRunning ? <Shimmer duration={1.5}>{item.title}</Shimmer> : item.title
+
+  return (
+    <Task defaultOpen={defaultOpen} variant="inline" className="py-0">
+      <TaskTrigger
+        variant="inline"
+        className="min-h-0"
+        title={
+          <span className="flex min-w-0 flex-1 items-baseline gap-1.5">
+            <span className="truncate">{titleContent}</span>
+            <DiffBadges additions={item.stats?.additions} deletions={item.stats?.deletions} />
+          </span>
+        }
+        live={isLive && hasRunning}
+      />
+      <TaskContent variant="inline" className="space-y-0">
+        {item.items.map((entry, index) => (
+          <ActivityRow
+            key={`${entry.label}-${index}`}
+            entry={entry}
+            isLive={isLive}
+            showDot
+          />
+        ))}
+      </TaskContent>
+    </Task>
+  )
+}
+
+export function SubagentRunItemView({ item }: { item: SubagentRunItem }): React.ReactElement {
+  const isLive = item.live === true
+  const hasRunning = item.status === 'running'
+  const defaultOpen = isLive || hasRunning || item.collapsed !== true
+  const title = `${item.subagentType} · ${item.description}`
+  const titleContent =
+    isLive && hasRunning ? <Shimmer duration={1.5}>{title}</Shimmer> : title
+  const traceItems =
+    isLive && item.trace ? item.trace.items.slice(-8) : (item.trace?.items ?? [])
+
+  return (
+    <Task defaultOpen={defaultOpen} variant="card" className="py-0">
+      <TaskTrigger
+        variant="card"
+        title={titleContent}
+        live={isLive && hasRunning}
+        stepCount={item.stepCount}
+      />
+      {traceItems.length > 0 && (
+        <TaskContent variant="card" className="space-y-0">
+          {traceItems.map((entry, index) => (
+            <ActivityRow
+              key={`${entry.label}-${index}`}
+              entry={entry}
+              isLive={isLive}
+              showDot={!isLive}
+            />
+          ))}
+        </TaskContent>
+      )}
+    </Task>
   )
 }
 
@@ -169,6 +371,8 @@ export function ActionCardItemView({
     context.onStreamAction?.(action.action, action.payload)
   }
 
+  const artifactReady = isArtifactReadyCard(item)
+
   return (
     <Card
       size="sm"
@@ -216,20 +420,41 @@ export function ActionCardItemView({
             </Button>
           )
         })}
-        {item.actions
-          .filter((action) => action.action !== 'decision.resolve')
-          .map((action) => (
-            <Button
-              key={action.id}
-              type="button"
-              variant={action.id === 'open' ? 'default' : 'outline'}
-              size="sm"
-              className="w-full"
-              onClick={() => handleAction(action)}
-            >
-              {action.label}
-            </Button>
-          ))}
+        {artifactReady ? (
+          <div className="flex flex-wrap gap-1.5">
+            {item.actions
+              .filter((action) => action.action !== 'decision.resolve')
+              .map((action) => (
+                <Button
+                  key={action.id}
+                  type="button"
+                  variant={action.action === 'phase.approve' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handleAction(action)}
+                >
+                  {action.label}
+                </Button>
+              ))}
+          </div>
+        ) : (
+          item.actions
+            .filter((action) => action.action !== 'decision.resolve')
+            .map((action) => (
+              <Button
+                key={action.id}
+                type="button"
+                variant={action.id === 'open' ? 'default' : 'outline'}
+                size="sm"
+                className="w-full"
+                onClick={() => handleAction(action)}
+              >
+                {action.label}
+              </Button>
+            ))
+        )}
+        {item.footer && (
+          <p className="pt-1 text-[10px] text-muted-foreground">{item.footer}</p>
+        )}
         {resolution && (
           <p className="pt-1 text-[10px] text-muted-foreground">
             Selected: {resolution.optionLabel}

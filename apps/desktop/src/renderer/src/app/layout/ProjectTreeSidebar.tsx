@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 
 import { Button, cn, ScrollArea } from '@circuit/ui'
 
+import { formatWorkflowSubtitle } from '../../../../shared/workflow-status.js'
 import type { RepoDto, TaskSummaryDto } from '../../../../shared/api.js'
 import { useAddRepo, useRepos } from '../../features/repos/hooks/useRepos.js'
 import { useTasks } from '../../features/tasks/hooks/useTasks.js'
@@ -105,7 +106,7 @@ export function ProjectTreeSidebar({
   }
 
   return (
-    <aside className="flex h-full w-60 shrink-0 flex-col border-r border-border bg-card">
+    <aside className="flex h-full w-full min-w-0 flex-col border-r border-border bg-card">
       <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-3">
         <div>
           <p className="text-sm font-semibold tracking-tight">Circuit</p>
@@ -265,8 +266,13 @@ function RepoSection({
                 }
               >
                 <span className="truncate text-xs font-medium">{task.title}</span>
-                <span className="truncate text-[10px] text-muted-foreground capitalize">
-                  {task.currentPhase} · {task.status.replace(/_/g, ' ')}
+                <span className="truncate text-[10px] text-muted-foreground">
+                  {formatWorkflowSubtitle({
+                    workflowStatus: task.workflowStatus,
+                    workflowType: task.workflowType,
+                    currentPhase: task.currentPhase,
+                    phases: [],
+                  })}
                 </span>
               </Button>
             )

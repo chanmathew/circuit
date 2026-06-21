@@ -10,7 +10,9 @@
     "dev:opencode": "CIRCUIT_AGENT_ADAPTER=opencode CIRCUIT_OPENCODE_URL=http://localhost:4096 CIRCUIT_OPENCODE_MODEL=opencode/deepseek-v4-flash-free electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "rebuild:native": "electron-rebuild -f -w better-sqlite3"
   },
   "dependencies": {
     "@circuit/agent-adapters": "workspace:*",
@@ -40,6 +42,7 @@
     "electron-vite": "6.0.0-beta.1",
     "tailwindcss": "^4.3.1",
     "typescript": "catalog:",
-    "vite": "^8.0.16"
+    "vite": "^8.0.16",
+    "vitest": "catalog:"
   }
 }

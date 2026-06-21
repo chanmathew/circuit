@@ -1,6 +1,7 @@
 import { writeFileSync } from 'node:fs'
 
 import {
+  getActiveWorkflowRunForTask,
   getArtifactByTaskAndPhase,
   getPhaseByTaskAndName,
   insertWorkflowEvent,
@@ -19,9 +20,15 @@ export function requestPhaseRevision(
   taskId: string,
   phaseName: string,
   note: string,
+  source: WorkflowRevisionRequestedPayload['source'] = 'action_bar',
 ): TaskDetail {
   const db = getDb()
-  const phase = getPhaseByTaskAndName(db, taskId, phaseName)
+  const activeRun = getActiveWorkflowRunForTask(db, taskId)
+  if (!activeRun) {
+    throw new ValidationError('No active workflow to revise')
+  }
+
+  const phase = getPhaseByTaskAndName(db, taskId, phaseName, activeRun.id)
   if (!phase) throw new NotFoundError('Phase', phaseName)
 
   if (phase.status !== 'needs_review') {
@@ -37,7 +44,7 @@ export function requestPhaseRevision(
 
   updatePhase(db, phase.id, { status: 'needs_revision' })
 
-  const artifact = getArtifactByTaskAndPhase(db, taskId, phaseName)
+  const artifact = getArtifactByTaskAndPhase(db, taskId, phaseName, activeRun.id)
   if (artifact) {
     const suffix = `\n\n---\n\n**Revision requested:** ${trimmedNote}\n`
     const content = artifact.content.includes('**Revision requested:**')
@@ -59,7 +66,7 @@ export function requestPhaseRevision(
   const payload: WorkflowRevisionRequestedPayload = {
     phase: phaseName,
     note: trimmedNote,
-    source: 'action_bar',
+    source,
   }
 
   insertWorkflowEvent(

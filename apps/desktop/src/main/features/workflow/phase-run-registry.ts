@@ -23,3 +23,22 @@ export function getSessionTaskId(sessionId: string): string | undefined {
 export function signalSessionAbort(sessionId: string): void {
   abortBySessionId.get(sessionId)?.()
 }
+
+export function getSessionIdsForTask(taskId: string): string[] {
+  const sessionIds: string[] = []
+  for (const [sessionId, boundTaskId] of sessionTaskById) {
+    if (boundTaskId === taskId) {
+      sessionIds.push(sessionId)
+    }
+  }
+  return sessionIds
+}
+
+/** Abort all in-flight harness runs for a task; returns session ids signalled. */
+export function signalTaskAbort(taskId: string): string[] {
+  const sessionIds = getSessionIdsForTask(taskId)
+  for (const sessionId of sessionIds) {
+    signalSessionAbort(sessionId)
+  }
+  return sessionIds
+}

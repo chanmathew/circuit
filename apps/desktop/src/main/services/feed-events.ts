@@ -6,7 +6,13 @@ import {
 
 export function buildFeedEvents(
   taskId: string,
-  phaseRuns: { id: string; phase: string; transcript: string; startedAt: string }[],
+  phaseRuns: {
+    id: string
+    phase: string
+    transcript: string
+    startedAt: string
+    completedAt?: string | null
+  }[],
 ): CircuitEvent[] {
   const events: CircuitEvent[] = []
 
@@ -22,7 +28,7 @@ export function buildFeedEvents(
       taskId,
       phaseRunId: run.id,
       timestamp: run.startedAt,
-      payload: { phaseRunId: run.id },
+      payload: { phaseRunId: run.id, phase: run.phase },
     })
 
     for (const event of parsed.events) {
@@ -34,7 +40,7 @@ export function buildFeedEvents(
         ...harnessTranscriptToEvents(run.transcript, {
           taskId,
           phaseRunId: run.id,
-          startedAt: run.startedAt,
+          startedAt: run.completedAt ?? run.startedAt,
         }),
       )
     }
@@ -43,8 +49,8 @@ export function buildFeedEvents(
       type: 'phase:completed',
       taskId,
       phaseRunId: run.id,
-      timestamp: run.startedAt,
-      payload: { phaseRunId: run.id },
+      timestamp: run.completedAt ?? run.startedAt,
+      payload: { phaseRunId: run.id, phase: run.phase },
     })
   }
 

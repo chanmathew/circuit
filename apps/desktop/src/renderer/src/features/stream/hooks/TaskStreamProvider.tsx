@@ -56,27 +56,35 @@ export function TaskStreamProvider({
         setLiveActivities([])
         setPhaseRunning(true)
         setLastPhaseRunError(null)
-        return
-      }
-
-      if (update.type === 'phase_run_completed') {
-        setLiveActivities([])
-        setPhaseRunning(false)
-        setHarnessSession(null)
-        setLastPhaseRunError(null)
         void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(taskId) })
         void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
         return
       }
 
+      if (update.type === 'phase_run_completed') {
+        setPhaseRunning(false)
+        setHarnessSession(null)
+        setLastPhaseRunError(null)
+        void (async () => {
+          await queryClient.cancelQueries({ queryKey: queryKeys.tasks.detail(taskId) })
+          await queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(taskId) })
+          setLiveActivities([])
+        })()
+        void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
+        return
+      }
+
       if (update.type === 'phase_run_failed') {
-        setLiveActivities([])
         setPhaseRunning(false)
         setHarnessSession(null)
         setLastPhaseRunError(
           update.error === 'Session aborted by user' ? null : update.error,
         )
-        void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(taskId) })
+        void (async () => {
+          await queryClient.cancelQueries({ queryKey: queryKeys.tasks.detail(taskId) })
+          await queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(taskId) })
+          setLiveActivities([])
+        })()
         void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
         return
       }
@@ -95,7 +103,10 @@ export function TaskStreamProvider({
       }
 
       if (update.type === 'task_updated') {
-        void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(taskId) })
+        void (async () => {
+          await queryClient.cancelQueries({ queryKey: queryKeys.tasks.detail(taskId) })
+          await queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(taskId) })
+        })()
         void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
       }
     })

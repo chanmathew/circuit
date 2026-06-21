@@ -1,33 +1,40 @@
 import type { ContentView } from '@circuit/protocol'
 
-import type { ArtifactDto } from '../../../../shared/api.js'
+import type { ArtifactDto, TaskDto } from '../../../../shared/api.js'
 import { ArtifactPanel } from './ArtifactPanel.js'
 import { CheckContentPanel } from './content/CheckContentPanel.js'
 import { DiffContentPanel } from './content/DiffContentPanel.js'
 import { FileContentPanel } from './content/FileContentPanel.js'
 import type { CheckEntry, DiffEntry } from './lib/workbench-content.js'
-import { resolveArtifactRef } from './lib/workbench-content.js'
+import { resolveArtifactRef, resolvePhaseArtifact } from './lib/workbench-content.js'
+import { WorkflowOverviewPanel } from './WorkflowOverviewPanel.js'
 
 export interface ContentViewPanelProps {
   contentView: ContentView
+  task: TaskDto
   artifacts: ArtifactDto[]
   repoPath: string
   diffs: DiffEntry[]
   checks: CheckEntry[]
   preview: boolean
+  isRunning?: boolean
   onPreviewChange: (preview: boolean) => void
 }
 
 export function ContentViewPanel({
   contentView,
+  task,
   artifacts,
   repoPath,
   diffs,
   checks,
   preview,
+  isRunning = false,
   onPreviewChange,
 }: ContentViewPanelProps): React.ReactElement {
   switch (contentView.type) {
+    case 'workflow_overview':
+      return <WorkflowOverviewPanel task={task} isRunning={isRunning} />
     case 'artifact': {
       const artifact = resolveArtifactRef(artifacts, contentView.artifactId)
       if (!artifact) {
@@ -62,7 +69,7 @@ export function ContentViewPanel({
       )
     case 'final_review': {
       const reviewArtifact =
-        artifacts.find((artifact) => artifact.phase === 'review') ?? artifacts.at(-1)
+        resolvePhaseArtifact(task, 'review') ?? task.artifacts.at(-1)
       return (
         <div className="flex min-h-0 flex-1 flex-col">
           <div className="shrink-0 border-b border-border px-4 py-3">
