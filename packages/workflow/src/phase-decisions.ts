@@ -29,12 +29,11 @@ export function getProceedLabel(phaseName: string, getLabel: (name: string) => s
     'review',
   ] as const
 
-  if (phaseName === 'plan') return 'Unlock implementation'
-  if (phaseName === 'review') return 'Approve review'
+  if (phaseName === 'review') return 'Complete workflow'
 
   const idx = order.indexOf(phaseName as (typeof order)[number])
   const next = idx >= 0 ? order[idx + 1] : undefined
-  if (!next) return `Approve ${getLabel(phaseName).toLowerCase()}`
+  if (!next) return `Run ${getLabel(phaseName)}`
 
-  return `Proceed to ${getLabel(next).toLowerCase()}`
+  return `Run ${getLabel(next)}`
 }
