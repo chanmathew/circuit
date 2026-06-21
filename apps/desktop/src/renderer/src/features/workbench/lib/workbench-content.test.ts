@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import { latestArtifactPerPhase, type ArtifactRow } from '@circuit/db'
+import { openReference } from '@circuit/protocol'
 
 import type { ArtifactDto, PhaseDto, TaskDto } from '../../../../../shared/api.js'
-import { resolvePhaseArtifact } from './workbench-content.js'
+import { inspectorSelectionForTab, resolvePhaseArtifact, resolveDiffEntry, findDiffForPath, WORKSPACE_DIFF_ID } from './workbench-content.js'
 
 function dbArtifact(
   overrides: Partial<ArtifactRow> & Pick<ArtifactRow, 'id' | 'phase'>,
@@ -122,5 +123,31 @@ describe('resolvePhaseArtifact', () => {
     )
 
     expect(resolved?.id).toBe('design-v2')
+  })
+})
+
+describe('file navigation', () => {
+  it('maps file references to the files inspector tab', () => {
+    const navigation = openReference({ type: 'file', path: 'src/index.ts' })
+    expect(navigation.contentView).toEqual({ type: 'file', path: 'src/index.ts' })
+    expect(navigation.inspector).toEqual({ tab: 'files', selectedId: 'src/index.ts' })
+  })
+
+  it('keeps file selection when switching to the files tab', () => {
+    const selection = inspectorSelectionForTab('files', { type: 'file', path: 'README.md' })
+    expect(selection).toEqual({ tab: 'files', selectedId: 'README.md' })
+  })
+
+  it('resolves workspace diff entries for changed files without a diff slice', () => {
+    const diff = resolveDiffEntry(WORKSPACE_DIFF_ID, [], 'src/index.ts')
+    expect(diff?.paths).toEqual(['src/index.ts'])
+  })
+
+  it('finds the latest diff slice containing a path', () => {
+    const diffs = [
+      { id: 'd1', title: 'A', paths: ['a.ts'], timestamp: '1' },
+      { id: 'd2', title: 'B', paths: ['b.ts', 'c.ts'], timestamp: '2' },
+    ]
+    expect(findDiffForPath(diffs, 'c.ts')?.id).toBe('d2')
   })
 })

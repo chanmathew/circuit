@@ -3,7 +3,7 @@ import type { ReferenceTarget } from './stream-items.js'
 /** Center panel content modes — heavy content renders here, not in the stream. */
 export type ContentView =
   | { type: 'artifact'; artifactId: string }
-  | { type: 'diff'; diffId: string }
+  | { type: 'diff'; diffId: string; path?: string }
   | { type: 'check'; checkId: string }
   | { type: 'file'; path: string }
   | { type: 'implementation'; sliceId: string }

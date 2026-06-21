@@ -16,6 +16,9 @@ import {
 /** Percent width of the inspector rail when collapsed (fits icon buttons ~44px). */
 const INSPECTOR_COLLAPSED_STRIP_SIZE = 4
 
+/** Default inspector width when opened from the collapsed strip or toggle. */
+export const INSPECTOR_DEFAULT_EXPANDED_SIZE = 25
+
 export interface WorkbenchPanelLayoutProps {
   stream: React.ReactNode
   content?: React.ReactNode
@@ -35,6 +38,7 @@ export interface WorkbenchPanelLayoutProps {
 function useCollapsedPanel(
   expanded: boolean,
   enabled: boolean,
+  expandedSize?: number,
 ): React.RefObject<ImperativePanelHandle | null> {
   const panelRef = useRef<ImperativePanelHandle>(null)
 
@@ -44,12 +48,18 @@ function useCollapsedPanel(
     if (!panel) return
 
     if (expanded) {
-      if (panel.isCollapsed()) panel.expand()
+      if (panel.isCollapsed()) {
+        if (expandedSize !== undefined) {
+          panel.resize(expandedSize)
+        } else {
+          panel.expand()
+        }
+      }
       return
     }
 
     if (!panel.isCollapsed()) panel.collapse()
-  }, [enabled, expanded])
+  }, [enabled, expanded, expandedSize])
 
   return panelRef
 }
@@ -70,7 +80,11 @@ export function WorkbenchPanelLayout({
   const hasContent = Boolean(content)
   const hasInspector = Boolean(inspector)
   const contentRef = useCollapsedPanel(showContent, hasContent)
-  const inspectorRef = useCollapsedPanel(showInspector, hasInspector)
+  const inspectorRef = useCollapsedPanel(
+    showInspector,
+    hasInspector,
+    INSPECTOR_DEFAULT_EXPANDED_SIZE,
+  )
 
   const panelGroupKey =
     layoutKey ?? `${hasContent ? 'content' : 'no-content'}-${hasInspector ? 'inspector' : 'no-inspector'}`
@@ -131,7 +145,9 @@ export function WorkbenchPanelLayout({
               order={3}
               collapsible
               collapsedSize={INSPECTOR_COLLAPSED_STRIP_SIZE}
-              defaultSize={showInspector ? 25 : INSPECTOR_COLLAPSED_STRIP_SIZE}
+              defaultSize={
+                showInspector ? INSPECTOR_DEFAULT_EXPANDED_SIZE : INSPECTOR_COLLAPSED_STRIP_SIZE
+              }
               minSize={16}
               maxSize={40}
               onExpand={onInspectorExpand}

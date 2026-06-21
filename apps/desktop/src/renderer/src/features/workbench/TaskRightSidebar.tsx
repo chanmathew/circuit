@@ -12,6 +12,7 @@ import type React from 'react'
 import type { InspectorTab } from '@circuit/protocol'
 
 import type { ArtifactDto, TaskDto } from '../../../../shared/api.js'
+import { ArtifactTree } from './ArtifactTree.js'
 import {
   INSPECTOR_TAB_TRIGGER_CLASS,
   INSPECTOR_TABS,
@@ -24,49 +25,8 @@ import {
   INSPECTOR_TOGGLE_BUTTON_CLASS,
   InspectorPanelToggle,
 } from './InspectorPanelToggle.js'
+import { WorkbenchFileTree } from './inspector/WorkbenchFileTree.js'
 import { WorkflowPanel } from './WorkflowPanel.js'
-
-function ArtifactTree({
-  artifacts,
-  selectedId,
-  onSelect,
-}: {
-  artifacts: ArtifactDto[]
-  selectedId?: string
-  onSelect: (id: string) => void
-}): React.ReactElement {
-  const fileArtifacts = artifacts.filter((artifact) => artifact.phase !== 'ticket')
-
-  if (fileArtifacts.length === 0) {
-    return (
-      <p className="px-2 py-4 text-center text-xs text-muted-foreground">
-        Phase artifacts appear here after the first phase run.
-      </p>
-    )
-  }
-
-  return (
-    <ul className="space-y-0.5">
-      {fileArtifacts.map((artifact) => (
-        <li key={artifact.id}>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className={cn(
-              'h-auto w-full flex-col items-start gap-0.5 px-2 py-1.5 text-left font-normal',
-              selectedId === artifact.id && 'bg-accent',
-            )}
-            onClick={() => onSelect(artifact.id)}
-          >
-            <span className="font-mono text-xs font-medium">{artifact.title}</span>
-            <span className="text-[10px] capitalize text-muted-foreground">{artifact.status}</span>
-          </Button>
-        </li>
-      ))}
-    </ul>
-  )
-}
 
 function ChangesPanel({
   task,
@@ -175,6 +135,7 @@ export interface TaskRightSidebarProps {
   isRunning?: boolean
   onTabChange: (tab: InspectorTab) => void
   onSelectArtifact: (id: string) => void
+  onSelectFile: (path: string) => void
   onSelectDiff: (id: string) => void
   onSelectCheck: (id: string) => void
   onToggleInspector?: () => void
@@ -191,6 +152,7 @@ export function TaskRightSidebar({
   isRunning = false,
   onTabChange,
   onSelectArtifact,
+  onSelectFile,
   onSelectDiff,
   onSelectCheck,
   onToggleInspector,
@@ -198,6 +160,11 @@ export function TaskRightSidebar({
   const selectedDiffId = activeTab === 'changes' && changesKind === 'diff' ? selectedId : undefined
   const selectedCheckId =
     activeTab === 'changes' && changesKind === 'check' ? selectedId : undefined
+  const selectedArtifactId =
+    activeTab === 'workflow' && selectedId && artifacts.some((a) => a.id === selectedId)
+      ? selectedId
+      : undefined
+  const selectedFilePath = activeTab === 'files' ? selectedId : undefined
 
   return (
     <aside className="flex h-full min-h-0 flex-col bg-card/50">
@@ -238,7 +205,9 @@ export function TaskRightSidebar({
           <ScrollArea className="h-full">
             <WorkflowPanel
               task={task}
+              artifacts={artifacts}
               isRunning={isRunning}
+              selectedArtifactId={selectedArtifactId}
               onSelectArtifact={onSelectArtifact}
               onSelectPhase={(phaseName) => {
                 const artifact = resolvePhaseArtifact(task, phaseName)
@@ -249,15 +218,11 @@ export function TaskRightSidebar({
         </TabsContent>
 
         <TabsContent value="files" className="mt-0 min-h-0 flex-1 overflow-hidden">
-          <ScrollArea className="h-full">
-            <div className="p-2">
-              <ArtifactTree
-                artifacts={artifacts}
-                selectedId={activeTab === 'files' ? selectedId : undefined}
-                onSelect={onSelectArtifact}
-              />
-            </div>
-          </ScrollArea>
+          <WorkbenchFileTree
+            workspacePath={task.workspacePath}
+            selectedPath={selectedFilePath}
+            onSelectPath={onSelectFile}
+          />
         </TabsContent>
 
         <TabsContent value="changes" className="mt-0 min-h-0 flex-1 overflow-hidden">

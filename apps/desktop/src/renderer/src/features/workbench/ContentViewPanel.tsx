@@ -10,7 +10,7 @@ import { CheckContentPanel } from './content/CheckContentPanel.js'
 import { DiffContentPanel } from './content/DiffContentPanel.js'
 import { FileContentPanel } from './content/FileContentPanel.js'
 import type { CheckEntry, DiffEntry } from './lib/workbench-content.js'
-import { resolveArtifactRef, resolvePhaseArtifact } from './lib/workbench-content.js'
+import { resolveArtifactRef, resolvePhaseArtifact, resolveDiffEntry } from './lib/workbench-content.js'
 import { WorkflowOverviewPanel } from './WorkflowOverviewPanel.js'
 
 export interface ContentViewPanelProps {
@@ -18,11 +18,14 @@ export interface ContentViewPanelProps {
   task: TaskDto
   artifacts: ArtifactDto[]
   repoPath: string
+  workspacePath: string
   diffs: DiffEntry[]
   checks: CheckEntry[]
   preview: boolean
   isRunning?: boolean
   onPreviewChange: (preview: boolean) => void
+  onSelectDiffPath?: (diffId: string, path: string) => void
+  onSelectFile?: (path: string) => void
 }
 
 export function ContentViewPanel({
@@ -30,11 +33,14 @@ export function ContentViewPanel({
   task,
   artifacts,
   repoPath,
+  workspacePath,
   diffs,
   checks,
   preview,
   isRunning = false,
   onPreviewChange,
+  onSelectDiffPath,
+  onSelectFile,
 }: ContentViewPanelProps): React.ReactElement {
   switch (contentView.type) {
     case 'workflow_overview':
@@ -49,12 +55,26 @@ export function ContentViewPanel({
           onPreviewChange={onPreviewChange}
         />
       )
-    case 'diff':
-      return <DiffContentPanel diff={diffs.find((entry) => entry.id === contentView.diffId)} />
+    case 'diff': {
+      const diff = resolveDiffEntry(contentView.diffId, diffs, contentView.path)
+      return (
+        <DiffContentPanel
+          workspacePath={workspacePath}
+          diff={diff}
+          selectedPath={contentView.path}
+          onSelectPath={
+            onSelectDiffPath && diff
+              ? (path) => onSelectDiffPath(diff.id, path)
+              : undefined
+          }
+          onOpenFile={onSelectFile}
+        />
+      )
+    }
     case 'check':
       return <CheckContentPanel check={checks.find((entry) => entry.id === contentView.checkId)} />
     case 'file':
-      return <FileContentPanel path={contentView.path} />
+      return <FileContentPanel workspacePath={workspacePath} path={contentView.path} />
     case 'implementation':
       return (
         <div className="flex flex-1 flex-col items-center justify-center p-8 text-center text-sm text-muted-foreground">

@@ -7,15 +7,18 @@ import type { TaskDto } from '../../../../shared/api.js'
 import { hasStartedPhase } from '../../../../shared/workflow-status.js'
 import { CircuitAgentStream } from '../stream/CircuitAgentStream.js'
 import { ContentViewPanel } from './ContentViewPanel.js'
+import { PierreHighlightProvider } from '../../lib/pierre/PierreHighlightProvider.js'
 import { TaskRightSidebar } from './TaskRightSidebar.js'
 import { WorkbenchPanelLayout } from './WorkbenchPanelLayout.js'
 import {
   checksFromFeed,
   defaultNavigationForTask,
   diffsFromFeed,
+  findDiffForPath,
   inspectorSelectionForTab,
   navigationForReference,
   resolvePhaseArtifact,
+  WORKSPACE_DIFF_ID,
 } from './lib/workbench-content.js'
 
 export interface TaskWorkbenchProps {
@@ -110,6 +113,30 @@ export function TaskWorkbench({
     })
   }
 
+  const handleSelectDiffPath = (diffId: string, path: string): void => {
+    revealContent({
+      contentView: { type: 'diff', diffId, path },
+      inspector: { tab: 'changes', selectedId: diffId, changesKind: 'diff' },
+    })
+  }
+
+  const handleSelectFile = (path: string): void => {
+    revealContent({
+      contentView: { type: 'file', path },
+      inspector: { tab: 'files', selectedId: path },
+    })
+  }
+
+  const handleOpenChangedFile = (path: string): void => {
+    const matchingDiff = findDiffForPath(diffs, path)
+    if (matchingDiff) {
+      handleSelectDiffPath(matchingDiff.id, path)
+      return
+    }
+
+    handleSelectDiffPath(WORKSPACE_DIFF_ID, path)
+  }
+
   const handleSelectCheck = (checkId: string): void => {
     revealContent({
       contentView: { type: 'check', checkId },
@@ -182,7 +209,7 @@ export function TaskWorkbench({
   const streamPanel = (
     <CircuitAgentStream
       taskId={task.id}
-      workspacePath={task.repoPath}
+      workspacePath={task.workspacePath}
       feedEvents={task.feedEvents}
       phases={task.phases}
       artifacts={task.artifacts}
@@ -201,54 +228,61 @@ export function TaskWorkbench({
         onResolveDecision(resolvePhase, decisionId, optionId, optionLabel)
       }}
       onOpenReference={handleOpenReference}
+      onOpenChangedFile={handleOpenChangedFile}
     />
   )
 
   return (
-    <div className={cn('flex h-full min-h-0 flex-col overflow-hidden', className)}>
-      <WorkbenchPanelLayout
-        layoutKey={task.id}
-        showContent={contentVisible}
-        showInspector={showInspector}
-        onToggleInspector={toggleInspector}
-        onInspectorExpand={() => setInspectorOpen(true)}
-        onInspectorCollapse={() => setInspectorOpen(false)}
-        inspectorActiveTab={navigation.inspector.tab}
-        onInspectorTabSelect={handleCollapsedInspectorTabSelect}
-        stream={streamPanel}
-        content={
-          <ScrollArea className="h-full min-h-0">
-            <ContentViewPanel
-              contentView={navigation.contentView}
+    <PierreHighlightProvider>
+      <div className={cn('flex h-full min-h-0 flex-col overflow-hidden', className)}>
+        <WorkbenchPanelLayout
+          layoutKey={task.id}
+          showContent={contentVisible}
+          showInspector={showInspector}
+          onToggleInspector={toggleInspector}
+          onInspectorExpand={() => setInspectorOpen(true)}
+          onInspectorCollapse={() => setInspectorOpen(false)}
+          inspectorActiveTab={navigation.inspector.tab}
+          onInspectorTabSelect={handleCollapsedInspectorTabSelect}
+          stream={streamPanel}
+          content={
+            <ScrollArea className="h-full min-h-0">
+              <ContentViewPanel
+                contentView={navigation.contentView}
+                task={task}
+                artifacts={task.artifacts}
+                repoPath={task.repoPath}
+                workspacePath={task.workspacePath}
+                diffs={diffs}
+                checks={checks}
+                preview={preview}
+                isRunning={isRunning}
+                onPreviewChange={setPreview}
+                onSelectDiffPath={handleSelectDiffPath}
+                onSelectFile={handleSelectFile}
+              />
+            </ScrollArea>
+          }
+          inspector={
+            <TaskRightSidebar
               task={task}
               artifacts={task.artifacts}
-              repoPath={task.repoPath}
               diffs={diffs}
               checks={checks}
-              preview={preview}
+              activeTab={navigation.inspector.tab}
+              selectedId={navigation.inspector.selectedId}
+              changesKind={navigation.inspector.changesKind}
               isRunning={isRunning}
-              onPreviewChange={setPreview}
+              onTabChange={handleInspectorTabChange}
+              onSelectArtifact={openArtifactById}
+              onSelectFile={handleSelectFile}
+              onSelectDiff={handleSelectDiff}
+              onSelectCheck={handleSelectCheck}
+              onToggleInspector={toggleInspector}
             />
-          </ScrollArea>
-        }
-        inspector={
-          <TaskRightSidebar
-            task={task}
-            artifacts={task.artifacts}
-            diffs={diffs}
-            checks={checks}
-            activeTab={navigation.inspector.tab}
-            selectedId={navigation.inspector.selectedId}
-            changesKind={navigation.inspector.changesKind}
-            isRunning={isRunning}
-            onTabChange={handleInspectorTabChange}
-            onSelectArtifact={openArtifactById}
-            onSelectDiff={handleSelectDiff}
-            onSelectCheck={handleSelectCheck}
-            onToggleInspector={toggleInspector}
-          />
-        }
-      />
-    </div>
+          }
+        />
+      </div>
+    </PierreHighlightProvider>
   )
 }

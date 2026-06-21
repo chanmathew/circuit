@@ -23,6 +23,34 @@ export interface DiffEntry {
   timestamp: string
 }
 
+/** Ad-hoc diff when opening a changed file from the stream without a diff:ready slice. */
+export const WORKSPACE_DIFF_ID = '__workspace__'
+
+export function resolveDiffEntry(
+  diffId: string,
+  diffs: DiffEntry[],
+  path?: string,
+): DiffEntry | undefined {
+  const fromFeed = diffs.find((entry) => entry.id === diffId)
+  if (fromFeed) return fromFeed
+
+  if (diffId === WORKSPACE_DIFF_ID && path) {
+    return {
+      id: WORKSPACE_DIFF_ID,
+      title: 'File changes',
+      summary: path,
+      paths: [path],
+      timestamp: new Date().toISOString(),
+    }
+  }
+
+  return undefined
+}
+
+export function findDiffForPath(diffs: DiffEntry[], path: string): DiffEntry | undefined {
+  return [...diffs].reverse().find((entry) => entry.paths.includes(path))
+}
+
 export interface CheckEntry {
   id: string
   command: string
