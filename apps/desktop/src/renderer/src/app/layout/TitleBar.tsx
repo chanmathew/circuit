@@ -10,7 +10,7 @@ import {
   CHROME_ROW_CLASS,
 } from './chrome-row.js'
 import { ProjectSidebarToggle } from './ProjectSidebarToggle.js'
-import { useSidebar } from './sidebar-context.js'
+import { useLayoutPanel } from './layout-panel-context.js'
 import { toggleMaximizeOnDoubleClick, WindowControls } from './WindowControls.js'
 import { useWindowState } from './useWindowState.js'
 
@@ -30,11 +30,11 @@ export function TitleBar({
   inspectorOpen,
   onToggleInspector,
 }: TitleBarProps): React.ReactElement {
-  const sidebar = useSidebar()
+  const layoutPanel = useLayoutPanel()
   const windowState = useWindowState()
   const isMac = windowState?.platform === 'darwin'
   const renderWindowControls = showWindowControls && windowState != null && !isMac
-  const showSidebarExpand = sidebar != null && !sidebar.open
+  const showSidebarExpand = layoutPanel != null && !layoutPanel.open
   const showInspectorExpand = onToggleInspector != null && !inspectorOpen
   const alignWithWindowEdge = insetTrafficLights || showSidebarExpand
 
@@ -56,7 +56,7 @@ export function TitleBar({
     >
       {showSidebarExpand ? (
         <div className={CHROME_CONTROL_WRAPPER_CLASS} style={CHROME_NO_DRAG_STYLE}>
-          <ProjectSidebarToggle open={false} onToggle={sidebar.toggle} />
+          <ProjectSidebarToggle open={false} onToggle={layoutPanel.toggle} />
         </div>
       ) : null}
       {showInspectorExpand || renderWindowControls ? (

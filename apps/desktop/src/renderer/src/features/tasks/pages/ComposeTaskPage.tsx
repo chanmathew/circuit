@@ -1,31 +1,44 @@
 import { useNavigate } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
-import { useRepos } from '../../repos/hooks/useRepos.js'
+import { useAddRepo, useRepos } from '../../repos/hooks/useRepos.js'
 import { CircuitInputComposer } from '../../stream/CircuitInputComposer.js'
 import { StreamList } from '../../stream/StreamList.js'
+import { resolveRepoId, writeLastRepoId } from '../../../lib/last-repo-id.js'
 import { useCreateTaskFromIntake } from '../hooks/useCreateTaskFromIntake.js'
 
-export function ComposeTaskPage({ repoId }: { repoId: string }): React.ReactElement {
+export function ComposeTaskPage({ repoId: urlRepoId }: { repoId?: string }): React.ReactElement {
   const navigate = useNavigate()
   const reposQuery = useRepos()
+  const addRepoMutation = useAddRepo()
   const createMutation = useCreateTaskFromIntake()
   const [pendingText, setPendingText] = useState<string | null>(null)
 
-  const repo = useMemo(
-    () => reposQuery.data?.find((entry) => entry.id === repoId),
-    [repoId, reposQuery.data],
+  const repos = reposQuery.data ?? []
+  const resolvedRepoId = useMemo(
+    () => resolveRepoId(repos, urlRepoId),
+    [repos, urlRepoId],
   )
+
+  useEffect(() => {
+    if (!resolvedRepoId || resolvedRepoId === urlRepoId) return
+    void navigate({ to: '/compose', search: { repoId: resolvedRepoId }, replace: true })
+  }, [navigate, resolvedRepoId, urlRepoId])
 
   const intakePlaceholder = 'Message the agent — chat starts an OpenCode session on send'
 
+  const handleRepoChange = (repoId: string): void => {
+    writeLastRepoId(repoId)
+    void navigate({ to: '/compose', search: { repoId }, replace: true })
+  }
+
   const handleSend = (text: string): void => {
     const trimmed = text.trim()
-    if (!trimmed || !repoId) return
+    if (!trimmed || !resolvedRepoId) return
 
     setPendingText(trimmed)
     createMutation.mutate(
-      { repoId, text: trimmed },
+      { repoId: resolvedRepoId, text: trimmed },
       {
         onSuccess: (task) => {
           setPendingText(null)
@@ -35,34 +48,6 @@ export function ComposeTaskPage({ repoId }: { repoId: string }): React.ReactElem
           setPendingText(null)
         },
       },
-    )
-  }
-
-  if (!repoId) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center">
-        <h1 className="text-xl font-semibold tracking-tight">Choose a project</h1>
-        <p className="text-sm text-muted-foreground">
-          Use the + button next to a repo in the sidebar to start a new task.
-        </p>
-      </div>
-    )
-  }
-
-  if (reposQuery.isLoading) {
-    return (
-      <div className="flex flex-1 items-center justify-center p-8 text-sm text-muted-foreground">
-        Loading…
-      </div>
-    )
-  }
-
-  if (!repo) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center">
-        <h1 className="text-xl font-semibold tracking-tight">Project not found</h1>
-        <p className="text-sm text-muted-foreground">Select another repo from the sidebar.</p>
-      </div>
     )
   }
 
@@ -82,9 +67,13 @@ export function ComposeTaskPage({ repoId }: { repoId: string }): React.ReactElem
         <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col">
           <StreamList items={[]} emptyDescription={intakePlaceholder} />
           <CircuitInputComposer
-            disabled={composerBusy}
+            disabled={composerBusy || reposQuery.isLoading}
             isRunning={composerBusy}
             placeholder={intakePlaceholder}
+            repos={repos}
+            repoId={resolvedRepoId}
+            onRepoChange={handleRepoChange}
+            onAddRepo={() => addRepoMutation.mutate()}
             onSend={handleSend}
           />
         </div>

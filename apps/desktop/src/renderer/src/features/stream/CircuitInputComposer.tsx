@@ -30,6 +30,9 @@ import {
   type PromptInputMessage,
 } from '@circuit/ui'
 
+import type { RepoDto } from '../../../../shared/api.js'
+import { ComposerProjectSelector } from './ComposerProjectSelector.js'
+
 /** Scaffold list — wire to harness model discovery later. */
 export const COMPOSER_MODELS = [
   {
@@ -48,6 +51,10 @@ export interface CircuitInputComposerProps {
   placeholder?: string
   model?: ComposerModelId
   onModelChange?: (model: ComposerModelId) => void
+  repos?: RepoDto[]
+  repoId?: string
+  onRepoChange?: (repoId: string) => void
+  onAddRepo?: () => void
   onSend: (text: string) => void
   onStop?: () => void
 }
@@ -86,6 +93,10 @@ export function CircuitInputComposer({
   placeholder = 'Message the agent…',
   model,
   onModelChange,
+  repos,
+  repoId,
+  onRepoChange,
+  onAddRepo,
   onSend,
   onStop,
 }: CircuitInputComposerProps): React.ReactElement {
@@ -117,6 +128,7 @@ export function CircuitInputComposer({
   }
 
   const submitStatus = isRunning ? 'streaming' : disabled ? 'submitted' : 'ready'
+  const canSend = Boolean(repoId) && draft.trim().length > 0
 
   return (
     <div className="shrink-0 border-t border-border p-3">
@@ -142,6 +154,16 @@ export function CircuitInputComposer({
                 <PromptInputActionAddScreenshot disabled={toolbarDisabled} />
               </PromptInputActionMenuContent>
             </PromptInputActionMenu>
+
+            {repos != null ? (
+              <ComposerProjectSelector
+                repos={repos}
+                repoId={repoId}
+                disabled={toolbarDisabled}
+                onRepoChange={onRepoChange}
+                onAddRepo={onAddRepo}
+              />
+            ) : null}
 
             <ModelSelector open={modelMenuOpen} onOpenChange={setModelMenuOpen}>
               <ModelSelectorTrigger asChild>
@@ -178,7 +200,7 @@ export function CircuitInputComposer({
           </PromptInputTools>
           <PromptInputSubmit
             status={submitStatus}
-            disabled={!isRunning && (disabled || !draft.trim())}
+            disabled={!isRunning && (disabled || !canSend)}
             onStop={onStop}
             className="shrink-0"
           />

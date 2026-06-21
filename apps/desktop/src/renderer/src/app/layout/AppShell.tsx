@@ -6,9 +6,11 @@ import {
   type ImperativePanelHandle,
 } from 'react-resizable-panels'
 
+import { SidebarProvider } from '@circuit/ui'
+
+import { LayoutPanelProvider } from './layout-panel-context.js'
 import { LayoutPanelResizeHandle } from './PanelResizeHandle.js'
-import { ProjectTreeSidebar } from './ProjectTreeSidebar.js'
-import { SidebarProvider } from './sidebar-context.js'
+import { ProjectSidebar } from './ProjectSidebar.js'
 import { SidebarTopChrome } from './SidebarTopChrome.js'
 import { TitleBar } from './TitleBar.js'
 
@@ -50,7 +52,7 @@ export function AppShell(): React.ReactElement {
   }
 
   return (
-    <SidebarProvider open={sidebarOpen} onToggle={toggleSidebar}>
+    <LayoutPanelProvider open={sidebarOpen} onToggle={toggleSidebar}>
       <PanelGroup
         direction="horizontal"
         className="h-full min-h-0 overflow-hidden bg-background text-foreground"
@@ -66,10 +68,12 @@ export function AppShell(): React.ReactElement {
           onCollapse={() => setSidebarOpen(false)}
           className="h-full min-h-0 min-w-0"
         >
-          <div className="flex h-full min-h-0 flex-col overflow-hidden">
+          <SidebarProvider className="flex h-full min-h-0 w-full flex-col">
             <SidebarTopChrome onToggle={toggleSidebar} />
-            <ProjectTreeSidebar />
-          </div>
+            <div className="flex min-h-0 flex-1 overflow-hidden">
+              <ProjectSidebar />
+            </div>
+          </SidebarProvider>
         </Panel>
 
         {sidebarOpen ? <LayoutPanelResizeHandle /> : null}
@@ -83,6 +87,6 @@ export function AppShell(): React.ReactElement {
           </div>
         </Panel>
       </PanelGroup>
-    </SidebarProvider>
+    </LayoutPanelProvider>
   )
 }

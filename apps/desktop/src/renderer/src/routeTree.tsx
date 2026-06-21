@@ -28,7 +28,7 @@ const composeRoute = createRoute({
   }),
   component: function ComposeRoutePage() {
     const { repoId } = composeRoute.useSearch()
-    return <ComposeTaskPage repoId={repoId ?? ''} />
+    return <ComposeTaskPage repoId={repoId} />
   },
 })
 
