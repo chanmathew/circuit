@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CheckIcon, CopyIcon } from 'lucide-react'
+import { CheckIcon, ChevronDownIcon, CopyIcon, Loader2 } from 'lucide-react'
 
 import {
   Badge,
@@ -36,14 +36,16 @@ import type {
 } from '@circuit/protocol'
 
 import type { DecisionResolutionDto } from '../../../../shared/api.js'
+import { ActivityEditRow } from './ActivityEditRow.js'
+import { ActivityFileLink } from './ActivityFileLink.js'
+import { DiffBadges } from './DiffBadges.js'
+import {
+  activityRowLabelParts,
+  resolveActivityRowFileTarget,
+} from '@circuit/protocol'
 
-const STATUS_DOT: Record<ActivityGroupItem['items'][number]['status'], string> = {
-  running: 'bg-primary animate-pulse',
-  success: 'bg-emerald-500',
-  failed: 'bg-destructive',
-  warning: 'bg-amber-500',
-  info: 'bg-muted-foreground',
-}
+const taskChevronClassName =
+  'size-2.5 shrink-0 text-muted-foreground/70 transition-transform [[data-state=closed]_&]:-rotate-90'
 
 const SEVERITY_BORDER: Record<NonNullable<ActionCardItem['severity']>, string> = {
   info: 'border-border',
@@ -77,9 +79,11 @@ function CopyMessageAction({ text }: { text: string }): React.ReactElement {
 }
 
 export interface StreamItemContext {
+  workspacePath?: string
   decisionResolutions?: DecisionResolutionDto[]
   onStreamAction?: (action: StreamAction['action'], payload?: StreamAction['payload']) => void
   onOpenReference?: (target: ReferenceTarget) => void
+  onOpenChangedFile?: (path: string) => void
 }
 
 function isArtifactReadyCard(item: ActionCardItem): boolean {
@@ -139,53 +143,70 @@ function liveCategoryLabel(item: ActivityGroupItem): string {
   return 'Exploring'
 }
 
-function DiffBadges({
-  additions,
-  deletions,
-}: {
-  additions?: number
-  deletions?: number
-}): React.ReactElement | null {
-  if ((additions ?? 0) <= 0 && (deletions ?? 0) <= 0) return null
-
-  return (
-    <span className="flex shrink-0 items-center gap-1 font-mono text-xs tabular-nums">
-      {additions !== undefined && additions > 0 && (
-        <span className="text-emerald-600 dark:text-emerald-400">+{additions}</span>
-      )}
-      {deletions !== undefined && deletions > 0 && (
-        <span className="text-red-500 dark:text-red-400">−{deletions}</span>
-      )}
-    </span>
-  )
-}
-
 function ActivityRow({
   entry,
-  isLive,
-  showDot,
+  workspacePath,
+  onOpenReference,
+  onOpenChangedFile,
 }: {
   entry: ActivityGroupItem['items'][number]
-  isLive: boolean
-  showDot: boolean
+  workspacePath?: string
+  onOpenReference?: (target: ReferenceTarget) => void
+  onOpenChangedFile?: (path: string) => void
 }): React.ReactElement {
+  const { filePath, openAs } = resolveActivityRowFileTarget(entry)
+  const labelParts = activityRowLabelParts(entry)
+
+  if (openAs === 'diff' && filePath && workspacePath) {
+    return (
+      <ActivityEditRow
+        entry={entry}
+        filePath={filePath}
+        workspacePath={workspacePath}
+        onOpenReference={onOpenReference}
+        onOpenChangedFile={onOpenChangedFile}
+      />
+    )
+  }
+
+  const showFileLink = filePath != null && labelParts.fileName != null
+
+  const plainLabel =
+    entry.status === 'running' ? (
+      <Shimmer duration={1.5}>{entry.label}</Shimmer>
+    ) : (
+      entry.label
+    )
+
   return (
-    <div className="flex items-baseline gap-1.5 py-px text-xs text-muted-foreground">
-      {!isLive && showDot && (
-        <span
-          className={cn('mt-[0.2em] size-1 shrink-0 rounded-full', STATUS_DOT[entry.status])}
-        />
-      )}
+    <div className="flex items-baseline py-px text-xs text-muted-foreground">
       <span className="flex min-w-0 flex-1 items-baseline gap-1">
-        {entry.status === 'running' ? (
-          <Shimmer duration={1.5}>{entry.label}</Shimmer>
+        {showFileLink ? (
+          <>
+            {entry.status === 'running' ? (
+              <Shimmer duration={1.5}>{labelParts.prefix}</Shimmer>
+            ) : (
+              <span className="shrink-0">{labelParts.prefix}</span>
+            )}
+            <ActivityFileLink
+              filePath={filePath}
+              fileName={labelParts.fileName ?? filePath}
+              openAs={openAs}
+              onOpenReference={onOpenReference}
+              onOpenChangedFile={onOpenChangedFile}
+            />
+          </>
         ) : (
-          <span className="truncate">{entry.label}</span>
+          <span className="truncate">{plainLabel}</span>
         )}
         {entry.detail && (
           <span className="shrink-0 text-muted-foreground/60">{entry.detail}</span>
         )}
-        <DiffBadges additions={entry.additions} deletions={entry.deletions} />
+        <DiffBadges
+          additions={entry.additions}
+          deletions={entry.deletions}
+          className="flex shrink-0 items-center gap-1 font-mono text-xs tabular-nums"
+        />
       </span>
     </div>
   )
@@ -193,8 +214,14 @@ function ActivityRow({
 
 function LiveActivityPanel({
   item,
+  workspacePath,
+  onOpenReference,
+  onOpenChangedFile,
 }: {
   item: ActivityGroupItem
+  workspacePath?: string
+  onOpenReference?: (target: ReferenceTarget) => void
+  onOpenChangedFile?: (path: string) => void
 }): React.ReactElement {
   const hasRunning = item.items.some((entry) => entry.status === 'running')
   const category = liveCategoryLabel(item)
@@ -217,8 +244,9 @@ function LiveActivityPanel({
             <ActivityRow
               key={`${entry.label}-${index}`}
               entry={entry}
-              isLive
-              showDot={false}
+              workspacePath={workspacePath}
+              onOpenReference={onOpenReference}
+              onOpenChangedFile={onOpenChangedFile}
             />
           ))}
         </div>
@@ -232,10 +260,26 @@ function LiveActivityPanel({
   )
 }
 
-export function ActivityGroupItemView({ item }: { item: ActivityGroupItem }): React.ReactElement {
+export function ActivityGroupItemView({
+  item,
+  context,
+}: {
+  item: ActivityGroupItem
+  context?: StreamItemContext
+}): React.ReactElement {
+  const workspacePath = context?.workspacePath
+  const onOpenReference = context?.onOpenReference
+  const onOpenChangedFile = context?.onOpenChangedFile
   const isLive = item.live === true
   if (isLive) {
-    return <LiveActivityPanel item={item} />
+    return (
+      <LiveActivityPanel
+        item={item}
+        workspacePath={workspacePath}
+        onOpenReference={onOpenReference}
+        onOpenChangedFile={onOpenChangedFile}
+      />
+    )
   }
 
   const display = item.display ?? (item.items.length <= 3 ? 'flat' : 'summary')
@@ -250,8 +294,9 @@ export function ActivityGroupItemView({ item }: { item: ActivityGroupItem }): Re
           <ActivityRow
             key={`${entry.label}-${index}`}
             entry={entry}
-            isLive={isLive}
-            showDot
+            workspacePath={workspacePath}
+            onOpenReference={onOpenReference}
+            onOpenChangedFile={onOpenChangedFile}
           />
         ))}
       </div>
@@ -265,22 +310,31 @@ export function ActivityGroupItemView({ item }: { item: ActivityGroupItem }): Re
     <Task defaultOpen={defaultOpen} variant="inline" className="py-0">
       <TaskTrigger
         variant="inline"
-        className="min-h-0"
-        title={
-          <span className="flex min-w-0 flex-1 items-baseline gap-1.5">
-            <span className="truncate">{titleContent}</span>
-            <DiffBadges additions={item.stats?.additions} deletions={item.stats?.deletions} />
-          </span>
-        }
-        live={isLive && hasRunning}
-      />
-      <TaskContent variant="inline" className="space-y-0">
+        title=""
+        className="min-h-0 justify-between gap-2"
+      >
+        <span className="flex min-w-0 flex-1 items-baseline gap-1.5">
+          <span className="truncate">{titleContent}</span>
+          <DiffBadges
+            additions={item.stats?.additions}
+            deletions={item.stats?.deletions}
+            className="flex shrink-0 items-center gap-1 font-mono text-xs tabular-nums"
+          />
+        </span>
+        {isLive && hasRunning ? (
+          <Loader2 className="size-2.5 shrink-0 animate-spin text-primary" />
+        ) : (
+          <ChevronDownIcon className={taskChevronClassName} />
+        )}
+      </TaskTrigger>
+      <TaskContent variant="inline" className="ml-0 space-y-0 border-0 py-0 pl-0">
         {item.items.map((entry, index) => (
           <ActivityRow
             key={`${entry.label}-${index}`}
             entry={entry}
-            isLive={isLive}
-            showDot
+            workspacePath={workspacePath}
+            onOpenReference={onOpenReference}
+            onOpenChangedFile={onOpenChangedFile}
           />
         ))}
       </TaskContent>
@@ -288,7 +342,13 @@ export function ActivityGroupItemView({ item }: { item: ActivityGroupItem }): Re
   )
 }
 
-export function SubagentRunItemView({ item }: { item: SubagentRunItem }): React.ReactElement {
+export function SubagentRunItemView({
+  item,
+  context,
+}: {
+  item: SubagentRunItem
+  context?: StreamItemContext
+}): React.ReactElement {
   const isLive = item.live === true
   const hasRunning = item.status === 'running'
   const defaultOpen = isLive || hasRunning || item.collapsed !== true
@@ -300,20 +360,30 @@ export function SubagentRunItemView({ item }: { item: SubagentRunItem }): React.
 
   return (
     <Task defaultOpen={defaultOpen} variant="card" className="py-0">
-      <TaskTrigger
-        variant="card"
-        title={titleContent}
-        live={isLive && hasRunning}
-        stepCount={item.stepCount}
-      />
+      <TaskTrigger variant="card" title="" className="justify-between gap-2">
+        <span className="min-w-0 flex-1 truncate">{titleContent}</span>
+        <span className="flex shrink-0 items-center gap-1.5">
+          {typeof item.stepCount === 'number' && item.stepCount > 0 && (
+            <span className="text-xs font-normal text-muted-foreground/80">
+              {item.stepCount} {item.stepCount === 1 ? 'step' : 'steps'}
+            </span>
+          )}
+          {isLive && hasRunning ? (
+            <Loader2 className="size-3 shrink-0 animate-spin text-primary" />
+          ) : (
+            <ChevronDownIcon className="size-3 shrink-0 text-muted-foreground/70 transition-transform [[data-state=closed]_&]:-rotate-90" />
+          )}
+        </span>
+      </TaskTrigger>
       {traceItems.length > 0 && (
         <TaskContent variant="card" className="space-y-0">
           {traceItems.map((entry, index) => (
             <ActivityRow
               key={`${entry.label}-${index}`}
               entry={entry}
-              isLive={isLive}
-              showDot={!isLive}
+              workspacePath={context?.workspacePath}
+              onOpenReference={context?.onOpenReference}
+              onOpenChangedFile={context?.onOpenChangedFile}
             />
           ))}
         </TaskContent>

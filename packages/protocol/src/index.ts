@@ -51,6 +51,14 @@ export {
   type UserMessageItem,
 } from './stream-items.js'
 export {
+  activityRowLabelParts,
+  inferOpenAsFromLabel,
+  parseFileTargetFromLabel,
+  resolveActivityRowFileTarget,
+  stripDiffStatsFromPath,
+  type ActivityRowLabelParts,
+} from './activity-file-target.js'
+export {
   eventsToStreamItems,
   mergeLiveActivities,
   revisionInferenceToStreamItem,

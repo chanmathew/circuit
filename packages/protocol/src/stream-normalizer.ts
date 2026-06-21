@@ -21,6 +21,7 @@ import type {
   SubagentRunItem,
   UserMessageItem,
 } from './stream-items.js'
+import { parseFileTargetFromLabel } from './activity-file-target.js'
 import { isHarnessMetaMessage, isPhaseHarnessPrompt } from './parsers.js'
 
 function isSuppressedHarnessMessage(content: string): boolean {
@@ -432,10 +433,54 @@ function labelFromActivity(activity: StreamActivityEvent): string {
   return activity.content.trim() || 'Activity'
 }
 
+function inferOpenAsFromActivity(activity: StreamActivityEvent): 'file' | 'diff' | undefined {
+  if (
+    readNumber(activity.metadata?.additions) != null ||
+    readNumber(activity.metadata?.deletions) != null
+  ) {
+    return 'diff'
+  }
+
+  return parseFileTargetFromLabel(labelFromActivity(activity)).openAs
+}
+
+function resolveActivityFileTarget(activity: StreamActivityEvent): {
+  filePath?: string
+  openAs?: 'file' | 'diff'
+} {
+  const path =
+    typeof activity.metadata?.path === 'string'
+      ? activity.metadata.path
+      : typeof activity.metadata?.title === 'string'
+        ? activity.metadata.title
+        : undefined
+
+  if (activity.type === 'file_read') {
+    return { filePath: path, openAs: 'file' }
+  }
+  if (activity.type === 'file_changed') {
+    return { filePath: path, openAs: 'diff' }
+  }
+  if (activity.type === 'tool_call') {
+    const tool =
+      typeof activity.metadata?.tool === 'string' ? activity.metadata.tool.toLowerCase() : ''
+    if (tool === 'edit' || tool === 'write' || tool === 'patch') {
+      return { filePath: path, openAs: 'diff' }
+    }
+    if (tool === 'read') {
+      return { filePath: path, openAs: 'file' }
+    }
+  }
+
+  return parseFileTargetFromLabel(labelFromActivity(activity))
+}
+
 function activityToGroupItem(
   activity: StreamActivityEvent,
   _index: number,
 ): ActivityGroupItem['items'][number] {
+  const fileTarget = resolveActivityFileTarget(activity)
+  const openAs = fileTarget.openAs ?? inferOpenAsFromActivity(activity)
   return {
     label: labelFromActivity(activity),
     status: activityStatusFromActivity(activity),
@@ -443,6 +488,8 @@ function activityToGroupItem(
       typeof activity.metadata?.detail === 'string' ? activity.metadata.detail : undefined,
     additions: readNumber(activity.metadata?.additions),
     deletions: readNumber(activity.metadata?.deletions),
+    ...(fileTarget.filePath ? { filePath: fileTarget.filePath } : {}),
+    ...(openAs ? { openAs } : {}),
   }
 }
 

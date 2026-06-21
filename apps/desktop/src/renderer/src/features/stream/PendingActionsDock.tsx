@@ -8,6 +8,7 @@ export interface PendingActionsDockProps {
   decisionResolutions?: DecisionResolutionDto[]
   onStreamAction?: (action: StreamAction['action'], payload?: StreamAction['payload']) => void
   onOpenReference?: (target: ReferenceTarget) => void
+  onOpenChangedFile?: (path: string) => void
 }
 
 export function PendingActionsDock({
@@ -15,6 +16,7 @@ export function PendingActionsDock({
   decisionResolutions,
   onStreamAction,
   onOpenReference,
+  onOpenChangedFile,
 }: PendingActionsDockProps): React.ReactElement | null {
   if (items.length === 0) return null
 
@@ -22,6 +24,7 @@ export function PendingActionsDock({
     decisionResolutions,
     onStreamAction,
     onOpenReference,
+    onOpenChangedFile,
   }
 
   return (

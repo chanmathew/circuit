@@ -37,6 +37,10 @@ export type ActivityGroupRow = {
   detail?: string
   additions?: number
   deletions?: number
+  /** Workspace-relative path when this row refers to a file. */
+  filePath?: string
+  /** How the workbench should open this path when clicked. */
+  openAs?: 'file' | 'diff'
 }
 
 export type ActivityGroupItem = {

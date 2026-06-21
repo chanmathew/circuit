@@ -163,6 +163,60 @@ describe('eventsToStreamItems', () => {
     if (group?.kind === 'activity_group') {
       expect(group.title).toBe('Explored 1 file, Ran 1 command')
       expect(group.display).toBe('flat')
+      expect(group.items[0]).toMatchObject({
+        label: 'Read src/auth.ts',
+        filePath: 'src/auth.ts',
+        openAs: 'file',
+      })
+    }
+  })
+
+  it('attaches filePath and openAs for OpenCode tool read/edit rows', () => {
+    const items = eventsToStreamItems({
+      events: [
+        {
+          type: 'harness:turn_activities',
+          taskId: TASK_ID,
+          timestamp: TS,
+          payload: {
+            activities: [
+              {
+                type: 'tool_call',
+                timestamp: TS,
+                content: 'Reading index.html',
+                metadata: { tool: 'read', status: 'completed', title: 'index.html' },
+              },
+              {
+                type: 'tool_call',
+                timestamp: TS,
+                content: 'Edited index.html',
+                metadata: {
+                  tool: 'edit',
+                  status: 'completed',
+                  title: 'index.html',
+                  additions: 1,
+                },
+              },
+            ],
+          },
+        },
+      ],
+    })
+
+    const group = items[0]
+    expect(group?.kind).toBe('activity_group')
+    if (group?.kind === 'activity_group') {
+      expect(group.items[0]).toMatchObject({
+        label: 'Reading index.html',
+        filePath: 'index.html',
+        openAs: 'file',
+      })
+      expect(group.items[1]).toMatchObject({
+        label: 'Edited index.html',
+        filePath: 'index.html',
+        openAs: 'diff',
+        additions: 1,
+      })
     }
   })
 

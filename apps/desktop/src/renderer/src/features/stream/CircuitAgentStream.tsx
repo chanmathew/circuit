@@ -38,6 +38,7 @@ export interface CircuitAgentStreamProps {
     phase?: string,
   ) => void
   onOpenReference?: (target: ReferenceTarget) => void
+  onOpenChangedFile?: (path: string) => void
   onFocusWorkflowPanel?: () => void
   onOpenWorkflowOverview?: () => void
   onOpenPhase?: (phaseName: string) => void
@@ -88,6 +89,7 @@ export function CircuitAgentStream({
   needsReview = false,
   onResolveDecision,
   onOpenReference,
+  onOpenChangedFile,
   onFocusWorkflowPanel,
   onOpenWorkflowOverview,
   onOpenPhase,
@@ -359,10 +361,12 @@ export function CircuitAgentStream({
 
         <StreamList
           items={chatItems}
+          workspacePath={workspacePath}
           decisionResolutions={decisionResolutions}
           emptyDescription={needsIntake ? intakePlaceholder : undefined}
           onStreamAction={handleStreamAction}
           onOpenReference={handleOpenReference}
+          onOpenChangedFile={onOpenChangedFile}
         />
 
         <PendingActionsDock
@@ -370,6 +374,7 @@ export function CircuitAgentStream({
           decisionResolutions={decisionResolutions}
           onStreamAction={handleStreamAction}
           onOpenReference={handleOpenReference}
+          onOpenChangedFile={onOpenChangedFile}
         />
 
         <CircuitInputComposer

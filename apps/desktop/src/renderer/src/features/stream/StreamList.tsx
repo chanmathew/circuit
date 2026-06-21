@@ -15,10 +15,12 @@ export interface StreamListProps extends Omit<StreamItemRendererProps, 'item'> {
 
 export function StreamList({
   items,
+  workspacePath,
   emptyDescription = 'Steer the agent, ask questions, or request changes. Material steering may offer revision cards.',
   decisionResolutions,
   onStreamAction,
   onOpenReference,
+  onOpenChangedFile,
 }: StreamListProps): React.ReactElement {
   return (
     <Conversation className="min-h-0 flex-1">
@@ -34,9 +36,11 @@ export function StreamList({
             <StreamItemRenderer
               key={item.id}
               item={item}
+              workspacePath={workspacePath}
               decisionResolutions={decisionResolutions}
               onStreamAction={onStreamAction}
               onOpenReference={onOpenReference}
+              onOpenChangedFile={onOpenChangedFile}
             />
           ))
         )}
