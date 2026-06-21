@@ -45,7 +45,7 @@ export const Reasoning = memo(function Reasoning({
   children,
   ...props
 }: ReasoningProps) {
-  const [isOpen, setIsOpen] = useState(defaultOpen ?? isStreaming);
+  const [isOpen, setIsOpen] = useState(defaultOpen ?? false);
   const [duration, setDuration] = useState<number | undefined>(durationProp);
   const startTimeRef = useRef<number | null>(null);
 
@@ -54,7 +54,6 @@ export const Reasoning = memo(function Reasoning({
       if (startTimeRef.current === null) {
         startTimeRef.current = Date.now();
       }
-      setIsOpen(true);
       return;
     }
 

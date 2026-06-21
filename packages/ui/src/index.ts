@@ -1,3 +1,4 @@
+export { cn } from './lib/utils.js'
 export { Badge } from './components/badge.js'
 export { Button, buttonVariants } from './components/button.js'
 export { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './components/card.js'
@@ -30,7 +31,7 @@ export { Separator } from './components/separator.js'
 export { Tabs, TabsContent, TabsList, TabsTrigger, tabsListVariants } from './components/tabs.js'
 export { Textarea } from './components/textarea.js'
 export { Toggle, toggleVariants } from './components/toggle.js'
-export { TooltipProvider } from './components/tooltip.js'
+export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './components/tooltip.js'
 export {
   Conversation,
   ConversationContent,
@@ -71,4 +72,3 @@ export {
   usePromptInputAttachments,
   type PromptInputMessage,
 } from './components/ai-elements/prompt-input.js'
-export { cn } from './lib/utils.js'
