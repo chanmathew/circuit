@@ -66,6 +66,7 @@ import { rejectHarnessQuestion } from '../features/workflow/reject-question.js'
 import { abortSession } from '../features/workflow/abort-session.js'
 import { requireHarnessSessionForTask } from '../features/workflow/require-harness-session.js'
 import { requireTaskWorkspacePath } from '../features/workflow/require-task-workspace.js'
+import { registerWindowHandlers } from './window-handlers.js'
 
 function toIpcError(error: unknown): Error {
   if (error instanceof CircuitError) {
@@ -80,6 +81,8 @@ function toIpcError(error: unknown): Error {
 }
 
 export function registerIpcHandlers(): void {
+  registerWindowHandlers()
+
   ipcMain.handle('circuit:ping', () => 'pong')
 
   ipcMain.handle('circuit:app:getConfig', () => ({

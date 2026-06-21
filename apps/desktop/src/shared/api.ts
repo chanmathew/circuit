@@ -359,9 +359,18 @@ export interface OpenWorkspaceFileRequest extends WorkspaceRootRequest {
   path: string
 }
 
+export interface WindowState {
+  platform: NodeJS.Platform
+  isMaximized: boolean
+}
+
 export interface CircuitApi {
   ping: () => Promise<string>
   getAppConfig: () => Promise<{ agentAdapter: string }>
+  getWindowState: () => Promise<WindowState>
+  windowMinimize: () => Promise<void>
+  windowToggleMaximize: () => Promise<void>
+  windowClose: () => Promise<void>
   listWorkspacePaths: (request: WorkspaceRootRequest) => Promise<string[]>
   readWorkspaceFile: (request: ReadWorkspaceFileRequest) => Promise<WorkspaceFileDto>
   getGitStatus: (request: WorkspaceRootRequest) => Promise<GitStatusDto>

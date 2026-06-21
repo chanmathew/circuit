@@ -22,9 +22,16 @@ import type { CheckEntry, DiffEntry } from './lib/workbench-content.js'
 import { resolvePhaseArtifact } from './lib/workbench-content.js'
 import {
   INSPECTOR_HEADER_ROW_CLASS,
-  INSPECTOR_TOGGLE_BUTTON_CLASS,
   InspectorPanelToggle,
 } from './InspectorPanelToggle.js'
+import {
+  CHROME_CONTROL_WRAPPER_CLASS,
+  CHROME_DRAG_STYLE,
+  CHROME_END_INSET,
+  CHROME_NO_DRAG_STYLE,
+  CHROME_ROW_CLASS,
+} from '../../app/layout/chrome-row.js'
+import { WindowControls } from '../../app/layout/WindowControls.js'
 import { WorkbenchFileTree } from './inspector/WorkbenchFileTree.js'
 import { WorkflowPanel } from './WorkflowPanel.js'
 
@@ -139,6 +146,8 @@ export interface TaskRightSidebarProps {
   onSelectDiff: (id: string) => void
   onSelectCheck: (id: string) => void
   onToggleInspector?: () => void
+  /** Win/Linux window controls when the inspector spans the top-right corner. */
+  showWindowControls?: boolean
 }
 
 export function TaskRightSidebar({
@@ -156,6 +165,7 @@ export function TaskRightSidebar({
   onSelectDiff,
   onSelectCheck,
   onToggleInspector,
+  showWindowControls = false,
 }: TaskRightSidebarProps): React.ReactElement {
   const selectedDiffId = activeTab === 'changes' && changesKind === 'diff' ? selectedId : undefined
   const selectedCheckId =
@@ -175,11 +185,18 @@ export function TaskRightSidebar({
       >
         <div
           className={cn(
-            'flex shrink-0 items-stretch justify-between overflow-visible border-b border-border',
+            CHROME_ROW_CLASS,
+            CHROME_END_INSET,
+            'justify-between gap-1 overflow-visible bg-card/50',
             INSPECTOR_HEADER_ROW_CLASS,
           )}
+          style={CHROME_DRAG_STYLE}
         >
-          <TabsList variant="line" className={INSPECTOR_TABS_LIST_CLASS}>
+          <TabsList
+            variant="line"
+            className={INSPECTOR_TABS_LIST_CLASS}
+            style={CHROME_NO_DRAG_STYLE}
+          >
             {INSPECTOR_TABS.map(({ value, label, icon: Icon }) => (
               <TabsTrigger
                 key={value}
@@ -192,13 +209,12 @@ export function TaskRightSidebar({
               </TabsTrigger>
             ))}
           </TabsList>
-          {onToggleInspector ? (
-            <InspectorPanelToggle
-              open
-              onToggle={onToggleInspector}
-              className={cn(INSPECTOR_TOGGLE_BUTTON_CLASS, 'self-center')}
-            />
-          ) : null}
+          <div className={cn(CHROME_CONTROL_WRAPPER_CLASS, 'gap-0')} style={CHROME_NO_DRAG_STYLE}>
+            {onToggleInspector ? (
+              <InspectorPanelToggle open onToggle={onToggleInspector} />
+            ) : null}
+            {showWindowControls ? <WindowControls /> : null}
+          </div>
         </div>
 
         <TabsContent value="workflow" className="mt-0 min-h-0 flex-1 overflow-hidden">

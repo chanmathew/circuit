@@ -6,6 +6,10 @@ import type { CircuitApi, TaskStreamUpdate } from '../shared/api.js'
 const circuitApi: CircuitApi = {
   ping: () => ipcRenderer.invoke('circuit:ping'),
   getAppConfig: () => ipcRenderer.invoke('circuit:app:getConfig'),
+  getWindowState: () => ipcRenderer.invoke('circuit:window:getState'),
+  windowMinimize: () => ipcRenderer.invoke('circuit:window:minimize'),
+  windowToggleMaximize: () => ipcRenderer.invoke('circuit:window:toggleMaximize'),
+  windowClose: () => ipcRenderer.invoke('circuit:window:close'),
   listRepos: () => ipcRenderer.invoke('circuit:repos:list'),
   addRepo: (path?: string) => ipcRenderer.invoke('circuit:repos:add', path),
   listTasks: (request) => ipcRenderer.invoke('circuit:tasks:list', request),

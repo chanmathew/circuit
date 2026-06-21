@@ -6,6 +6,8 @@ import { ScrollArea, cn } from '@circuit/ui'
 import type { TaskDto } from '../../../../shared/api.js'
 import { hasStartedPhase } from '../../../../shared/workflow-status.js'
 import { CircuitAgentStream } from '../stream/CircuitAgentStream.js'
+import { TitleBar } from '../../app/layout/TitleBar.js'
+import { useWindowState } from '../../app/layout/useWindowState.js'
 import { ContentViewPanel } from './ContentViewPanel.js'
 import { PierreHighlightProvider } from '../../lib/pierre/PierreHighlightProvider.js'
 import { TaskRightSidebar } from './TaskRightSidebar.js'
@@ -64,6 +66,8 @@ export function TaskWorkbench({
   const [preview, setPreview] = useState(true)
 
   const showInspector = inspectorOpen
+  const windowState = useWindowState()
+  const isMac = windowState?.platform === 'darwin'
 
   const navigationKey = `${task.id}:${task.workflowStatus}:${hasStartedPhase(task.phases)}`
 
@@ -172,11 +176,6 @@ export function TaskWorkbench({
     })
   }
 
-  const handleCollapsedInspectorTabSelect = (tab: InspectorTab): void => {
-    setInspectorOpen(true)
-    handleInspectorTabChange(tab)
-  }
-
   const openWorkflowOverview = (): void => {
     revealContent({
       contentView: { type: 'workflow_overview' },
@@ -237,13 +236,17 @@ export function TaskWorkbench({
       <div className={cn('flex h-full min-h-0 flex-col overflow-hidden', className)}>
         <WorkbenchPanelLayout
           layoutKey={task.id}
+          titleBar={
+            <TitleBar
+              showWindowControls={!isMac && !showInspector}
+              inspectorOpen={showInspector}
+              onToggleInspector={toggleInspector}
+            />
+          }
           showContent={contentVisible}
           showInspector={showInspector}
-          onToggleInspector={toggleInspector}
           onInspectorExpand={() => setInspectorOpen(true)}
           onInspectorCollapse={() => setInspectorOpen(false)}
-          inspectorActiveTab={navigation.inspector.tab}
-          onInspectorTabSelect={handleCollapsedInspectorTabSelect}
           stream={streamPanel}
           content={
             <ScrollArea className="h-full min-h-0">
@@ -279,6 +282,7 @@ export function TaskWorkbench({
               onSelectDiff={handleSelectDiff}
               onSelectCheck={handleSelectCheck}
               onToggleInspector={toggleInspector}
+              showWindowControls={!isMac && showInspector}
             />
           }
         />

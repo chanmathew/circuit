@@ -30,6 +30,10 @@ import type {
 export const circuitApi = {
   ping: () => window.circuit.ping(),
   getAppConfig: () => window.circuit.getAppConfig(),
+  getWindowState: () => window.circuit.getWindowState(),
+  windowMinimize: () => window.circuit.windowMinimize(),
+  windowToggleMaximize: () => window.circuit.windowToggleMaximize(),
+  windowClose: () => window.circuit.windowClose(),
   listRepos: () => window.circuit.listRepos(),
   addRepo: (path?: string) => window.circuit.addRepo(path),
   listTasks: (request?: ListTasksRequest) => window.circuit.listTasks(request),

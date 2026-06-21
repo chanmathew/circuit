@@ -1,15 +1,18 @@
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, Menu, shell } from 'electron'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { closeDb, initDb } from './db.js'
 import { getActiveAgentAdapterName } from './features/workflow/adapter.js'
 import { registerIpcHandlers } from './ipc/handlers.js'
+import { macOSTrafficLightPosition } from '../shared/window-chrome.js'
 
 const isDev = !app.isPackaged
 const mainDir = fileURLToPath(new URL('.', import.meta.url))
 
 function createWindow(): void {
+  const isMac = process.platform === 'darwin'
+
   const mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -17,6 +20,14 @@ function createWindow(): void {
     minHeight: 600,
     show: false,
     title: 'Circuit',
+    ...(isMac
+      ? {
+          titleBarStyle: 'hiddenInset' as const,
+          trafficLightPosition: macOSTrafficLightPosition,
+        }
+      : {
+          frame: false,
+        }),
     webPreferences: {
       preload: join(mainDir, '../preload/index.mjs'),
       contextIsolation: true,
@@ -42,6 +53,7 @@ function createWindow(): void {
 }
 
 void app.whenReady().then(() => {
+  Menu.setApplicationMenu(null)
   initDb()
   registerIpcHandlers()
   console.info(`[circuit] agent adapter: ${getActiveAgentAdapterName()}`)
