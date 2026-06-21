@@ -42,6 +42,9 @@ const circuitApi: CircuitApi = {
   readWorkspaceFile: (request) => ipcRenderer.invoke('circuit:workspace:readFile', request),
   getGitStatus: (request) => ipcRenderer.invoke('circuit:git:status', request),
   getGitDiff: (request) => ipcRenderer.invoke('circuit:git:diff', request),
+  gitStage: (request) => ipcRenderer.invoke('circuit:git:stage', request),
+  gitUnstage: (request) => ipcRenderer.invoke('circuit:git:unstage', request),
+  gitCommit: (request) => ipcRenderer.invoke('circuit:git:commit', request),
   openWorkspaceFile: (request) => ipcRenderer.invoke('circuit:shell:openWorkspaceFile', request),
   onTaskStreamUpdate: (callback) => {
     const handler = (_event: Electron.IpcRendererEvent, update: TaskStreamUpdate) => {

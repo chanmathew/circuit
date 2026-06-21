@@ -7,6 +7,7 @@ import { Input, cn } from '@circuit/ui'
 
 import { circuitApi } from '../../../ipc/client.js'
 import { queryKeys } from '../../../ipc/query-keys.js'
+import { useWorkspaceGitStatus } from '../../../hooks/useWorkspaceGitStatus.js'
 import { usePierreThemeType } from '../../../lib/pierre/usePierreThemeType.js'
 
 export interface WorkbenchFileTreeProps {
@@ -135,11 +136,7 @@ export function WorkbenchFileTree({
     enabled: !pathsOverride,
   })
 
-  const gitQuery = useQuery({
-    queryKey: queryKeys.workspace.gitStatus(workspacePath),
-    queryFn: () => circuitApi.getGitStatus({ workspacePath }),
-    enabled: !pathsOverride && showGitStatus,
-  })
+  const gitQuery = useWorkspaceGitStatus(workspacePath, !pathsOverride && showGitStatus)
 
   const paths = pathsOverride ?? pathsQuery.data ?? []
   const gitStatusEntries = useMemo(

@@ -1,6 +1,6 @@
 import { dialog, ipcMain, shell } from 'electron'
 
-import { getDiff, getStatus } from '@circuit/git'
+import { commitStaged, getDiff, getStatus, stageFiles, unstageFiles } from '@circuit/git'
 
 import { CircuitError, ValidationError } from '@circuit/shared'
 
@@ -31,6 +31,8 @@ import {
   type GetWorkflowRunRequest,
   type StartFollowUpWorkflowRequest,
   type GitDiffRequest,
+  type GitStageRequest,
+  type GitCommitRequest,
   type WorkspaceRootRequest,
   type OpenWorkspaceFileRequest,
   type ReadWorkspaceFileRequest,
@@ -429,7 +431,40 @@ export function registerIpcHandlers(): void {
         cwd: workspacePath,
         paths,
         staged: request.staged,
+        against: request.against,
       })
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
+  ipcMain.handle('circuit:git:stage', async (_event, request: GitStageRequest) => {
+    try {
+      const workspacePath = requireRegisteredWorkspacePath(request.workspacePath)
+      const paths = validateWorkspaceRelativePaths(workspacePath, request.paths)
+      await stageFiles(workspacePath, paths)
+      return getStatus(workspacePath)
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
+  ipcMain.handle('circuit:git:unstage', async (_event, request: GitStageRequest) => {
+    try {
+      const workspacePath = requireRegisteredWorkspacePath(request.workspacePath)
+      const paths = validateWorkspaceRelativePaths(workspacePath, request.paths)
+      await unstageFiles(workspacePath, paths)
+      return getStatus(workspacePath)
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
+  ipcMain.handle('circuit:git:commit', async (_event, request: GitCommitRequest) => {
+    try {
+      const workspacePath = requireRegisteredWorkspacePath(request.workspacePath)
+      await commitStaged(workspacePath, request.message)
+      return getStatus(workspacePath)
     } catch (error) {
       throw toIpcError(error)
     }

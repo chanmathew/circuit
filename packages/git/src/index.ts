@@ -1,17 +1,27 @@
 export interface GitFileChange {
   path: string
   status: 'added' | 'modified' | 'deleted' | 'renamed' | 'untracked'
+  staged: boolean
+  unstaged: boolean
+  insertions?: number
+  deletions?: number
 }
 
 export interface GitStatus {
   branch: string
   clean: boolean
   changes: GitFileChange[]
+  summary: {
+    files: number
+    insertions: number
+    deletions: number
+  }
 }
 
 export interface DiffOptions {
   cwd: string
   staged?: boolean
+  against?: 'HEAD' | 'index'
 }
 
 export interface WorktreeOptions {
@@ -23,6 +33,8 @@ export interface WorktreeOptions {
 export { getStatus } from './status.js'
 export { countUnifiedDiffLines, getDiff, type GetDiffOptions } from './diff.js'
 export { toPierreGitStatusEntries, type PierreGitStatusEntry } from './pierre-git-status.js'
+export { stageFiles, unstageFiles } from './stage.js'
+export { commitStaged } from './commit.js'
 
 export async function createWorktree(_options: WorktreeOptions): Promise<void> {
   throw new Error('Git worktree creation not yet implemented')

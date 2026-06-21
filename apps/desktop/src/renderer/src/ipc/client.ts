@@ -20,6 +20,8 @@ import type {
   StartPhaseRequest,
   SubmitTaskIntakeRequest,
   GitDiffRequest,
+  GitStageRequest,
+  GitCommitRequest,
   ListWorkspacePathsRequest,
   OpenWorkspaceFileRequest,
   ReadWorkspaceFileRequest,
@@ -77,6 +79,9 @@ export const circuitApi = {
     window.circuit.readWorkspaceFile(request),
   getGitStatus: (request: ListWorkspacePathsRequest) => window.circuit.getGitStatus(request),
   getGitDiff: (request: GitDiffRequest) => window.circuit.getGitDiff(request),
+  gitStage: (request: GitStageRequest) => window.circuit.gitStage(request),
+  gitUnstage: (request: GitStageRequest) => window.circuit.gitUnstage(request),
+  gitCommit: (request: GitCommitRequest) => window.circuit.gitCommit(request),
   openWorkspaceFile: (request: OpenWorkspaceFileRequest) =>
     window.circuit.openWorkspaceFile(request),
   onTaskStreamUpdate: (callback: (update: TaskStreamUpdate) => void) =>

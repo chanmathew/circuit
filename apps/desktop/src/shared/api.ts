@@ -342,17 +342,35 @@ export interface WorkspaceFileDto {
 export interface GitFileChangeDto {
   path: string
   status: 'added' | 'modified' | 'deleted' | 'renamed' | 'untracked'
+  staged: boolean
+  unstaged: boolean
+  insertions?: number
+  deletions?: number
 }
 
 export interface GitStatusDto {
   branch: string
   clean: boolean
   changes: GitFileChangeDto[]
+  summary: {
+    files: number
+    insertions: number
+    deletions: number
+  }
 }
 
 export interface GitDiffRequest extends WorkspaceRootRequest {
   paths?: string[]
   staged?: boolean
+  against?: 'HEAD' | 'index'
+}
+
+export interface GitStageRequest extends WorkspaceRootRequest {
+  paths: string[]
+}
+
+export interface GitCommitRequest extends WorkspaceRootRequest {
+  message: string
 }
 
 export interface OpenWorkspaceFileRequest extends WorkspaceRootRequest {
@@ -375,6 +393,9 @@ export interface CircuitApi {
   readWorkspaceFile: (request: ReadWorkspaceFileRequest) => Promise<WorkspaceFileDto>
   getGitStatus: (request: WorkspaceRootRequest) => Promise<GitStatusDto>
   getGitDiff: (request: GitDiffRequest) => Promise<string>
+  gitStage: (request: GitStageRequest) => Promise<GitStatusDto>
+  gitUnstage: (request: GitStageRequest) => Promise<GitStatusDto>
+  gitCommit: (request: GitCommitRequest) => Promise<GitStatusDto>
   openWorkspaceFile: (request: OpenWorkspaceFileRequest) => Promise<void>
   listRepos: () => Promise<RepoDto[]>
   addRepo: (path?: string) => Promise<RepoDto | null>

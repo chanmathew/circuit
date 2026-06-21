@@ -5,6 +5,7 @@ import { ScrollArea, cn } from '@circuit/ui'
 
 import type { TaskDto } from '../../../../shared/api.js'
 import { hasStartedPhase } from '../../../../shared/workflow-status.js'
+import { useWorkspaceGitStatus } from '../../hooks/useWorkspaceGitStatus.js'
 import { CircuitAgentStream } from '../stream/CircuitAgentStream.js'
 import { TitleBar } from '../../app/layout/TitleBar.js'
 import { useWindowState } from '../../app/layout/useWindowState.js'
@@ -91,12 +92,24 @@ export function TaskWorkbench({
 
   const diffs = useMemo(() => diffsFromFeed(task.feedEvents), [task.feedEvents])
   const checks = useMemo(() => checksFromFeed(task.feedEvents), [task.feedEvents])
+  const gitStatusQuery = useWorkspaceGitStatus(task.workspacePath)
+  const allChangedPaths = useMemo(
+    () => gitStatusQuery.data?.changes.map((change) => change.path) ?? [],
+    [gitStatusQuery.data],
+  )
 
   const actionPhase = needsReviewPhase ?? activePhase
 
   const revealContent = (next: ContentNavigationState): void => {
     setContentVisible(true)
     setNavigation(next)
+  }
+
+  const openAllChanges = (): void => {
+    revealContent({
+      contentView: { type: 'diff', diffId: WORKSPACE_DIFF_ID },
+      inspector: { tab: 'changes', selectedId: WORKSPACE_DIFF_ID, changesKind: 'diff' },
+    })
   }
 
   const handleOpenReference = (target: ReferenceTarget): void => {
@@ -149,6 +162,11 @@ export function TaskWorkbench({
   }
 
   const handleInspectorTabChange = (tab: InspectorTab): void => {
+    if (tab === 'changes' && allChangedPaths.length > 0) {
+      openAllChanges()
+      return
+    }
+
     setNavigation((current) => ({
       ...current,
       inspector: inspectorSelectionForTab(tab, current.contentView),
@@ -258,11 +276,13 @@ export function TaskWorkbench({
                 workspacePath={task.workspacePath}
                 diffs={diffs}
                 checks={checks}
+                allChangedPaths={allChangedPaths}
                 preview={preview}
                 isRunning={isRunning}
                 onPreviewChange={setPreview}
                 onSelectDiffPath={handleSelectDiffPath}
                 onSelectFile={handleSelectFile}
+                onViewAllChanges={openAllChanges}
               />
             </ScrollArea>
           }
@@ -273,6 +293,7 @@ export function TaskWorkbench({
               diffs={diffs}
               checks={checks}
               activeTab={navigation.inspector.tab}
+              contentView={navigation.contentView}
               selectedId={navigation.inspector.selectedId}
               changesKind={navigation.inspector.changesKind}
               isRunning={isRunning}
@@ -281,6 +302,8 @@ export function TaskWorkbench({
               onSelectFile={handleSelectFile}
               onSelectDiff={handleSelectDiff}
               onSelectCheck={handleSelectCheck}
+              onOpenChangedFile={handleOpenChangedFile}
+              onOpenAllChanges={openAllChanges}
               onToggleInspector={toggleInspector}
               showWindowControls={!isMac && showInspector}
             />

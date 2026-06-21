@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo } from 'react'
 import { PatchDiff } from '@pierre/diffs/react'
-import { ScrollArea } from '@circuit/ui'
+import { Button, ScrollArea } from '@circuit/ui'
 
 import { useWorkspaceGitDiff } from '../../../hooks/useWorkspaceGitDiff.js'
-import { WorkbenchFileTree } from '../inspector/WorkbenchFileTree.js'
 import { usePierreThemeType } from '../../../lib/pierre/usePierreThemeType.js'
 import { usePierreGlobalHighlightReady } from '../../../lib/pierre/PierreHighlightProvider.js'
 import { pierreDiffViewerOptionsWithFileLinks } from '../lib/pierre-diff-header-links.js'
 import type { DiffEntry } from '../lib/workbench-content.js'
+import { WORKSPACE_DIFF_ID } from '../lib/workbench-content.js'
+import { splitGitPatchByFile } from '../lib/split-git-patch.js'
 
 export interface DiffContentPanelProps {
   workspacePath: string
@@ -15,41 +16,40 @@ export interface DiffContentPanelProps {
   selectedPath?: string
   onSelectPath?: (path: string) => void
   onOpenFile?: (path: string) => void
+  onViewAllChanges?: () => void
 }
-
-const SIDEBAR_MIN_WIDTH = 320
 
 export function DiffContentPanel({
   workspacePath,
   diff,
   selectedPath,
-  onSelectPath,
   onOpenFile,
+  onViewAllChanges,
 }: DiffContentPanelProps): React.ReactElement {
   const themeType = usePierreThemeType()
   const highlightReady = usePierreGlobalHighlightReady()
-  const containerRef = useRef<HTMLDivElement>(null)
-  const [showSidebar, setShowSidebar] = useState(false)
 
-  const pathsKey = diff?.paths.join('\0') ?? ''
-  const diffQuery = useWorkspaceGitDiff(workspacePath, diff?.paths, Boolean(diff && diff.paths.length > 0))
+  const isWorkspaceDiff = diff?.id === WORKSPACE_DIFF_ID
+  const diffPaths =
+    isWorkspaceDiff && selectedPath ? [selectedPath] : diff?.paths
+  const pathsKey = diffPaths?.join('\0') ?? ''
 
-  useEffect(() => {
-    const node = containerRef.current
-    if (!node) return
-
-    const observer = new ResizeObserver(([entry]) => {
-      setShowSidebar(entry.contentRect.width >= SIDEBAR_MIN_WIDTH)
-    })
-    observer.observe(node)
-    setShowSidebar(node.getBoundingClientRect().width >= SIDEBAR_MIN_WIDTH)
-    return () => observer.disconnect()
-  }, [])
+  const diffQuery = useWorkspaceGitDiff(
+    workspacePath,
+    diffPaths,
+    Boolean(diff && (diffPaths?.length ?? 0) > 0),
+    { against: isWorkspaceDiff ? 'HEAD' : 'index' },
+  )
 
   const patchDiffOptions = useMemo(
     () =>
       pierreDiffViewerOptionsWithFileLinks(themeType, diff?.paths ?? [], onOpenFile),
     [themeType, diff?.paths, onOpenFile],
+  )
+
+  const filePatches = useMemo(
+    () => (diffQuery.data ? splitGitPatchByFile(diffQuery.data) : []),
+    [diffQuery.data],
   )
 
   if (!diff) {
@@ -60,56 +60,61 @@ export function DiffContentPanel({
     )
   }
 
-  const activePath = selectedPath ?? diff.paths[0]
+  const showAllChangesLink =
+    isWorkspaceDiff && selectedPath && onViewAllChanges && diff.paths.length > 1
 
   return (
-    <div ref={containerRef} className="flex min-h-0 flex-1 flex-col">
+    <div className="flex min-h-0 flex-1 flex-col">
       <div className="shrink-0 border-b border-border px-4 py-3">
-        <p className="text-sm font-medium">{diff.title}</p>
-        <p className="text-xs text-muted-foreground">{diff.summary}</p>
+        <div className="flex items-start gap-2">
+          {showAllChangesLink ? (
+            <Button
+              type="button"
+              variant="link"
+              size="sm"
+              className="h-auto shrink-0 px-0 text-xs text-muted-foreground"
+              onClick={onViewAllChanges}
+            >
+              All changes
+            </Button>
+          ) : null}
+          <div className="min-w-0">
+            <p className="text-sm font-medium">{diff.title}</p>
+            <p className="text-xs text-muted-foreground">{diff.summary}</p>
+          </div>
+        </div>
       </div>
 
-      <div className="flex min-h-0 flex-1">
-        {showSidebar && diff.paths.length > 0 ? (
-          <aside className="w-56 shrink-0 overflow-hidden border-r border-border">
-            <WorkbenchFileTree
-              workspacePath={workspacePath}
-              paths={diff.paths}
-              selectedPath={activePath}
-              onSelectPath={onSelectPath}
-              showGitStatus={false}
-              style={{ minHeight: 320 }}
-            />
-          </aside>
+      <ScrollArea className="min-h-0 flex-1">
+        {diffQuery.isLoading ? (
+          <p className="p-6 text-sm text-muted-foreground">Loading diff…</p>
         ) : null}
-
-        <ScrollArea className="min-h-0 min-w-0 flex-1">
-          {diffQuery.isLoading ? (
-            <p className="p-6 text-sm text-muted-foreground">Loading diff…</p>
-          ) : null}
-          {diffQuery.isError ? (
-            <p className="p-6 text-sm text-destructive">
-              Failed to load git diff. Changes may not be committed yet.
-            </p>
-          ) : null}
-          {diffQuery.data && diffQuery.data.trim().length > 0 && !highlightReady ? (
-            <p className="p-6 text-sm text-muted-foreground">Preparing syntax highlight…</p>
-          ) : null}
-          {diffQuery.data && diffQuery.data.trim().length > 0 && highlightReady ? (
-            <PatchDiff
-              key={`${pathsKey}:${activePath ?? ''}:${themeType}`}
-              patch={diffQuery.data}
-              options={patchDiffOptions}
-              disableWorkerPool
-            />
-          ) : null}
-          {diffQuery.data !== undefined && diffQuery.data.trim().length === 0 ? (
-            <p className="p-6 text-sm text-muted-foreground">
-              No patch text for these paths — they may match the current HEAD.
-            </p>
-          ) : null}
-        </ScrollArea>
-      </div>
+        {diffQuery.isError ? (
+          <p className="p-6 text-sm text-destructive">
+            Failed to load git diff. Changes may not be committed yet.
+          </p>
+        ) : null}
+        {diffQuery.data && diffQuery.data.trim().length > 0 && !highlightReady ? (
+          <p className="p-6 text-sm text-muted-foreground">Preparing syntax highlight…</p>
+        ) : null}
+        {diffQuery.data && diffQuery.data.trim().length > 0 && highlightReady ? (
+          <div className="space-y-4 p-4">
+            {filePatches.map((filePatch, index) => (
+              <PatchDiff
+                key={`${pathsKey}:${index}:${themeType}`}
+                patch={filePatch}
+                options={patchDiffOptions}
+                disableWorkerPool
+              />
+            ))}
+          </div>
+        ) : null}
+        {diffQuery.data !== undefined && diffQuery.data.trim().length === 0 ? (
+          <p className="p-6 text-sm text-muted-foreground">
+            No patch text for these paths — they may match the current HEAD.
+          </p>
+        ) : null}
+      </ScrollArea>
     </div>
   )
 }

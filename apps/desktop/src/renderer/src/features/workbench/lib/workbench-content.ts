@@ -30,17 +30,30 @@ export function resolveDiffEntry(
   diffId: string,
   diffs: DiffEntry[],
   path?: string,
+  allChangedPaths?: string[],
 ): DiffEntry | undefined {
   const fromFeed = diffs.find((entry) => entry.id === diffId)
   if (fromFeed) return fromFeed
 
-  if (diffId === WORKSPACE_DIFF_ID && path) {
-    return {
-      id: WORKSPACE_DIFF_ID,
-      title: 'File changes',
-      summary: path,
-      paths: [path],
-      timestamp: new Date().toISOString(),
+  if (diffId === WORKSPACE_DIFF_ID) {
+    if (path) {
+      return {
+        id: WORKSPACE_DIFF_ID,
+        title: 'File changes',
+        summary: path,
+        paths: [path],
+        timestamp: new Date().toISOString(),
+      }
+    }
+
+    if (allChangedPaths && allChangedPaths.length > 0) {
+      return {
+        id: WORKSPACE_DIFF_ID,
+        title: 'All changes',
+        summary: `${allChangedPaths.length} file${allChangedPaths.length === 1 ? '' : 's'} changed`,
+        paths: allChangedPaths,
+        timestamp: new Date().toISOString(),
+      }
     }
   }
 

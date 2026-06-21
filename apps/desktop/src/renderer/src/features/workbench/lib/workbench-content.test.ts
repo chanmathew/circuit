@@ -143,6 +143,12 @@ describe('file navigation', () => {
     expect(diff?.paths).toEqual(['src/index.ts'])
   })
 
+  it('resolves aggregate workspace diff entries from git status paths', () => {
+    const diff = resolveDiffEntry(WORKSPACE_DIFF_ID, [], undefined, ['a.ts', 'b.ts'])
+    expect(diff?.title).toBe('All changes')
+    expect(diff?.paths).toEqual(['a.ts', 'b.ts'])
+  })
+
   it('finds the latest diff slice containing a path', () => {
     const diffs = [
       { id: 'd1', title: 'A', paths: ['a.ts'], timestamp: '1' },

@@ -1,6 +1,4 @@
 import {
-  Badge,
-  Button,
   ScrollArea,
   Tabs,
   TabsContent,
@@ -9,17 +7,16 @@ import {
 } from '@circuit/ui'
 import { cn } from '@circuit/ui/utils'
 import type React from 'react'
-import type { InspectorTab } from '@circuit/protocol'
+import type { ContentView, InspectorTab } from '@circuit/protocol'
 
 import type { ArtifactDto, TaskDto } from '../../../../shared/api.js'
-import { ArtifactTree } from './ArtifactTree.js'
 import {
   INSPECTOR_TAB_TRIGGER_CLASS,
   INSPECTOR_TABS,
   INSPECTOR_TABS_LIST_CLASS,
 } from './lib/inspector-tabs.js'
 import type { CheckEntry, DiffEntry } from './lib/workbench-content.js'
-import { resolvePhaseArtifact } from './lib/workbench-content.js'
+import { resolvePhaseArtifact, WORKSPACE_DIFF_ID } from './lib/workbench-content.js'
 import {
   INSPECTOR_HEADER_ROW_CLASS,
   InspectorPanelToggle,
@@ -32,104 +29,9 @@ import {
   CHROME_ROW_CLASS,
 } from '../../app/layout/chrome-row.js'
 import { WindowControls } from '../../app/layout/WindowControls.js'
+import { ChangesPanel } from './inspector/ChangesPanel.js'
 import { WorkbenchFileTree } from './inspector/WorkbenchFileTree.js'
 import { WorkflowPanel } from './WorkflowPanel.js'
-
-function ChangesPanel({
-  task,
-  diffs,
-  checks,
-  selectedDiffId,
-  selectedCheckId,
-  onSelectDiff,
-  onSelectCheck,
-}: {
-  task: TaskDto
-  diffs: DiffEntry[]
-  checks: CheckEntry[]
-  selectedDiffId?: string
-  selectedCheckId?: string
-  onSelectDiff: (id: string) => void
-  onSelectCheck: (id: string) => void
-}): React.ReactElement {
-  const hasChanges = diffs.length > 0 || checks.length > 0
-
-  return (
-    <div className="space-y-4 p-2">
-      <div className="rounded-md border border-border bg-card px-2.5 py-2">
-        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-          Branch
-        </p>
-        <p className="mt-0.5 font-mono text-xs">{task.branchName}</p>
-      </div>
-
-      {!hasChanges && (
-        <p className="px-2 text-center text-xs text-muted-foreground">
-          Diffs and validation results will appear here during build and review.
-        </p>
-      )}
-
-      {diffs.length > 0 && (
-        <section>
-          <p className="mb-1 px-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-            Diffs
-          </p>
-          <ul className="space-y-0.5">
-            {diffs.map((diff) => (
-              <li key={diff.id}>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    'h-auto w-full flex-col items-start gap-0.5 px-2 py-1.5 text-left font-normal',
-                    selectedDiffId === diff.id && 'bg-accent',
-                  )}
-                  onClick={() => onSelectDiff(diff.id)}
-                >
-                  <span className="text-xs font-medium">{diff.title}</span>
-                  <span className="text-[10px] text-muted-foreground">{diff.summary}</span>
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {checks.length > 0 && (
-        <section>
-          <p className="mb-1 px-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-            Checks
-          </p>
-          <ul className="space-y-0.5">
-            {checks.map((check) => (
-              <li key={check.id}>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    'h-auto w-full items-center justify-between gap-2 px-2 py-1.5 text-left font-normal',
-                    selectedCheckId === check.id && 'bg-accent',
-                  )}
-                  onClick={() => onSelectCheck(check.id)}
-                >
-                  <span className="truncate font-mono text-xs">{check.command}</span>
-                  <Badge
-                    variant={check.passed ? 'outline' : 'destructive'}
-                    className="shrink-0 text-[9px]"
-                  >
-                    {check.passed ? 'pass' : 'fail'}
-                  </Badge>
-                </Button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-    </div>
-  )
-}
 
 export interface TaskRightSidebarProps {
   task: TaskDto
@@ -137,6 +39,7 @@ export interface TaskRightSidebarProps {
   diffs: DiffEntry[]
   checks: CheckEntry[]
   activeTab: InspectorTab
+  contentView: ContentView
   selectedId?: string
   changesKind?: 'diff' | 'check'
   isRunning?: boolean
@@ -145,6 +48,8 @@ export interface TaskRightSidebarProps {
   onSelectFile: (path: string) => void
   onSelectDiff: (id: string) => void
   onSelectCheck: (id: string) => void
+  onOpenChangedFile: (path: string) => void
+  onOpenAllChanges: () => void
   onToggleInspector?: () => void
   /** Win/Linux window controls when the inspector spans the top-right corner. */
   showWindowControls?: boolean
@@ -156,6 +61,7 @@ export function TaskRightSidebar({
   diffs,
   checks,
   activeTab,
+  contentView,
   selectedId,
   changesKind,
   isRunning = false,
@@ -164,12 +70,20 @@ export function TaskRightSidebar({
   onSelectFile,
   onSelectDiff,
   onSelectCheck,
+  onOpenChangedFile,
+  onOpenAllChanges,
   onToggleInspector,
   showWindowControls = false,
 }: TaskRightSidebarProps): React.ReactElement {
   const selectedDiffId = activeTab === 'changes' && changesKind === 'diff' ? selectedId : undefined
   const selectedCheckId =
     activeTab === 'changes' && changesKind === 'check' ? selectedId : undefined
+  const selectedWorkspacePath =
+    contentView.type === 'diff' &&
+    contentView.diffId === WORKSPACE_DIFF_ID &&
+    contentView.path
+      ? contentView.path
+      : undefined
   const selectedArtifactId =
     activeTab === 'workflow' && selectedId && artifacts.some((a) => a.id === selectedId)
       ? selectedId
@@ -249,8 +163,11 @@ export function TaskRightSidebar({
               checks={checks}
               selectedDiffId={selectedDiffId}
               selectedCheckId={selectedCheckId}
+              selectedWorkspacePath={selectedWorkspacePath}
               onSelectDiff={onSelectDiff}
               onSelectCheck={onSelectCheck}
+              onOpenChangedFile={onOpenChangedFile}
+              onOpenAllChanges={onOpenAllChanges}
             />
           </ScrollArea>
         </TabsContent>
