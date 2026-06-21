@@ -3,10 +3,16 @@ import { useMemo, useState } from 'react'
 
 import { Button, cn, ScrollArea } from '@circuit/ui'
 
+import { formatWorkflowSubtitle } from '../../../../shared/workflow-status.js'
 import type { RepoDto, TaskSummaryDto } from '../../../../shared/api.js'
 import { useAddRepo, useRepos } from '../../features/repos/hooks/useRepos.js'
 import { useTasks } from '../../features/tasks/hooks/useTasks.js'
 import { ThemeToggle } from './ThemeToggle.js'
+
+/** Placeholder drafts abandoned before first message — hide from sidebar. */
+function isVisibleInSidebar(task: TaskSummaryDto): boolean {
+  return !(task.status === 'draft' && task.description.trim() === 'New task')
+}
 
 function ChevronIcon({ open }: { open: boolean }): React.ReactElement {
   return (
@@ -47,6 +53,7 @@ export function ProjectTreeSidebar({
 }: ProjectTreeSidebarProps): React.ReactElement {
   const navigate = useNavigate()
   const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const search = useRouterState({ select: (s) => s.location.search })
 
   const selectedTaskId = useMemo(() => {
     if (selectedTaskIdProp) return selectedTaskIdProp
@@ -54,12 +61,24 @@ export function ProjectTreeSidebar({
     return match?.[1]
   }, [selectedTaskIdProp, pathname])
 
+  const composingRepoId = useMemo(() => {
+    if (pathname !== '/compose') return undefined
+    const repoId = (search as { repoId?: string }).repoId
+    return typeof repoId === 'string' ? repoId : undefined
+  }, [pathname, search])
+
   const reposQuery = useRepos()
   const tasksQuery = useTasks()
   const addRepoMutation = useAddRepo()
 
   const repos = reposQuery.data ?? []
-  const tasks = tasksQuery.data ?? []
+  const tasks = (tasksQuery.data ?? []).filter(isVisibleInSidebar)
+
+  const listError =
+    reposQuery.isError || tasksQuery.isError
+      ? [reposQuery.error, tasksQuery.error].find((e) => e instanceof Error)?.message ??
+        'Failed to load projects'
+      : null
 
   const tasksByRepo = useMemo(() => {
     const map = new Map<string, TaskSummaryDto[]>()
@@ -83,11 +102,11 @@ export function ProjectTreeSidebar({
   }
 
   const onNewTask = (repoId: string) => {
-    void navigate({ to: '/new-task', search: { repoId } })
+    void navigate({ to: '/compose', search: { repoId } })
   }
 
   return (
-    <aside className="flex h-full w-60 shrink-0 flex-col border-r border-border bg-card">
+    <aside className="flex h-full w-full min-w-0 flex-col border-r border-border bg-card">
       <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-3">
         <div>
           <p className="text-sm font-semibold tracking-tight">Circuit</p>
@@ -107,7 +126,13 @@ export function ProjectTreeSidebar({
 
       <ScrollArea className="flex-1 py-2">
         <div className="space-y-1 px-2">
-          {repos.length === 0 && !reposQuery.isLoading && (
+          {listError && (
+            <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+              {listError}
+            </div>
+          )}
+
+          {repos.length === 0 && !reposQuery.isLoading && !listError && (
             <div className="rounded-md border border-dashed border-border px-3 py-4 text-center">
               <p className="text-xs text-muted-foreground">No repos yet</p>
               <Button
@@ -130,6 +155,7 @@ export function ProjectTreeSidebar({
               tasks={tasksByRepo.get(repo.id) ?? []}
               open={isExpanded(repo.id)}
               selectedTaskId={selectedTaskId}
+              composing={composingRepoId === repo.id}
               onToggle={() => toggleProject(repo.id)}
               onNewTask={() => onNewTask(repo.id)}
             />
@@ -161,6 +187,7 @@ function RepoSection({
   tasks,
   open,
   selectedTaskId,
+  composing,
   onToggle,
   onNewTask,
 }: {
@@ -168,6 +195,7 @@ function RepoSection({
   tasks: TaskSummaryDto[]
   open: boolean
   selectedTaskId?: string
+  composing?: boolean
   onToggle: () => void
   onNewTask: () => void
 }): React.ReactElement {
@@ -175,7 +203,12 @@ function RepoSection({
 
   return (
     <div className="rounded-md">
-      <div className="group flex items-center gap-0.5 rounded-md hover:bg-accent/50">
+      <div
+        className={cn(
+          'group flex items-center gap-0.5 rounded-md hover:bg-accent/50',
+          composing && 'bg-accent/40',
+        )}
+      >
         <Button
           type="button"
           variant="ghost"
@@ -213,6 +246,9 @@ function RepoSection({
 
       {open && (
         <div className="ml-3 border-l border-border pl-2 pb-1">
+          {composing && (
+            <div className="px-2 py-1.5 text-[10px] font-medium text-primary">New task…</div>
+          )}
           {tasks.map((task) => {
             const selected = task.id === selectedTaskId
             return (
@@ -230,13 +266,18 @@ function RepoSection({
                 }
               >
                 <span className="truncate text-xs font-medium">{task.title}</span>
-                <span className="truncate text-[10px] text-muted-foreground capitalize">
-                  {task.currentPhase} · {task.status.replace(/_/g, ' ')}
+                <span className="truncate text-[10px] text-muted-foreground">
+                  {formatWorkflowSubtitle({
+                    workflowStatus: task.workflowStatus,
+                    workflowType: task.workflowType,
+                    currentPhase: task.currentPhase,
+                    phases: [],
+                  })}
                 </span>
               </Button>
             )
           })}
-          {tasks.length === 0 && (
+          {tasks.length === 0 && !composing && (
             <Button
               type="button"
               variant="ghost"

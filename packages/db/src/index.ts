@@ -4,8 +4,12 @@ export {
   getArtifactById,
   getArtifactByTaskAndPhase,
   getTicketArtifactForTask,
+  getTicketArtifactForRun,
   insertArtifact,
+  latestArtifactPerPhase,
   listArtifactsForTask,
+  listArtifactsForWorkflowRun,
+  deleteArtifact,
   updateArtifact,
   type ArtifactRow,
   type NewArtifactRow,
@@ -16,6 +20,7 @@ export {
   insertPhase,
   insertPhases,
   listPhasesForTask,
+  listPhasesForWorkflowRun,
   updatePhase,
   updatePhaseArtifactId,
   type NewPhaseRow,
@@ -25,6 +30,7 @@ export {
   getPhaseRunById,
   insertPhaseRun,
   listPhaseRunsForTask,
+  listPhaseRunsForWorkflowRun,
   type NewPhaseRunRow,
   type PhaseRunRow,
 } from './phase-runs.js'
@@ -36,6 +42,12 @@ export {
   type DecisionResolutionRow,
   type NewDecisionResolutionRow,
 } from './decision-resolutions.js'
+export {
+  insertWorkflowEvent,
+  listWorkflowEventsForTask,
+  type NewWorkflowEventRow,
+  type WorkflowEventRow,
+} from './workflow-events.js'
 export {
   getRepoById,
   getRepoByPath,
@@ -55,6 +67,18 @@ export {
 } from './tasks.js'
 export { updateTask } from './tasks-update.js'
 export {
+  cancelWorkflowRun,
+  completeWorkflowRun,
+  deleteWorkflowRun,
+  getActiveWorkflowRunForTask,
+  getWorkflowRunById,
+  insertWorkflowRun,
+  listWorkflowRunsForTask,
+  updateWorkflowRun,
+  type NewWorkflowRunRow,
+  type WorkflowRunRow,
+} from './workflow-runs.js'
+export {
   artifacts,
   decisionResolutions,
   phaseRuns,
@@ -63,5 +87,7 @@ export {
   settings,
   tasks,
   validationRuns,
+  workflowEvents,
+  workflowRuns,
   workspaces,
 } from './schema.js'

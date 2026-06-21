@@ -18,15 +18,53 @@ export type AgentMessageItem = {
 
 export type ActivityStatus = 'running' | 'success' | 'failed' | 'warning' | 'info'
 
+export type ReasoningItem = {
+  kind: 'reasoning'
+  id: string
+  text: string
+  isStreaming?: boolean
+  duration?: number
+  collapsed?: boolean
+  createdAt: string
+}
+
+export type ActivityGroupDisplay = 'flat' | 'summary'
+
+export type ActivityGroupRow = {
+  label: string
+  status: ActivityStatus
+  /** Secondary detail — line range, command tokens, etc. */
+  detail?: string
+  additions?: number
+  deletions?: number
+}
+
 export type ActivityGroupItem = {
   kind: 'activity_group'
   id: string
   title: string
-  items: Array<{
-    label: string
-    status: ActivityStatus
-  }>
+  items: ActivityGroupRow[]
+  /** Flat rows for small bursts; summary + expand for larger batches. */
+  display?: ActivityGroupDisplay
+  /** Session-level diff totals for summary rows. */
+  stats?: { additions?: number; deletions?: number }
   collapsed?: boolean
+  /** Ephemeral in-progress tool trace. */
+  live?: boolean
+  createdAt: string
+}
+
+export type SubagentRunItem = {
+  kind: 'subagent_run'
+  id: string
+  subagentType: string
+  description: string
+  status: ActivityStatus
+  childSessionId?: string
+  stepCount?: number
+  trace?: ActivityGroupItem
+  collapsed?: boolean
+  live?: boolean
   createdAt: string
 }
 
@@ -51,6 +89,8 @@ export type ActionCardItem = {
   id: string
   title: string
   summary?: string
+  /** Secondary hint below actions (e.g. chat revision guidance). */
+  footer?: string
   severity?: ActionCardSeverity
   options?: StreamOption[]
   actions: StreamAction[]
@@ -82,19 +122,30 @@ export type ReferenceCardItem = {
 export type StreamItem =
   | UserMessageItem
   | AgentMessageItem
+  | ReasoningItem
   | ActivityGroupItem
+  | SubagentRunItem
   | ActionCardItem
   | ReferenceCardItem
 
 /** Live adapter activity normalized into stream groups or messages. */
 export type StreamActivityEvent = {
-  type: 'message' | 'tool_call' | 'file_read' | 'file_changed' | 'command'
+  type:
+    | 'message'
+    | 'reasoning'
+    | 'tool_call'
+    | 'subagent_run'
+    | 'file_read'
+    | 'file_changed'
+    | 'command'
+    | 'permission_request'
+    | 'question_request'
   timestamp: string
   content: string
   metadata?: Record<string, unknown>
 }
 
-/** Persisted user chat messages merged into the stream. */
+/** Ephemeral or derived user messages merged into the stream projection. */
 export type StreamUserMessage = {
   id: string
   text: string

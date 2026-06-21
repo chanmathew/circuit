@@ -1,9 +1,9 @@
 import type { DecisionRequiredPayload } from '@circuit/protocol'
 import {
   approveBlockedReason,
-  getPhaseLabel,
-  getProceedLabel as workflowProceedLabel,
+  getPhaseRunLabel,
 } from '@circuit/workflow'
+import type { WorkflowType } from '@circuit/workflow'
 
 export interface DecisionResolutionLike {
   decisionId: string
@@ -25,6 +25,6 @@ export function canApprovePhase(
   return getApproveBlockedReason(requiredDecisions, resolutions) === null
 }
 
-export function getProceedLabel(phaseName: string): string {
-  return workflowProceedLabel(phaseName, getPhaseLabel)
+export function getProceedLabel(phaseName: string, workflowType: WorkflowType): string {
+  return getPhaseRunLabel(phaseName, workflowType)
 }

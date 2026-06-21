@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 
 import type { CircuitDb } from './client.js'
 import { decisionResolutions } from './schema.js'
@@ -10,11 +10,16 @@ export function upsertDecisionResolution(
   db: CircuitDb,
   resolution: NewDecisionResolutionRow,
 ): DecisionResolutionRow {
+  const scope = resolution.workflowRunId
+    ? eq(decisionResolutions.workflowRunId, resolution.workflowRunId)
+    : isNull(decisionResolutions.workflowRunId)
+
   db.delete(decisionResolutions)
     .where(
       and(
         eq(decisionResolutions.taskId, resolution.taskId),
         eq(decisionResolutions.decisionId, resolution.decisionId),
+        scope,
       ),
     )
     .run()
@@ -48,11 +53,20 @@ export function listDecisionResolutionsForPhase(
   db: CircuitDb,
   taskId: string,
   phase: string,
+  workflowRunId?: string,
 ): DecisionResolutionRow[] {
+  const conditions = [
+    eq(decisionResolutions.taskId, taskId),
+    eq(decisionResolutions.phase, phase),
+  ]
+  if (workflowRunId) {
+    conditions.push(eq(decisionResolutions.workflowRunId, workflowRunId))
+  }
+
   return db
     .select()
     .from(decisionResolutions)
-    .where(and(eq(decisionResolutions.taskId, taskId), eq(decisionResolutions.phase, phase)))
+    .where(and(...conditions))
     .all()
 }
 
@@ -60,12 +74,19 @@ export function getDecisionResolution(
   db: CircuitDb,
   taskId: string,
   decisionId: string,
+  workflowRunId?: string,
 ): DecisionResolutionRow | undefined {
+  const conditions = [
+    eq(decisionResolutions.taskId, taskId),
+    eq(decisionResolutions.decisionId, decisionId),
+  ]
+  if (workflowRunId) {
+    conditions.push(eq(decisionResolutions.workflowRunId, workflowRunId))
+  }
+
   return db
     .select()
     .from(decisionResolutions)
-    .where(
-      and(eq(decisionResolutions.taskId, taskId), eq(decisionResolutions.decisionId, decisionId)),
-    )
+    .where(and(...conditions))
     .get()
 }

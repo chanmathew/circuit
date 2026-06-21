@@ -15,9 +15,6 @@ export type MainMode = 'artifact' | 'implementation' | 'diff' | 'final_review'
 
 export type RightTab = 'artifacts' | 'files' | 'git'
 
-/** @deprecated use RightTab */
-export type LeftTab = RightTab
-
 export type ScenarioId = 'early' | 'research' | 'design' | 'mid' | 'plan' | 'implementing' | 'final'
 
 export type QaItemStatus = 'pending' | 'answered' | 'deferred'
@@ -189,6 +186,3 @@ export interface WorkbenchLayoutProps {
   state: WorkbenchState
   actions: WorkbenchActions
 }
-
-/** @deprecated Use WorkbenchLayoutProps */
-export type WorkbenchVariantProps = WorkbenchLayoutProps

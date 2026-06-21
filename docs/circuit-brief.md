@@ -68,19 +68,28 @@ the hood — exposed as **guided autonomy**, not visible harness complexity.
      automatically.
    - Advanced configuration should be available but hidden by default.
 
-2. **Guided autonomy — not wizard, not freeform chat**
-   - The primary object is a task, not a conversation.
+2. **Guided autonomy — chat always, workflow when attached**
+   - Every task has a **persistent chat stream** and a generic composer (`Message the agent…`). All
+     composer sends use the chat harness path — there is no Chat/Workflow mode toggle.
+   - Structured work is **attached** explicitly from the **Workflow panel** (or an optional stream
+     suggestion card): enable workflow → start phases → review artifacts. Workflow mutations never
+     happen implicitly from a chat send.
    - Structure answers: Where are we? What is allowed now? What evidence exists? What needs my
      decision? What happens next?
    - Chat answers: Steering, clarifying, revising, going backward, choosing options, asking why,
-     changing scope.
+     changing scope — including while a workflow is active (chat and workflow run in parallel).
    - The UX model is:
      ```txt
-     Structured task workspace
-     + contextual agent chat/control surface
-     + artifact/diff/review panels
+     Task workspace (stable tri-pane after first message)
+     + agent stream (always)
+     + content view (artifacts / workflow overview)
+     + workflow inspector panel
      ```
-   - Avoid rigid per-stage approve-only wizards. Avoid unstructured chat-as-primary-navigation.
+   - **New task** intake is chat-only until the first message creates the task; then the full
+     workbench appears.
+   - Avoid rigid per-stage approve-only wizards. Use panel actions and explicit stream cards for
+     approve, revise, and cancel — not composer mode switches.
+   - **Cancel workflow** is the MVP exit ramp; chat continues regardless of workflow status.
 
 3. **Structured feed over raw transcript**
    - Default visible activity is a structured event stream with contextual cards — not endless chat

@@ -1,0 +1,42 @@
+{
+  "description": "Representative OpenCode session.messages payload after one chat turn with reasoning + tools",
+  "messages": [
+    {
+      "info": { "role": "user", "id": "msg_user_1" },
+      "parts": [{ "type": "text", "text": "Why is chat submit disabled?", "messageID": "msg_user_1" }]
+    },
+    {
+      "info": { "role": "assistant", "id": "msg_asst_1" },
+      "parts": [
+        {
+          "type": "reasoning",
+          "text": "The composer treats task.status === 'running' as harness activity. I should inspect TaskDetailPage and approvePhase.",
+          "messageID": "msg_asst_1"
+        },
+        {
+          "type": "tool",
+          "tool": "read",
+          "messageID": "msg_asst_1",
+          "state": { "status": "completed", "title": "TaskDetailPage.tsx" }
+        },
+        {
+          "type": "tool",
+          "tool": "read",
+          "messageID": "msg_asst_1",
+          "state": { "status": "completed", "title": "approve-phase.ts" }
+        },
+        {
+          "type": "tool",
+          "tool": "edit",
+          "messageID": "msg_asst_1",
+          "state": { "status": "completed", "title": "TaskDetailPage.tsx" }
+        },
+        {
+          "type": "text",
+          "text": "Root cause: task.status === 'running' was used for the composer after phase approval.",
+          "messageID": "msg_asst_1"
+        }
+      ]
+    }
+  ]
+}

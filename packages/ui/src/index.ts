@@ -1,6 +1,17 @@
+export { cn } from './lib/utils.js'
 export { Badge } from './components/badge.js'
 export { Button, buttonVariants } from './components/button.js'
 export { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './components/card.js'
+export {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from './components/dialog.js'
 export { Input } from './components/input.js'
 export { Label } from './components/label.js'
 export { ScrollArea } from './components/scroll-area.js'
@@ -20,18 +31,44 @@ export { Separator } from './components/separator.js'
 export { Tabs, TabsContent, TabsList, TabsTrigger, tabsListVariants } from './components/tabs.js'
 export { Textarea } from './components/textarea.js'
 export { Toggle, toggleVariants } from './components/toggle.js'
-export { TooltipProvider } from './components/tooltip.js'
+export { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './components/tooltip.js'
 export {
   Conversation,
   ConversationContent,
   ConversationEmptyState,
   ConversationScrollButton,
 } from './components/ai-elements/conversation.js'
-export { Message, MessageContent, MessageResponse } from './components/ai-elements/message.js'
+export { Message, MessageAction, MessageActions, MessageContent, MessageResponse } from './components/ai-elements/message.js'
+export { Reasoning, ReasoningContent, ReasoningTrigger } from './components/ai-elements/reasoning.js'
+export { Shimmer } from './components/ai-elements/shimmer.js'
+export { Task, TaskContent, TaskItem, TaskTrigger } from './components/ai-elements/task.js'
+export {
+  ModelSelector,
+  ModelSelectorContent,
+  ModelSelectorEmpty,
+  ModelSelectorGroup,
+  ModelSelectorInput,
+  ModelSelectorItem,
+  ModelSelectorList,
+  ModelSelectorLogo,
+  ModelSelectorLogoGroup,
+  ModelSelectorName,
+  ModelSelectorTrigger,
+} from './components/ai-elements/model-selector.js'
 export {
   PromptInput,
-  PromptInputTextarea,
+  PromptInputActionAddAttachments,
+  PromptInputActionAddScreenshot,
+  PromptInputActionMenu,
+  PromptInputActionMenuContent,
+  PromptInputActionMenuTrigger,
+  PromptInputBody,
+  PromptInputButton,
+  PromptInputFooter,
+  PromptInputHeader,
   PromptInputSubmit,
+  PromptInputTextarea,
+  PromptInputTools,
+  usePromptInputAttachments,
   type PromptInputMessage,
 } from './components/ai-elements/prompt-input.js'
-export { cn } from './lib/utils.js'

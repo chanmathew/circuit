@@ -1,11 +1,9 @@
 export { autoSelectWorkflow, type WorkflowSelection } from './auto-select-workflow.js'
-export {
-  AUTO_RUN_ON_TASK_CREATE,
-  BALANCED_AUTO_RUN_AFTER_APPROVE,
-  PAUSE_BEFORE_PHASES,
-} from './auto-advance.js'
+export { inferRevisionFromSteering, type SteeringInferenceInput } from './steering-inference.js'
 export { buildInitialPhases, type InitialPhase } from './phase-init.js'
 export { getPhaseLabel } from './phase-labels.js'
+export { getPhaseRunLabel } from './phase-next-step.js'
+export { isRevisionFeedback } from './revision-feedback.js'
 export {
   approveBlockedReason,
   getProceedLabel,

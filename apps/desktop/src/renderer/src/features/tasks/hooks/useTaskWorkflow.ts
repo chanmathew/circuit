@@ -18,11 +18,6 @@ type WorkflowAction =
 export function useTaskWorkflow(taskId: string) {
   const queryClient = useQueryClient()
 
-  const invalidate = (): void => {
-    void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(taskId) })
-    void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
-  }
-
   return useMutation({
     mutationFn: async (action: WorkflowAction) => {
       if (action.type === 'run') {
@@ -46,6 +41,12 @@ export function useTaskWorkflow(taskId: string) {
         note: action.note,
       })
     },
-    onSuccess: invalidate,
+    onSuccess: (data, action) => {
+      // Run schedules phase work in the background; stream events refresh the task cache.
+      if (action.type === 'run') return
+
+      queryClient.setQueryData(queryKeys.tasks.detail(taskId), data)
+      void queryClient.invalidateQueries({ queryKey: queryKeys.tasks.all })
+    },
   })
 }

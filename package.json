@@ -6,6 +6,7 @@
     "prepare": "vp config",
     "ready": "vp check && vp run -r typecheck && vp run -r build",
     "dev": "vp run desktop#dev",
+    "dev:opencode": "vp run desktop#dev:opencode",
     "build": "vp run -r build",
     "check": "vp check",
     "typecheck": "vp run -r typecheck"

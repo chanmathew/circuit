@@ -33,10 +33,13 @@ export {
 export {
   type ActionCardItem,
   type ActionCardSeverity,
+  type ActivityGroupDisplay,
   type ActivityGroupItem,
+  type ActivityGroupRow,
   type ActivityStatus,
   type AgentMessageItem,
   type AgentRole,
+  type ReasoningItem,
   type ReferenceCardItem,
   type ReferenceTarget,
   type StreamAction,
@@ -44,17 +47,29 @@ export {
   type StreamItem,
   type StreamOption,
   type StreamUserMessage,
+  type SubagentRunItem,
   type UserMessageItem,
 } from './stream-items.js'
 export {
   eventsToStreamItems,
+  mergeLiveActivities,
   revisionInferenceToStreamItem,
   type NormalizeStreamInput,
   type NormalizeStreamOptions,
 } from './stream-normalizer.js'
 export {
+  type WorkflowEventActor,
+  type WorkflowRevisionAppliedPayload,
+  type WorkflowRevisionRequestedPayload,
+  type WorkflowSteeringPayload,
+} from './workflow-events.js'
+export {
   blocksToEvents,
+  harnessTranscriptToEvents,
+  isHarnessMetaMessage,
+  isPhaseHarnessPrompt,
   parseCircuitBlocks,
+  parseHarnessSessionTranscript,
   parseTranscript,
   stripCircuitBlocks,
 } from './parsers.js'

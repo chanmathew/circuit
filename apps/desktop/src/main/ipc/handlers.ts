@@ -3,25 +3,56 @@ import { dialog, ipcMain } from 'electron'
 import { CircuitError } from '@circuit/shared'
 
 import {
+  toArtifactDto,
+  toPhaseDto,
   toRepoDto,
   toTaskDto,
   toTaskSummaryDto,
   type ApprovePhaseRequest,
-  type CreateTaskRequest,
   type ListTasksRequest,
   type RequestPhaseRevisionRequest,
   type ResolveDecisionRequest,
   type RunPhaseRequest,
+  type SendChatMessageRequest,
+  type AbortSessionRequest,
+  type ApplySteeringRevisionRequest,
+  type CreateDraftTaskRequest,
+  type CreateTaskFromIntakeRequest,
+  type ReplyPermissionRequest,
+  type ReplyQuestionRequest,
+  type RejectQuestionRequest,
+  type SubmitTaskIntakeRequest,
+  type EnableWorkflowRequest,
+  type StartPhaseRequest,
+  type CancelWorkflowRequest,
+  type DiscardWorkflowDraftRequest,
+  type GetWorkflowRunRequest,
+  type StartFollowUpWorkflowRequest,
 } from '../../shared/api.js'
 import { registerRepo, listRegisteredRepos } from '../services/repos.js'
 import { resolveDecision } from '../services/decisions.js'
-import { createTask, getTaskDetail, listAllTasks } from '../services/tasks.js'
+import { createDraftTask, getArtifactDetail, getTaskDetail, getWorkflowRunDetail, listAllTasks } from '../services/tasks.js'
+import { applySteeringRevision } from '../services/workflow-events.js'
 import {
   approvePhase,
-  autoRunOnTaskCreate,
+  cancelWorkflow,
+  createTaskFromIntake,
+  discardWorkflowDraft,
+  enableWorkflow,
+  enableWorkflowFromChat,
+  getActiveAgentAdapterName,
   requestPhaseRevision,
-  runPhase,
+  sendChatMessage,
+  startFollowUpWorkflow,
+  startPhase,
+  submitTaskIntake,
 } from '../features/workflow/index.js'
+import { replyHarnessPermission } from '../features/workflow/reply-permission.js'
+import { replyHarnessQuestion } from '../features/workflow/reply-question.js'
+import { rejectHarnessQuestion } from '../features/workflow/reject-question.js'
+import { abortSession } from '../features/workflow/abort-session.js'
+import { requireHarnessSessionForTask } from '../features/workflow/require-harness-session.js'
+import { requireTaskWorkspacePath } from '../features/workflow/require-task-workspace.js'
 
 function toIpcError(error: unknown): Error {
   if (error instanceof CircuitError) {
@@ -37,6 +68,10 @@ function toIpcError(error: unknown): Error {
 
 export function registerIpcHandlers(): void {
   ipcMain.handle('circuit:ping', () => 'pong')
+
+  ipcMain.handle('circuit:app:getConfig', () => ({
+    agentAdapter: getActiveAgentAdapterName(),
+  }))
 
   ipcMain.handle('circuit:repos:list', () => {
     try {
@@ -78,11 +113,128 @@ export function registerIpcHandlers(): void {
     }
   })
 
-  ipcMain.handle('circuit:tasks:create', async (_event, request: CreateTaskRequest) => {
+  ipcMain.handle('circuit:tasks:createDraft', (_event, request: CreateDraftTaskRequest) => {
     try {
-      const task = createTask(request)
-      await autoRunOnTaskCreate(task.id)
-      return toTaskDto(getTaskDetail(task.id))
+      const task = createDraftTask(request.repoId)
+      return toTaskDto(task)
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
+  ipcMain.handle(
+    'circuit:tasks:createFromIntake',
+    async (_event, request: CreateTaskFromIntakeRequest) => {
+      try {
+        const task = await createTaskFromIntake(request.repoId, request.text)
+        return toTaskDto(task)
+      } catch (error) {
+        throw toIpcError(error)
+      }
+    },
+  )
+
+  ipcMain.handle('circuit:tasks:submitIntake', async (_event, request: SubmitTaskIntakeRequest) => {
+    try {
+      return toTaskDto(await submitTaskIntake(request.taskId, request.text))
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
+  async function handleEnableWorkflow(request: EnableWorkflowRequest) {
+    const workflowType = request.workflowType as import('@circuit/workflow').WorkflowType | undefined
+
+    if (request.text?.trim()) {
+      return enableWorkflowFromChat(request.taskId, request.text, {
+        autoRunFirstPhase: request.autoRunFirstPhase,
+      })
+    }
+
+    const description = request.description?.trim()
+    if (!description) {
+      return enableWorkflowFromChat(request.taskId, undefined, {
+        autoRunFirstPhase: request.autoRunFirstPhase,
+      })
+    }
+
+    return enableWorkflow(request.taskId, {
+      description,
+      autoRunFirstPhase: request.autoRunFirstPhase,
+      workflowType,
+    })
+  }
+
+  ipcMain.handle('circuit:tasks:enableWorkflow', async (_event, request: EnableWorkflowRequest) => {
+    try {
+      return toTaskDto(await handleEnableWorkflow(request))
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
+  ipcMain.handle('circuit:tasks:startPhase', (_event, request: StartPhaseRequest) => {
+    try {
+      return toTaskDto(startPhase(request.taskId, request.phaseName))
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
+  ipcMain.handle('circuit:tasks:cancelWorkflow', async (_event, request: CancelWorkflowRequest) => {
+    try {
+      if (request.stopRun === false) {
+        // stopRun reserved for future use — cancel always best-effort aborts active harness.
+      }
+      return toTaskDto(await cancelWorkflow(request.taskId))
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
+  ipcMain.handle(
+    'circuit:tasks:discardWorkflowDraft',
+    (_event, request: DiscardWorkflowDraftRequest) => {
+      try {
+        return toTaskDto(discardWorkflowDraft(request.taskId))
+      } catch (error) {
+        throw toIpcError(error)
+      }
+    },
+  )
+
+  ipcMain.handle(
+    'circuit:tasks:startFollowUpWorkflow',
+    async (_event, request: StartFollowUpWorkflowRequest) => {
+      try {
+        return toTaskDto(
+          await startFollowUpWorkflow(request.taskId, {
+            description: request.description,
+            workflowType: request.workflowType as import('@circuit/workflow').WorkflowType | undefined,
+          }),
+        )
+      } catch (error) {
+        throw toIpcError(error)
+      }
+    },
+  )
+
+  ipcMain.handle('circuit:tasks:getWorkflowRun', (_event, request: GetWorkflowRunRequest) => {
+    try {
+      const detail = getWorkflowRunDetail(request.taskId, request.runId)
+      return {
+        ...detail.run,
+        phases: detail.phases.map(toPhaseDto),
+        artifacts: detail.artifacts.map(toArtifactDto),
+      }
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
+  ipcMain.handle('circuit:tasks:sendChatMessage', (_event, request: SendChatMessageRequest) => {
+    try {
+      return toTaskDto(sendChatMessage(request.taskId, request.text))
     } catch (error) {
       throw toIpcError(error)
     }
@@ -96,10 +248,17 @@ export function registerIpcHandlers(): void {
     }
   })
 
-  ipcMain.handle('circuit:tasks:runPhase', async (_event, request: RunPhaseRequest) => {
+  ipcMain.handle('circuit:artifacts:get', (_event, artifactId: string) => {
     try {
-      const detail = await runPhase(request.taskId, request.phaseName)
-      return toTaskDto(detail)
+      return toArtifactDto(getArtifactDetail(artifactId))
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
+  ipcMain.handle('circuit:tasks:runPhase', (_event, request: RunPhaseRequest) => {
+    try {
+      return toTaskDto(startPhase(request.taskId, request.phaseName))
     } catch (error) {
       throw toIpcError(error)
     }
@@ -136,6 +295,82 @@ export function registerIpcHandlers(): void {
         request.optionLabel,
       )
       return toTaskDto(detail)
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
+  ipcMain.handle(
+    'circuit:tasks:applySteeringRevision',
+    (_event, request: ApplySteeringRevisionRequest) => {
+      try {
+        return toTaskDto(
+          applySteeringRevision(request.taskId, {
+            affectedPhase: request.affectedPhase,
+            optionId: request.optionId,
+            stalePhases: request.stalePhases,
+            steeringText: request.steeringText,
+          }),
+        )
+      } catch (error) {
+        throw toIpcError(error)
+      }
+    },
+  )
+
+  ipcMain.handle('circuit:tasks:replyPermission', async (_event, request: ReplyPermissionRequest) => {
+    try {
+      requireTaskWorkspacePath(request.taskId, request.workspacePath)
+      requireHarnessSessionForTask(request.taskId, request.sessionId)
+      await replyHarnessPermission({
+        taskId: request.taskId,
+        sessionId: request.sessionId,
+        permissionId: request.permissionId,
+        response: request.response,
+        workspacePath: request.workspacePath,
+      })
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
+  ipcMain.handle('circuit:tasks:replyQuestion', async (_event, request: ReplyQuestionRequest) => {
+    try {
+      requireTaskWorkspacePath(request.taskId, request.workspacePath)
+      requireHarnessSessionForTask(request.taskId, request.sessionId)
+      await replyHarnessQuestion({
+        taskId: request.taskId,
+        requestId: request.requestId,
+        sessionId: request.sessionId,
+        workspacePath: request.workspacePath,
+        answers: request.answers,
+      })
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
+  ipcMain.handle('circuit:tasks:rejectQuestion', async (_event, request: RejectQuestionRequest) => {
+    try {
+      requireTaskWorkspacePath(request.taskId, request.workspacePath)
+      await rejectHarnessQuestion({
+        taskId: request.taskId,
+        requestId: request.requestId,
+        workspacePath: request.workspacePath,
+      })
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
+  ipcMain.handle('circuit:tasks:abortSession', async (_event, request: AbortSessionRequest) => {
+    try {
+      requireTaskWorkspacePath(request.taskId, request.workspacePath)
+      requireHarnessSessionForTask(request.taskId, request.sessionId)
+      await abortSession({
+        sessionId: request.sessionId,
+        workspacePath: request.workspacePath,
+      })
     } catch (error) {
       throw toIpcError(error)
     }

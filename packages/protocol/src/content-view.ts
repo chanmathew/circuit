@@ -8,8 +8,9 @@ export type ContentView =
   | { type: 'file'; path: string }
   | { type: 'implementation'; sliceId: string }
   | { type: 'final_review' }
+  | { type: 'workflow_overview' }
 
-export type InspectorTab = 'artifacts' | 'changes' | 'files'
+export type InspectorTab = 'workflow' | 'files' | 'changes'
 
 export interface InspectorSelection {
   tab: InspectorTab
@@ -24,11 +25,11 @@ export interface ContentNavigationState {
 }
 
 const INSPECTOR_TAB_BY_TARGET: Record<ReferenceTarget['type'], InspectorTab> = {
-  artifact: 'artifacts',
+  artifact: 'workflow',
   file: 'files',
   diff: 'changes',
   check: 'changes',
-  review: 'artifacts',
+  review: 'workflow',
 }
 
 function selectedIdForTarget(target: ReferenceTarget): string | undefined {

@@ -9,7 +9,11 @@ import type {
 } from '@circuit/protocol'
 import { openReference } from '@circuit/protocol'
 
-import type { ArtifactDto, FeedEventDto } from '../../../../../shared/api.js'
+import type { ArtifactDto, FeedEventDto, TaskDto } from '../../../../../shared/api.js'
+import {
+  isAwaitingFirstPhase,
+  isWorkflowActive,
+} from '../../../../../shared/workflow-status.js'
 
 export interface DiffEntry {
   id: string
@@ -34,7 +38,7 @@ export function inspectorSelectionForTab(
   contentView: ContentView,
 ): InspectorSelection {
   switch (tab) {
-    case 'artifacts':
+    case 'workflow':
       if (contentView.type === 'artifact') {
         return { tab, selectedId: contentView.artifactId }
       }
@@ -68,6 +72,34 @@ export function resolveArtifactRef(
         artifact.title === artifactRef,
     )
   )
+}
+
+function isNewerArtifact(candidate: ArtifactDto, current: ArtifactDto): boolean {
+  if (candidate.version !== current.version) {
+    return candidate.version > current.version
+  }
+  return candidate.updatedAt > current.updatedAt
+}
+
+/** Latest artifact for a phase — prefers phase.currentArtifactId, then highest version. */
+export function resolvePhaseArtifact(
+  task: Pick<TaskDto, 'phases' | 'artifacts'>,
+  phaseName: string,
+): ArtifactDto | undefined {
+  const phase = task.phases.find((entry) => entry.name === phaseName)
+  if (phase?.currentArtifactId) {
+    const byId = task.artifacts.find((artifact) => artifact.id === phase.currentArtifactId)
+    if (byId) return byId
+  }
+
+  let latest: ArtifactDto | undefined
+  for (const artifact of task.artifacts) {
+    if (artifact.phase !== phaseName) continue
+    if (!latest || isNewerArtifact(artifact, latest)) {
+      latest = artifact
+    }
+  }
+  return latest
 }
 
 export function resolveArtifactId(artifacts: ArtifactDto[], target: ReferenceTarget): string | undefined {
@@ -128,7 +160,7 @@ export function navigationForReference(
     if (artifact) {
       return {
         contentView: { type: 'artifact', artifactId: artifact.id },
-        inspector: { tab: 'artifacts', selectedId: artifact.id },
+        inspector: { tab: 'workflow', selectedId: artifact.id },
       }
     }
   }
@@ -150,9 +182,66 @@ export function navigationForReference(
   return base
 }
 
+export function shouldShowWorkflowOverview(task: TaskDto): boolean {
+  return isAwaitingFirstPhase(task.workflowStatus, task.phases)
+}
+
+function primaryArtifactId(task: TaskDto): string {
+  const needsReviewPhase = task.phases.find((phase) => phase.status === 'needs_review')
+  const activePhase = task.phases.find((phase) => phase.name === task.currentPhase)
+  const phaseForArtifact = needsReviewPhase ?? activePhase
+  const fromPhase = phaseForArtifact
+    ? resolvePhaseArtifact(task, phaseForArtifact.name)
+    : undefined
+  return (
+    fromPhase?.id ??
+    resolvePhaseArtifact(task, task.currentPhase)?.id ??
+    resolvePhaseArtifact(task, 'ticket')?.id ??
+    task.artifacts[0]?.id ??
+    ''
+  )
+}
+
+export function defaultInspectorTab(task: TaskDto): InspectorTab {
+  if (isWorkflowActive(task.workflowStatus)) {
+    return 'workflow'
+  }
+  return 'files'
+}
+
+export function defaultNavigationForTask(task: TaskDto): ContentNavigationState {
+  // Progressive disclosure: inspector defaults only; content opens on explicit user action.
+  if (isAwaitingFirstPhase(task.workflowStatus, task.phases)) {
+    return {
+      contentView: { type: 'workflow_overview' },
+      inspector: { tab: 'workflow' },
+    }
+  }
+
+  if (isWorkflowActive(task.workflowStatus)) {
+    return {
+      contentView: { type: 'workflow_overview' },
+      inspector: { tab: 'workflow' },
+    }
+  }
+
+  const artifactId = primaryArtifactId(task)
+  if (!artifactId) {
+    return {
+      contentView: { type: 'workflow_overview' },
+      inspector: { tab: defaultInspectorTab(task) },
+    }
+  }
+
+  return {
+    contentView: { type: 'artifact', artifactId },
+    inspector: { tab: 'workflow', selectedId: artifactId },
+  }
+}
+
 export function defaultNavigation(artifactId: string): ContentNavigationState {
   return {
     contentView: { type: 'artifact', artifactId },
-    inspector: { tab: 'artifacts', selectedId: artifactId },
+    inspector: { tab: 'workflow', selectedId: artifactId },
   }
 }

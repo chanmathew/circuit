@@ -1,52 +1,54 @@
+import { useQuery } from '@tanstack/react-query'
+
 import type { ContentView } from '@circuit/protocol'
 
-import type { ArtifactDto } from '../../../../shared/api.js'
+import type { ArtifactDto, TaskDto } from '../../../../shared/api.js'
+import { circuitApi } from '../../ipc/client.js'
+import { queryKeys } from '../../ipc/query-keys.js'
 import { ArtifactPanel } from './ArtifactPanel.js'
 import { CheckContentPanel } from './content/CheckContentPanel.js'
 import { DiffContentPanel } from './content/DiffContentPanel.js'
 import { FileContentPanel } from './content/FileContentPanel.js'
 import type { CheckEntry, DiffEntry } from './lib/workbench-content.js'
-import { resolveArtifactRef } from './lib/workbench-content.js'
+import { resolveArtifactRef, resolvePhaseArtifact } from './lib/workbench-content.js'
+import { WorkflowOverviewPanel } from './WorkflowOverviewPanel.js'
 
 export interface ContentViewPanelProps {
   contentView: ContentView
+  task: TaskDto
   artifacts: ArtifactDto[]
   repoPath: string
   diffs: DiffEntry[]
   checks: CheckEntry[]
   preview: boolean
+  isRunning?: boolean
   onPreviewChange: (preview: boolean) => void
 }
 
 export function ContentViewPanel({
   contentView,
+  task,
   artifacts,
   repoPath,
   diffs,
   checks,
   preview,
+  isRunning = false,
   onPreviewChange,
 }: ContentViewPanelProps): React.ReactElement {
   switch (contentView.type) {
-    case 'artifact': {
-      const artifact = resolveArtifactRef(artifacts, contentView.artifactId)
-      if (!artifact) {
-        return (
-          <div className="flex flex-1 flex-col items-center justify-center p-8 text-center text-sm text-muted-foreground">
-            <p>Artifact not found. Select one from the inspector.</p>
-          </div>
-        )
-      }
+    case 'workflow_overview':
+      return <WorkflowOverviewPanel task={task} isRunning={isRunning} />
+    case 'artifact':
       return (
-        <ArtifactPanel
-          title={artifact.title}
-          relativePath={artifact.path.replace(repoPath, '.')}
-          content={artifact.content}
+        <ArtifactContentView
+          artifactId={contentView.artifactId}
+          artifacts={artifacts}
+          repoPath={repoPath}
           preview={preview}
           onPreviewChange={onPreviewChange}
         />
       )
-    }
     case 'diff':
       return <DiffContentPanel diff={diffs.find((entry) => entry.id === contentView.diffId)} />
     case 'check':
@@ -62,7 +64,7 @@ export function ContentViewPanel({
       )
     case 'final_review': {
       const reviewArtifact =
-        artifacts.find((artifact) => artifact.phase === 'review') ?? artifacts.at(-1)
+        resolvePhaseArtifact(task, 'review') ?? task.artifacts.at(-1)
       return (
         <div className="flex min-h-0 flex-1 flex-col">
           <div className="shrink-0 border-b border-border px-4 py-3">
@@ -76,4 +78,53 @@ export function ContentViewPanel({
       )
     }
   }
+}
+
+function ArtifactContentView({
+  artifactId,
+  artifacts,
+  repoPath,
+  preview,
+  onPreviewChange,
+}: {
+  artifactId: string
+  artifacts: ArtifactDto[]
+  repoPath: string
+  preview: boolean
+  onPreviewChange: (preview: boolean) => void
+}): React.ReactElement {
+  const localArtifact = resolveArtifactRef(artifacts, artifactId)
+  const remoteQuery = useQuery({
+    queryKey: queryKeys.artifacts.detail(artifactId),
+    queryFn: () => circuitApi.getArtifact(artifactId),
+    enabled: !localArtifact,
+  })
+
+  const artifact = localArtifact ?? remoteQuery.data
+
+  if (!artifact) {
+    if (remoteQuery.isLoading) {
+      return (
+        <div className="flex flex-1 flex-col items-center justify-center p-8 text-center text-sm text-muted-foreground">
+          <p>Loading artifact…</p>
+        </div>
+      )
+    }
+
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center p-8 text-center text-sm text-muted-foreground">
+        <p>Artifact not found. Select one from the inspector.</p>
+      </div>
+    )
+  }
+
+  return (
+    <ArtifactPanel
+      title={artifact.title}
+      relativePath={artifact.path.replace(repoPath, '.')}
+      content={artifact.content}
+      preview={preview}
+      onPreviewChange={onPreviewChange}
+    />
+  )
 }

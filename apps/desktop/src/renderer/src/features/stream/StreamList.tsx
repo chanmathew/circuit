@@ -15,7 +15,7 @@ export interface StreamListProps extends Omit<StreamItemRendererProps, 'item'> {
 
 export function StreamList({
   items,
-  emptyDescription = 'Steer the agent, ask questions, or request changes. Messages are local for now — workflow steering arrives with OpenCode.',
+  emptyDescription = 'Steer the agent, ask questions, or request changes. Material steering may offer revision cards.',
   decisionResolutions,
   onStreamAction,
   onOpenReference,

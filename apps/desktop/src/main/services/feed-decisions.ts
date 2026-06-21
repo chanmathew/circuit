@@ -33,6 +33,31 @@ export function requiredDecisionsForPhaseFromRuns(
   )
 }
 
+export function findRequiredDecision(
+  taskId: string,
+  decisionId: string,
+  runs: { id: string; phase: string; transcript: string; startedAt: string }[],
+): { decision: DecisionRequiredPayload; phase: string } | undefined {
+  for (let index = runs.length - 1; index >= 0; index -= 1) {
+    const run = runs[index]
+    if (!run) continue
+
+    const decisions = requiredDecisionsFromTranscript(
+      run.transcript,
+      taskId,
+      run.id,
+      run.startedAt,
+      run.phase,
+    )
+    const decision = decisions.find((item) => item.decisionId === decisionId)
+    if (decision) {
+      return { decision, phase: decision.phase ?? run.phase }
+    }
+  }
+
+  return undefined
+}
+
 export function decisionResolvedEvents(
   taskId: string,
   resolutions: {

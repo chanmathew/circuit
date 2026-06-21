@@ -1,7 +1,10 @@
 import type { ArtifactRow, PhaseRow, RepoRow, TaskRow } from '@circuit/db'
-import type { CircuitEvent, DecisionRequiredPayload } from '@circuit/protocol'
+import type { CircuitEvent, DecisionRequiredPayload, StreamActivityEvent } from '@circuit/protocol'
 import { getPhaseLabel } from '@circuit/workflow'
 import type { PhaseStatus } from '@circuit/workflow'
+
+export type { WorkflowRunDetailDto, WorkflowRunDto, WorkflowRunStatus } from './workflow-run.js'
+import type { WorkflowRunDetailDto, WorkflowRunDto } from './workflow-run.js'
 
 export interface RepoDto {
   id: string
@@ -56,7 +59,94 @@ export interface TaskDto extends TaskRow {
   decisionResolutions: DecisionResolutionDto[]
   /** Required decisions from latest phase run — same source as server approve gate. */
   requiredDecisionsByPhase: Record<string, DecisionRequiredPayload[]>
+  /** Server-computed — draft task awaiting first composer message. */
+  needsIntake: boolean
+  activeWorkflowRun?: WorkflowRunDto
+  pastWorkflowRuns?: WorkflowRunDto[]
 }
+
+export type TaskStreamUpdate =
+  | {
+      taskId: string
+      type: 'activity'
+      activity: StreamActivityEvent
+    }
+  | {
+      taskId: string
+      type: 'phase_run_started'
+      phaseName: string
+      phaseRunId: string
+    }
+  | {
+      taskId: string
+      type: 'phase_run_completed'
+      phaseName: string
+      phaseRunId: string
+    }
+  | {
+      taskId: string
+      type: 'phase_run_failed'
+      phaseName: string
+      phaseRunId: string
+      error: string
+    }
+  | {
+      taskId: string
+      type: 'task_updated'
+    }
+  | {
+      taskId: string
+      type: 'harness_session_active'
+      sessionId: string
+      workspacePath: string
+    }
+  | {
+      taskId: string
+      type: 'harness_session_cleared'
+    }
+
+export interface EnableWorkflowRequest {
+  taskId: string
+  description?: string
+  text?: string
+  workflowType?: string
+  autoRunFirstPhase?: boolean
+}
+
+export interface StartPhaseRequest {
+  taskId: string
+  phaseName?: string
+}
+
+export interface CancelWorkflowRequest {
+  taskId: string
+  stopRun?: boolean
+}
+
+export interface DiscardWorkflowDraftRequest {
+  taskId: string
+}
+
+export interface StartFollowUpWorkflowRequest {
+  taskId: string
+  description?: string
+  workflowType?: string
+}
+
+export interface GetWorkflowRunRequest {
+  taskId: string
+  runId: string
+}
+
+export interface ApplySteeringRevisionRequest {
+  taskId: string
+  affectedPhase: string
+  optionId: string
+  stalePhases: string[]
+  steeringText?: string
+}
+
+export { TASK_STREAM_UPDATE_CHANNEL } from './channels.js'
 
 export interface RunPhaseRequest {
   taskId: string
@@ -92,9 +182,53 @@ export interface ResolveDecisionRequest {
   optionLabel: string
 }
 
-export interface CreateTaskRequest {
+export interface CreateDraftTaskRequest {
   repoId: string
-  description: string
+}
+
+export interface SubmitTaskIntakeRequest {
+  taskId: string
+  text: string
+}
+
+export interface CreateTaskFromIntakeRequest {
+  repoId: string
+  text: string
+}
+
+export interface AbortSessionRequest {
+  taskId: string
+  sessionId: string
+  workspacePath: string
+}
+
+export type PermissionReply = 'once' | 'always' | 'reject'
+
+export interface ReplyPermissionRequest {
+  taskId: string
+  sessionId: string
+  permissionId: string
+  response: PermissionReply
+  workspacePath: string
+}
+
+export interface ReplyQuestionRequest {
+  taskId: string
+  requestId: string
+  sessionId: string
+  workspacePath: string
+  answers: string[][]
+}
+
+export interface RejectQuestionRequest {
+  taskId: string
+  requestId: string
+  workspacePath: string
+}
+
+export interface SendChatMessageRequest {
+  taskId: string
+  text: string
 }
 
 export interface ListTasksRequest {
@@ -162,6 +296,9 @@ export function toTaskDto(
       resolvedAt: string
     }[]
     requiredDecisionsByPhase: Record<string, DecisionRequiredPayload[]>
+    needsIntake: boolean
+    activeWorkflowRun?: WorkflowRunDto
+    pastWorkflowRuns?: WorkflowRunDto[]
   },
 ): TaskDto {
   return {
@@ -179,18 +316,38 @@ export function toTaskDto(
       resolvedAt: row.resolvedAt,
     })),
     requiredDecisionsByPhase: task.requiredDecisionsByPhase,
+    needsIntake: task.needsIntake,
+    activeWorkflowRun: task.activeWorkflowRun,
+    pastWorkflowRuns: task.pastWorkflowRuns ?? [],
   }
 }
 
 export interface CircuitApi {
   ping: () => Promise<string>
+  getAppConfig: () => Promise<{ agentAdapter: string }>
   listRepos: () => Promise<RepoDto[]>
   addRepo: (path?: string) => Promise<RepoDto | null>
   listTasks: (request?: ListTasksRequest) => Promise<TaskSummaryDto[]>
-  createTask: (request: CreateTaskRequest) => Promise<TaskDto>
+  createDraftTask: (request: CreateDraftTaskRequest) => Promise<TaskDto>
+  createTaskFromIntake: (request: CreateTaskFromIntakeRequest) => Promise<TaskDto>
+  submitTaskIntake: (request: SubmitTaskIntakeRequest) => Promise<TaskDto>
+  enableWorkflow: (request: EnableWorkflowRequest) => Promise<TaskDto>
+  startPhase: (request: StartPhaseRequest) => Promise<TaskDto>
+  cancelWorkflow: (request: CancelWorkflowRequest) => Promise<TaskDto>
+  discardWorkflowDraft: (request: DiscardWorkflowDraftRequest) => Promise<TaskDto>
+  startFollowUpWorkflow: (request: StartFollowUpWorkflowRequest) => Promise<TaskDto>
+  getWorkflowRun: (request: GetWorkflowRunRequest) => Promise<WorkflowRunDetailDto>
+  sendChatMessage: (request: SendChatMessageRequest) => Promise<TaskDto>
   getTask: (taskId: string) => Promise<TaskDto>
+  getArtifact: (artifactId: string) => Promise<ArtifactDto>
   runPhase: (request: RunPhaseRequest) => Promise<TaskDto>
   approvePhase: (request: ApprovePhaseRequest) => Promise<TaskDto>
   requestPhaseRevision: (request: RequestPhaseRevisionRequest) => Promise<TaskDto>
   resolveDecision: (request: ResolveDecisionRequest) => Promise<TaskDto>
+  applySteeringRevision: (request: ApplySteeringRevisionRequest) => Promise<TaskDto>
+  replyPermission: (request: ReplyPermissionRequest) => Promise<void>
+  replyQuestion: (request: ReplyQuestionRequest) => Promise<void>
+  rejectQuestion: (request: RejectQuestionRequest) => Promise<void>
+  abortSession: (request: AbortSessionRequest) => Promise<void>
+  onTaskStreamUpdate: (callback: (update: TaskStreamUpdate) => void) => () => void
 }

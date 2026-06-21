@@ -18,6 +18,9 @@ function copyDbMigrations(outDir: string): void {
 export function copyDbMigrationsPlugin(outDir = defaultOutDir): Plugin {
   return {
     name: 'copy-db-migrations',
+    buildStart() {
+      copyDbMigrations(outDir)
+    },
     writeBundle() {
       copyDbMigrations(outDir)
     },

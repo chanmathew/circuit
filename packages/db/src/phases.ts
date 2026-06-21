@@ -29,12 +29,26 @@ export function getPhaseByTaskAndName(
   db: CircuitDb,
   taskId: string,
   name: string,
+  workflowRunId?: string,
 ): PhaseRow | undefined {
+  const conditions = [eq(phases.taskId, taskId), eq(phases.name, name)]
+  if (workflowRunId) {
+    conditions.push(eq(phases.workflowRunId, workflowRunId))
+  }
   return db
     .select()
     .from(phases)
-    .where(and(eq(phases.taskId, taskId), eq(phases.name, name)))
+    .where(and(...conditions))
     .get()
+}
+
+export function listPhasesForWorkflowRun(db: CircuitDb, workflowRunId: string): PhaseRow[] {
+  return db
+    .select()
+    .from(phases)
+    .where(eq(phases.workflowRunId, workflowRunId))
+    .orderBy(asc(phases.order))
+    .all()
 }
 
 export function listPhasesForTask(db: CircuitDb, taskId: string): PhaseRow[] {

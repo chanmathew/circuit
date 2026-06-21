@@ -1,30 +1,37 @@
 import { createId, NotFoundError, ValidationError } from '@circuit/shared'
 import {
+  getActiveWorkflowRunForTask,
   getDecisionResolution,
   listDecisionResolutionsForTask,
+  listPhaseRunsForTask,
   upsertDecisionResolution,
 } from '@circuit/db'
 
 import { getDb } from '../db.js'
 import { getTaskDetail, type TaskDetail } from './tasks.js'
-import { requiredDecisionsForPhaseFromRuns } from './feed-decisions.js'
-import { listPhaseRunsForTask } from '@circuit/db'
+import { findRequiredDecision } from './feed-decisions.js'
 
 export function resolveDecision(
   taskId: string,
-  phase: string,
+  _phase: string,
   decisionId: string,
   optionId: string,
   optionLabel: string,
 ): TaskDetail {
   const db = getDb()
-  const phaseRuns = listPhaseRunsForTask(db, taskId)
-  const required = requiredDecisionsForPhaseFromRuns(taskId, phase, phaseRuns)
-  const decision = required.find((item) => item.decisionId === decisionId)
+  const activeRun = getActiveWorkflowRunForTask(db, taskId)
+  const phaseRuns = listPhaseRunsForTask(db, taskId).filter(
+    (run) =>
+      run.phase === 'chat' ||
+      (activeRun ? run.workflowRunId === activeRun.id : !run.workflowRunId),
+  )
+  const found = findRequiredDecision(taskId, decisionId, phaseRuns)
 
-  if (!decision) {
+  if (!found) {
     throw new NotFoundError('Decision', decisionId)
   }
+
+  const { decision, phase: ownerPhase } = found
 
   const option = decision.options.find((item) => item.id === optionId)
   if (!option) {
@@ -35,7 +42,8 @@ export function resolveDecision(
   upsertDecisionResolution(db, {
     id: createId(),
     taskId,
-    phase,
+    workflowRunId: activeRun?.id ?? null,
+    phase: ownerPhase,
     decisionId,
     optionId,
     optionLabel: optionLabel || option.label,
@@ -49,6 +57,10 @@ export function listTaskDecisionResolutions(taskId: string) {
   return listDecisionResolutionsForTask(getDb(), taskId)
 }
 
-export function isDecisionResolved(taskId: string, decisionId: string): boolean {
-  return Boolean(getDecisionResolution(getDb(), taskId, decisionId))
+export function isDecisionResolved(
+  taskId: string,
+  decisionId: string,
+  workflowRunId?: string,
+): boolean {
+  return Boolean(getDecisionResolution(getDb(), taskId, decisionId, workflowRunId))
 }
