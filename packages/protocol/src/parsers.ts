@@ -129,6 +129,17 @@ export function isHarnessMetaMessage(content: string): boolean {
   return HARNESS_SESSION_META_RE.test(content.trim())
 }
 
+/** Phase run prompt built from ticket + approved artifacts — harness-only, not chat. */
+export function isPhaseHarnessPrompt(content: string): boolean {
+  const trimmed = content.trim()
+  if (!trimmed) return false
+  return (
+    /^#\s+\S+\s+phase\b/i.test(trimmed) &&
+    (/\b## Context pack\b/i.test(trimmed) ||
+      /\bRun the \S+ phase using the context above\./i.test(trimmed))
+  )
+}
+
 export interface HarnessTranscriptMessage {
   role: 'user' | 'assistant'
   text: string

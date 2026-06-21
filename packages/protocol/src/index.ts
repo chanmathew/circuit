@@ -33,10 +33,13 @@ export {
 export {
   type ActionCardItem,
   type ActionCardSeverity,
+  type ActivityGroupDisplay,
   type ActivityGroupItem,
+  type ActivityGroupRow,
   type ActivityStatus,
   type AgentMessageItem,
   type AgentRole,
+  type ReasoningItem,
   type ReferenceCardItem,
   type ReferenceTarget,
   type StreamAction,
@@ -44,6 +47,7 @@ export {
   type StreamItem,
   type StreamOption,
   type StreamUserMessage,
+  type SubagentRunItem,
   type UserMessageItem,
 } from './stream-items.js'
 export {
@@ -63,6 +67,7 @@ export {
   blocksToEvents,
   harnessTranscriptToEvents,
   isHarnessMetaMessage,
+  isPhaseHarnessPrompt,
   parseCircuitBlocks,
   parseHarnessSessionTranscript,
   parseTranscript,

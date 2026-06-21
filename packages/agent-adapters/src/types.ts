@@ -1,7 +1,9 @@
 export interface AgentActivityEvent {
   type:
     | 'message'
+    | 'reasoning'
     | 'tool_call'
+    | 'subagent_run'
     | 'file_read'
     | 'file_changed'
     | 'command'
@@ -29,6 +31,8 @@ export interface ChatTurnResult {
   sessionId: string
   transcript: string
   modelLabel?: string
+  /** Normalized harness activities for the turn (replay + feed persistence). */
+  activities?: AgentActivityEvent[]
 }
 
 export interface PhaseRunRequest {
@@ -55,4 +59,6 @@ export interface PhaseRunResult {
   artifactContent?: string
   /** Label stored on phase_runs — adapter-owned, not env-specific. */
   modelLabel?: string
+  /** Normalized harness activities for the run (replay + feed persistence). */
+  activities?: AgentActivityEvent[]
 }

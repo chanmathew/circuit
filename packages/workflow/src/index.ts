@@ -7,6 +7,8 @@ export {
 } from './auto-advance.js'
 export { buildInitialPhases, type InitialPhase } from './phase-init.js'
 export { getPhaseLabel } from './phase-labels.js'
+export { getPhaseNextStepLabel } from './phase-next-step.js'
+export { isRevisionFeedback } from './revision-feedback.js'
 export {
   approveBlockedReason,
   getProceedLabel,

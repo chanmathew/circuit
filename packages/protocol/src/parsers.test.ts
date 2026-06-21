@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { parseCircuitBlocks, parseTranscript, stripCircuitBlocks } from './parsers.js'
+import {
+  isHarnessMetaMessage,
+  isPhaseHarnessPrompt,
+  parseCircuitBlocks,
+  parseTranscript,
+  stripCircuitBlocks,
+} from './parsers.js'
 
 describe('parseCircuitBlocks', () => {
   it('parses fenced JSON circuit blocks', () => {
@@ -74,5 +80,26 @@ describe('parseTranscript', () => {
     expect(result.events[0]?.id).toBe('circuit-validation-0')
     expect(result.events[0]?.taskId).toBe('task-1')
     expect(result.prose).toBe('Working on slice.')
+  })
+})
+
+describe('harness message filters', () => {
+  it('detects session banner meta lines', () => {
+    expect(isHarnessMetaMessage('OpenCode session abc12345 · provider/model')).toBe(true)
+    expect(isHarnessMetaMessage('Hello from the agent')).toBe(false)
+  })
+
+  it('detects phase harness prompts with context pack', () => {
+    const prompt = `# design phase
+
+## Context pack
+
+## .Circuit/tasks/ticket/00-ticket.md
+
+Fix the bug
+
+Run the design phase using the context above.`
+    expect(isPhaseHarnessPrompt(prompt)).toBe(true)
+    expect(isPhaseHarnessPrompt('Here is my design doc')).toBe(false)
   })
 })

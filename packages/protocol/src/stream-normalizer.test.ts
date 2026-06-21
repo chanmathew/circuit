@@ -155,12 +155,15 @@ describe('eventsToStreamItems', () => {
     const group = items[0]
     expect(group).toMatchObject({
       kind: 'activity_group',
-      title: 'Activity',
       items: [
         { label: 'Read src/auth.ts', status: 'success' },
         { label: 'pnpm test', status: 'success' },
       ],
     })
+    if (group?.kind === 'activity_group') {
+      expect(group.title).toBe('Explored 1 file, Ran 1 command')
+      expect(group.display).toBe('flat')
+    }
   })
 
   it('maps blockers to blocked action cards', () => {
@@ -230,9 +233,249 @@ describe('eventsToStreamItems', () => {
 
     expect(items[0]).toMatchObject({
       kind: 'action_card',
-      title: 'Revise design?',
+      title: 'Apply to workflow?',
       severity: 'warning',
     })
+  })
+
+  it('uses summary display for larger activity batches', () => {
+    const items = eventsToStreamItems({
+      events: [
+        {
+          type: 'harness:turn_activities',
+          taskId: TASK_ID,
+          timestamp: TS,
+          payload: {
+            activities: [
+              { type: 'file_read', timestamp: TS, content: 'Read a.ts' },
+              { type: 'file_read', timestamp: TS, content: 'Read b.ts' },
+              {
+                type: 'tool_call',
+                timestamp: TS,
+                content: 'Edited c.ts',
+                metadata: { tool: 'edit', status: 'completed', additions: 10, deletions: 2 },
+              },
+              {
+                type: 'tool_call',
+                timestamp: TS,
+                content: 'Edited d.ts',
+                metadata: { tool: 'edit', status: 'completed', additions: 5, deletions: 1 },
+              },
+            ],
+          },
+        },
+      ],
+    })
+
+    const group = items[0]
+    expect(group).toMatchObject({
+      kind: 'activity_group',
+      display: 'summary',
+      collapsed: false,
+      stats: { additions: 15, deletions: 3 },
+    })
+    if (group?.kind === 'activity_group') {
+      expect(group.title).toBe('Edited 2 files, Explored 2 files')
+    }
+  })
+
+  it('interleaves turn activities before the assistant reply on reload', () => {
+    const startedAt = '2026-06-20T12:00:00.000Z'
+    const completedAt = '2026-06-20T12:00:05.000Z'
+    const reply =
+      'Root cause: task.status was used for composer running state.'
+    const items = eventsToStreamItems({
+      events: [
+        {
+          type: 'workflow:steering_received',
+          taskId: TASK_ID,
+          timestamp: startedAt,
+          payload: { rawText: 'Why is chat submit disabled?' },
+        },
+        {
+          type: 'phase:started',
+          taskId: TASK_ID,
+          phaseRunId: RUN_ID,
+          timestamp: startedAt,
+          payload: { phaseRunId: RUN_ID, phase: 'chat' },
+        },
+        {
+          type: 'harness:turn_activities',
+          taskId: TASK_ID,
+          phaseRunId: RUN_ID,
+          timestamp: completedAt,
+          payload: {
+            activities: [
+              {
+                type: 'reasoning',
+                timestamp: completedAt,
+                content: 'Inspect TaskDetailPage and approvePhase.',
+              },
+              {
+                type: 'tool_call',
+                timestamp: completedAt,
+                content: 'Read TaskDetailPage.tsx',
+                metadata: { tool: 'read', status: 'completed' },
+              },
+              {
+                type: 'message',
+                timestamp: completedAt,
+                content: reply,
+              },
+              {
+                type: 'reasoning',
+                timestamp: completedAt,
+                content: 'Post-reply reasoning should be trimmed.',
+              },
+            ],
+          },
+        },
+        {
+          type: 'agent:activity',
+          taskId: TASK_ID,
+          phaseRunId: RUN_ID,
+          timestamp: completedAt,
+          payload: {
+            role: 'driver',
+            text: reply,
+            activityType: 'message',
+          },
+        },
+      ],
+    })
+
+    expect(items.map((item) => item.kind)).toEqual([
+      'user_message',
+      'reasoning',
+      'activity_group',
+      'agent_message',
+    ])
+    expect(items.at(-1)).toMatchObject({ kind: 'agent_message', text: reply })
+  })
+
+  it('keeps the transcript reply when agent:activity precedes turn activities in the feed', () => {
+    const startedAt = '2026-06-20T12:00:00.000Z'
+    const completedAt = '2026-06-20T12:00:05.000Z'
+    const reply = 'Sure, what file do you want me to edit?'
+    const items = eventsToStreamItems({
+      events: [
+        {
+          type: 'phase:started',
+          taskId: TASK_ID,
+          phaseRunId: RUN_ID,
+          timestamp: startedAt,
+          payload: { phaseRunId: RUN_ID, phase: 'chat' },
+        },
+        {
+          type: 'agent:activity',
+          taskId: TASK_ID,
+          phaseRunId: RUN_ID,
+          timestamp: completedAt,
+          payload: {
+            role: 'driver',
+            text: reply,
+            activityType: 'message',
+          },
+        },
+        {
+          type: 'harness:turn_activities',
+          taskId: TASK_ID,
+          phaseRunId: RUN_ID,
+          timestamp: completedAt,
+          payload: {
+            activities: [
+              {
+                type: 'reasoning',
+                timestamp: completedAt,
+                content: 'Need to ask a clarifying question.',
+              },
+              {
+                type: 'message',
+                timestamp: completedAt,
+                content: reply,
+              },
+            ],
+          },
+        },
+      ],
+    })
+
+    expect(items.filter((item) => item.kind === 'agent_message')).toHaveLength(1)
+    expect(items.at(-1)).toMatchObject({ kind: 'agent_message', text: reply })
+  })
+
+  it('places artifact ready after harness activities and the assistant reply', () => {
+    const startedAt = '2026-06-20T12:00:00.000Z'
+    const completedAt = '2026-06-20T12:00:05.000Z'
+    const reply = 'Questions phase output is ready for review.'
+    const items = eventsToStreamItems({
+      events: [
+        {
+          type: 'phase:started',
+          taskId: TASK_ID,
+          phaseRunId: RUN_ID,
+          timestamp: startedAt,
+          payload: { phaseRunId: RUN_ID, phase: 'questions' },
+        },
+        {
+          type: 'phase:completed',
+          taskId: TASK_ID,
+          phaseRunId: RUN_ID,
+          timestamp: startedAt,
+          payload: { phaseRunId: RUN_ID, phase: 'questions' },
+        },
+        {
+          type: 'harness:turn_activities',
+          taskId: TASK_ID,
+          phaseRunId: RUN_ID,
+          timestamp: completedAt,
+          payload: {
+            activities: [
+              {
+                type: 'reasoning',
+                timestamp: completedAt,
+                content: 'Reviewing ticket context.',
+              },
+              {
+                type: 'tool_call',
+                timestamp: completedAt,
+                content: 'Read ticket.md',
+                metadata: { tool: 'read', status: 'completed' },
+              },
+              {
+                type: 'message',
+                timestamp: completedAt,
+                content: reply,
+              },
+            ],
+          },
+        },
+        {
+          type: 'agent:activity',
+          taskId: TASK_ID,
+          phaseRunId: RUN_ID,
+          timestamp: completedAt,
+          payload: {
+            role: 'driver',
+            text: reply,
+            activityType: 'message',
+          },
+        },
+      ],
+      options: {
+        phaseStatuses: {
+          questions: 'needs_review',
+        },
+      },
+    })
+
+    expect(items.map((item) => item.kind)).toEqual([
+      'reasoning',
+      'activity_group',
+      'agent_message',
+      'action_card',
+    ])
+    expect(items.at(-1)).toMatchObject({ kind: 'action_card', title: 'Questions ready' })
   })
 
   it('can include collapsed phase lifecycle groups', () => {
@@ -250,6 +493,62 @@ describe('eventsToStreamItems', () => {
         { label: 'Phase run completed', status: 'success' },
       ],
     })
+  })
+
+  it('maps workflow enable and phase lifecycle events to stream action cards', () => {
+    const events: CircuitEvent[] = [
+      {
+        type: 'workflow:enabled',
+        taskId: TASK_ID,
+        timestamp: TS,
+        payload: { workflowType: 'structured_change', startPhase: 'questions' },
+      },
+      {
+        type: 'phase:started',
+        taskId: TASK_ID,
+        phaseRunId: RUN_ID,
+        timestamp: TS,
+        payload: { phaseRunId: RUN_ID, phase: 'questions' },
+      },
+      {
+        type: 'phase:completed',
+        taskId: TASK_ID,
+        phaseRunId: RUN_ID,
+        timestamp: TS,
+        payload: { phaseRunId: RUN_ID, phase: 'questions' },
+      },
+      {
+        type: 'phase:completed',
+        taskId: TASK_ID,
+        phaseRunId: 'run-design',
+        timestamp: TS,
+        payload: { phaseRunId: 'run-design', phase: 'design' },
+      },
+    ]
+
+    const items = eventsToStreamItems({
+      events,
+      options: {
+        phaseStatuses: {
+          questions: 'complete',
+          design: 'needs_review',
+        },
+      },
+    })
+
+    expect(items.map((item) => (item.kind === 'action_card' ? item.title : item.kind))).toEqual([
+      'Workflow attached',
+      'Design ready',
+    ])
+
+    const completed = items[1]
+    if (completed?.kind === 'action_card') {
+      expect(completed.actions.map((action) => action.action)).toEqual([
+        'phase.open',
+        'phase.approve',
+      ])
+      expect(completed.footer).toBe('Need changes? Tell the agent in chat.')
+    }
   })
 })
 
@@ -272,7 +571,7 @@ describe('revisionInferenceToStreamItem', () => {
 
     expect(item.kind).toBe('action_card')
     if (item.kind === 'action_card') {
-      expect(item.title).toBe('Revise design?')
+      expect(item.title).toBe('Apply to workflow?')
       expect(item.summary).toBe('This changes Design. Mark Structure and Plan stale?')
       expect(item.options).toEqual(
         expect.arrayContaining([{ id: 'revise', label: 'Revise Design', recommended: true }]),
@@ -315,6 +614,100 @@ describe('mergeLiveActivities', () => {
     expect(merged[1]?.kind).toBe('agent_message')
   })
 
+  it('pins live tool activity as a single working group after messages', () => {
+    const base = eventsToStreamItems({
+      events: [],
+      userMessages: [{ id: 'u1', text: 'Hello', createdAt: '2026-06-20T12:00:00.000Z' }],
+    })
+
+    const merged = mergeLiveActivities(base, [
+      {
+        type: 'file_read',
+        timestamp: '2026-06-20T12:00:01.000Z',
+        content: 'src/index.ts',
+      },
+      {
+        type: 'command',
+        timestamp: '2026-06-20T12:00:02.000Z',
+        content: 'pnpm test',
+      },
+    ])
+
+    expect(merged).toHaveLength(2)
+    expect(merged[0]?.kind).toBe('user_message')
+    const live = merged[1]
+    expect(live).toMatchObject({
+      kind: 'activity_group',
+      live: true,
+    })
+    if (live?.kind === 'activity_group') {
+      expect(live.title).toBe('Explored 1 file, Ran 1 command')
+      expect(live.display).toBe('flat')
+      expect(live.items.at(-1)?.status).toBe('running')
+    }
+  })
+
+  it('pins live activity after prior agent replies when no new user message (phase harness)', () => {
+    const base = eventsToStreamItems({
+      events: [
+        {
+          type: 'agent:activity',
+          taskId: TASK_ID,
+          timestamp: '2026-06-20T12:00:30.000Z',
+          payload: { text: 'Prior chat reply.', role: 'driver' },
+        },
+        {
+          type: 'workflow:enabled',
+          taskId: TASK_ID,
+          timestamp: '2026-06-20T12:01:00.000Z',
+          payload: { workflowType: 'feature', workflowRunId: 'run-1' },
+        },
+      ],
+      userMessages: [{ id: 'u1', text: 'Start a workflow', createdAt: '2026-06-20T12:00:00.000Z' }],
+    })
+
+    const merged = mergeLiveActivities(base, [
+      {
+        type: 'file_read',
+        timestamp: '2026-06-20T12:02:00.000Z',
+        content: 'src/index.ts',
+      },
+    ])
+
+    expect(merged.map((item) => item.kind)).toEqual([
+      'user_message',
+      'agent_message',
+      'action_card',
+      'activity_group',
+    ])
+    expect(merged.at(-1)).toMatchObject({ kind: 'activity_group', live: true })
+  })
+
+  it('pins live activity before trailing artifact ready cards', () => {
+    const base = eventsToStreamItems({
+      events: [
+        {
+          type: 'phase:completed',
+          taskId: TASK_ID,
+          phaseRunId: RUN_ID,
+          timestamp: TS,
+          payload: { phaseRunId: RUN_ID, phase: 'questions' },
+        },
+      ],
+      options: { phaseStatuses: { questions: 'needs_review' } },
+    })
+
+    const merged = mergeLiveActivities(base, [
+      {
+        type: 'file_read',
+        timestamp: '2026-06-20T12:00:01.000Z',
+        content: 'src/index.ts',
+      },
+    ])
+
+    expect(merged.map((item) => item.kind)).toEqual(['activity_group', 'action_card'])
+  })
+
   it('skips live messages already present in the persisted feed', () => {
     const base = eventsToStreamItems({
       events: [],
@@ -344,6 +737,78 @@ describe('mergeLiveActivities', () => {
     expect(merged.filter((item) => item.kind === 'agent_message')).toHaveLength(2)
     expect(merged.at(-1)).toMatchObject({ kind: 'agent_message', text: 'New live only' })
   })
+
+  it('renders live subagent runs as subagent_run stream items', () => {
+    const base = eventsToStreamItems({
+      events: [],
+      userMessages: [{ id: 'u1', text: 'Hello', createdAt: '2026-06-20T12:00:00.000Z' }],
+    })
+
+    const merged = mergeLiveActivities(base, [
+      {
+        type: 'subagent_run',
+        timestamp: '2026-06-20T12:00:01.000Z',
+        content: 'Explore ShopTab and product architecture',
+        metadata: {
+          subagentType: 'explore',
+          description: 'Explore ShopTab and product architecture',
+          status: 'running',
+          callId: 'call_task_1',
+          childActivities: [
+            {
+              type: 'tool_call',
+              timestamp: '2026-06-20T12:00:02.000Z',
+              content: 'Read ShopTab.svelte',
+              metadata: { tool: 'read', status: 'completed', title: 'ShopTab.svelte' },
+            },
+          ],
+        },
+      },
+    ])
+
+    const subagent = merged.find((item) => item.kind === 'subagent_run')
+    expect(subagent).toMatchObject({
+      kind: 'subagent_run',
+      subagentType: 'Explore',
+      description: 'Explore ShopTab and product architecture',
+      status: 'running',
+      stepCount: 1,
+      live: true,
+    })
+  })
+
+  it('skips phase harness prompts leaked as live message activities', () => {
+    const harnessPrompt = `# questions phase
+
+## Context pack
+
+## .Circuit/tasks/ticket/00-ticket.md
+
+Ticket body
+
+Run the questions phase using the context above.`
+
+    const base = eventsToStreamItems({ events: [] })
+    const merged = mergeLiveActivities(base, [
+      {
+        type: 'message',
+        timestamp: TS,
+        content: harnessPrompt,
+      },
+      {
+        type: 'message',
+        timestamp: TS,
+        content: 'Here are clarifying questions for the ticket.',
+      },
+    ])
+
+    expect(merged.filter((item) => item.kind === 'agent_message')).toEqual([
+      expect.objectContaining({
+        kind: 'agent_message',
+        text: 'Here are clarifying questions for the ticket.',
+      }),
+    ])
+  })
 })
 
 describe('content navigation helpers', () => {
@@ -351,12 +816,12 @@ describe('content navigation helpers', () => {
     const target = { type: 'artifact' as const, artifactId: 'art-1' }
     expect(referenceToContentView(target)).toEqual({ type: 'artifact', artifactId: 'art-1' })
     expect(referenceToInspectorSelection(target)).toEqual({
-      tab: 'artifacts',
+      tab: 'workflow',
       selectedId: 'art-1',
     })
     expect(openReference(target)).toEqual({
       contentView: { type: 'artifact', artifactId: 'art-1' },
-      inspector: { tab: 'artifacts', selectedId: 'art-1' },
+      inspector: { tab: 'workflow', selectedId: 'art-1' },
     })
   })
 

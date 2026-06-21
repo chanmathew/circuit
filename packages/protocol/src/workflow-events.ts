@@ -22,3 +22,15 @@ export interface WorkflowRevisionAppliedPayload {
 }
 
 export type WorkflowEventActor = 'user' | 'circuit' | 'adapter' | 'agent'
+
+/** Emitted when a workflow is attached from the panel or stream suggestion. */
+export interface WorkflowEnabledPayload {
+  workflowType: string
+  startPhase?: string
+}
+
+/** Phase lifecycle markers enriched for stream cards. */
+export interface PhaseLifecyclePayload {
+  phaseRunId: string
+  phase: string
+}

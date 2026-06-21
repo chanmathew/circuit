@@ -3,6 +3,12 @@ import { createOpencodeClient, type Event, type OpencodeClient } from '@opencode
 
 import type { AgentActivityEvent } from './types.js'
 
+import {
+  mapOpenCodeToolPartToActivity,
+  normalizeActivityEvent,
+  sessionMessagesToActivities,
+} from './activity-normalizer.js'
+
 type OpenCodeQuestionOption = {
   label: string
   description: string
@@ -34,7 +40,15 @@ function parseQuestionAskedProperties(event: Event): OpenCodeQuestionAskedEvent[
 
 export type OpenCodeSessionMessage = {
   info: { role: string; id?: string }
-  parts: Array<{ type: string; text?: string; messageID?: string }>
+  parts: Array<{
+    type: string
+    text?: string
+    messageID?: string
+    tool?: string
+    filename?: string
+    url?: string
+    state?: { status?: string; title?: string }
+  }>
 }
 
 export interface OpenCodeClientOptions {
@@ -65,6 +79,46 @@ export function resolveOpenCodeModel(
   return parseOpenCodeModel(options.model ?? process.env.CIRCUIT_OPENCODE_MODEL)
 }
 
+/** Matches desktop `isPhaseRunAborted` — keep in sync. */
+export const SESSION_ABORTED_BY_USER = 'Session aborted by user'
+
+export function createSessionAbortedError(): Error {
+  return new Error(SESSION_ABORTED_BY_USER)
+}
+
+export function isSessionAbortedError(error: unknown): boolean {
+  return error instanceof Error && error.message === SESSION_ABORTED_BY_USER
+}
+
+/** Surface OpenCode SDK error bodies that are not `Error` instances. */
+export function formatOpenCodeSdkError(error: unknown, fallback: string): Error {
+  if (error instanceof Error) return error
+
+  if (typeof error === 'object' && error !== null) {
+    const obj = error as Record<string, unknown>
+    const data = obj.data
+    const dataMessage =
+      typeof data === 'object' &&
+      data !== null &&
+      'message' in data &&
+      typeof data.message === 'string'
+        ? data.message
+        : undefined
+    const message =
+      dataMessage ||
+      (typeof obj.message === 'string' ? obj.message : undefined) ||
+      (typeof obj.name === 'string' ? obj.name : undefined) ||
+      JSON.stringify(error)
+    return new Error(message)
+  }
+
+  if (typeof error === 'string' && error.trim()) {
+    return new Error(error)
+  }
+
+  return new Error(fallback)
+}
+
 export function createOpenCodeClient(options: OpenCodeClientOptions = {}): OpencodeClient {
   const baseUrl = options.baseUrl ?? process.env.CIRCUIT_OPENCODE_URL ?? 'http://localhost:4096'
   return createOpencodeClient({
@@ -88,64 +142,62 @@ export function mapOpenCodeEventToActivity(event: Event): AgentActivityEvent | n
   if (event.type === 'message.part.updated') {
     const part = event.properties.part
     if (part.type === 'text' && part.text.trim()) {
-      return {
+      return normalizeActivityEvent({
         type: 'message',
         timestamp,
         content: part.text,
         metadata: { sessionID: part.sessionID, messageID: part.messageID },
-      }
+      })
+    }
+    if (part.type === 'reasoning' || (part.type as string) === 'thinking') {
+      const text = 'text' in part && typeof part.text === 'string' ? part.text.trim() : ''
+      if (!text) return null
+      return normalizeActivityEvent({
+        type: 'reasoning',
+        timestamp,
+        content: text,
+        metadata: { sessionID: part.sessionID, messageID: part.messageID, status: 'running' },
+      })
     }
     if (part.type === 'file') {
       const path = part.filename ?? part.url
-      return {
+      return normalizeActivityEvent({
         type: 'file_read',
         timestamp,
         content: path,
-        metadata: { path },
-      }
+        metadata: { path, status: 'completed' },
+      })
     }
     if (part.type === 'tool') {
-      const toolName = part.tool || 'tool'
-      const status = part.state.status
-      const title = 'title' in part.state ? part.state.title?.trim() : undefined
-      let label: string
-      if (title && title !== toolName) {
-        label = status === 'running' ? `${toolName}: ${title}` : `${toolName} — ${title}`
-      } else if (status === 'running') {
-        label = `Running ${toolName}`
-      } else if (status === 'completed') {
-        label = `Completed ${toolName}`
-      } else if (status === 'error') {
-        label = `Failed ${toolName}`
-      } else {
-        label = toolName
-      }
-      return {
-        type: 'tool_call',
-        timestamp,
-        content: label,
-        metadata: { tool: part.tool, status: part.state.status },
-      }
+      return normalizeActivityEvent(
+        mapOpenCodeToolPartToActivity({
+          tool: part.tool,
+          state: part.state ?? {},
+          sessionID: part.sessionID,
+          messageID: part.messageID,
+          callId: 'callID' in part && typeof part.callID === 'string' ? part.callID : undefined,
+        }),
+      )
     }
     return null
   }
 
   if (event.type === 'file.edited') {
-    return {
+    return normalizeActivityEvent({
       type: 'file_changed',
       timestamp,
       content: event.properties.file,
-      metadata: { path: event.properties.file },
-    }
+      metadata: { path: event.properties.file, status: 'completed' },
+    })
   }
 
   if (event.type === 'command.executed') {
-    return {
+    return normalizeActivityEvent({
       type: 'command',
       timestamp,
       content: `${event.properties.name} ${event.properties.arguments}`.trim(),
-      metadata: { sessionID: event.properties.sessionID },
-    }
+      metadata: { sessionID: event.properties.sessionID, status: 'completed' },
+    })
   }
 
   if (event.type === 'permission.updated') {
@@ -197,6 +249,8 @@ export function mapOpenCodeEventToActivity(event: Event): AgentActivityEvent | n
 
   return null
 }
+
+export { sessionMessagesToActivities } from './activity-normalizer.js'
 
 /** Derive phase artifact markdown from the last assistant turn. */
 export function extractArtifactContentFromMessages(
@@ -262,6 +316,12 @@ export function knownMessageIdsFromSession(messages: OpenCodeSessionMessage[]): 
 }
 
 export function eventBelongsToSession(event: Event, sessionId: string): boolean {
+  const eventSessionId = extractEventSessionId(event)
+  if (!eventSessionId) return false
+  return eventSessionId === sessionId
+}
+
+export function extractEventSessionId(event: Event): string | undefined {
   const properties = event.properties as Record<string, unknown>
 
   const directSessionId =
@@ -271,38 +331,36 @@ export function eventBelongsToSession(event: Event, sessionId: string): boolean 
         ? properties.sessionId
         : undefined
 
-  if (directSessionId) return directSessionId === sessionId
+  if (directSessionId) return directSessionId
 
   if (event.type === 'message.part.updated') {
-    return event.properties.part.sessionID === sessionId
+    return event.properties.part.sessionID
   }
 
   if (event.type === 'session.created' || event.type === 'session.updated') {
-    return event.properties.info.id === sessionId
+    return event.properties.info.id
   }
 
   if (event.type === 'session.error') {
-    return event.properties.sessionID === sessionId
+    return event.properties.sessionID
   }
 
   if (event.type === 'session.idle') {
-    return event.properties.sessionID === sessionId
+    return event.properties.sessionID
   }
 
   if (event.type === 'permission.updated') {
-    return event.properties.sessionID === sessionId
+    return event.properties.sessionID
   }
 
   const questionProperties = parseQuestionAskedProperties(event)
   if (questionProperties) {
-    return questionProperties.sessionID === sessionId
+    return questionProperties.sessionID
   }
 
   if (event.type === 'file.edited' || event.type === 'command.executed') {
-    const sessionFromEvent =
-      typeof properties.sessionID === 'string' ? properties.sessionID : undefined
-    return sessionFromEvent ? sessionFromEvent === sessionId : false
+    return typeof properties.sessionID === 'string' ? properties.sessionID : undefined
   }
 
-  return false
+  return undefined
 }

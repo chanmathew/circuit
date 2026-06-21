@@ -20,6 +20,12 @@ export {
   mapOpenCodeEventToActivity,
   type OpenCodeClientOptions,
 } from './opencode-client.js'
+export {
+  formatToolLabel,
+  normalizeActivityEvent,
+  sessionMessagesToActivities,
+  summarizeActivities,
+} from './activity-normalizer.js'
 export type {
   AgentActivityEvent,
   ContextPackPayload,

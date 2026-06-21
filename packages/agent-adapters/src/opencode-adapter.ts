@@ -6,15 +6,24 @@ import type {
 } from './adapter.js'
 import {
   createOpenCodeClient,
+  createSessionAbortedError,
   eventBelongsToSession,
+  extractEventSessionId,
   extractArtifactContentFromMessages,
   formatLastAssistantTurn,
+  formatOpenCodeSdkError,
   formatSessionTranscript,
+  isSessionAbortedError,
   knownMessageIdsFromSession,
   mapOpenCodeEventToActivity,
   resolveOpenCodeModel,
   type OpenCodeClientOptions,
 } from './opencode-client.js'
+import {
+  enrichActivitiesWithFileDiffs,
+  sessionMessagesToActivities,
+  upsertTraceActivity,
+} from './activity-normalizer.js'
 import type { AgentActivityEvent, ChatTurnRequest, ChatTurnResult, PhaseRunRequest, PhaseRunResult } from './types.js'
 
 import type { AgentAdapter, HarnessSessionMessage, SendMessageRequest } from './adapter.js'
@@ -81,13 +90,33 @@ export class OpenCodeAdapter implements AgentAdapter {
 
     const sessionId = created.data.id
     const model = resolveOpenCodeModel(this.options)
+    const trimmedPrompt = request.prompt.trim()
+    const knownMessageIds = new Set<string>()
+
+    const emitActivity = (event: AgentActivityEvent): void => {
+      if (event.type === 'message') {
+        const messageId =
+          typeof event.metadata?.messageID === 'string' ? event.metadata.messageID : undefined
+        if (messageId && knownMessageIds.has(messageId)) return
+        if (messageId) knownMessageIds.add(messageId)
+
+        const trimmedContent = event.content.trim()
+        if (
+          trimmedContent === trimmedPrompt ||
+          (trimmedContent.length > 0 && trimmedPrompt.startsWith(trimmedContent))
+        ) {
+          return
+        }
+      }
+      onActivity(event)
+    }
 
     await this.runSessionTurn({
       workspacePath: request.workspacePath,
       sessionId,
       prompt: request.prompt,
       onSessionStarted: request.onSessionStarted,
-      onActivity,
+      onActivity: emitActivity,
       sessionBanner: model
         ? `OpenCode session ${sessionId.slice(0, 8)} · ${model.providerID}/${model.modelID}`
         : `OpenCode session ${sessionId.slice(0, 8)} · context ${request.contextPack.hash.slice(0, 8)}`,
@@ -112,9 +141,25 @@ export class OpenCodeAdapter implements AgentAdapter {
       query: { directory: request.workspacePath },
     })
 
-    const filesChanged =
-      diff.data?.flatMap((entry) => entry.file).filter((path): path is string => Boolean(path)) ??
-      []
+    const fileDiffs =
+      diff.data?.map((entry) => ({
+        file: entry.file,
+        additions: entry.additions,
+        deletions: entry.deletions,
+      })) ?? []
+
+    const filesChanged = fileDiffs.map((entry) => entry.file).filter(Boolean)
+
+    const activities = enrichActivitiesWithFileDiffs(
+      await this.enrichSubagentTracesAsync(
+        request.workspacePath,
+        sessionMessagesToActivities(messages.data, {
+          latestTurnOnly: false,
+          timestamp: new Date().toISOString(),
+        }),
+      ),
+      fileDiffs,
+    )
 
     return {
       sessionId,
@@ -125,6 +170,7 @@ export class OpenCodeAdapter implements AgentAdapter {
       filesChanged,
       commandsRun: [],
       modelLabel: model ? `${model.providerID}/${model.modelID}` : 'opencode-default',
+      activities,
     }
   }
 
@@ -190,10 +236,33 @@ export class OpenCodeAdapter implements AgentAdapter {
       )
     }
 
+    const diff = await client.session.diff({
+      path: { id: sessionId },
+      query: { directory: request.workspacePath },
+    })
+
+    const fileDiffs =
+      diff.data?.map((entry) => ({
+        file: entry.file,
+        additions: entry.additions,
+        deletions: entry.deletions,
+      })) ?? []
+
+    const activities = enrichActivitiesWithFileDiffs(
+      await this.enrichSubagentTracesAsync(
+        request.workspacePath,
+        sessionMessagesToActivities(messages.data, {
+          timestamp: new Date().toISOString(),
+        }),
+      ),
+      fileDiffs,
+    )
+
     return {
       sessionId,
       transcript: formatLastAssistantTurn(messages.data),
       modelLabel: model ? `${model.providerID}/${model.modelID}` : 'opencode-default',
+      activities,
     }
   }
 
@@ -277,9 +346,7 @@ export class OpenCodeAdapter implements AgentAdapter {
     })
 
     if (result.error) {
-      throw new Error(
-        result.error instanceof Error ? result.error.message : 'Failed to abort OpenCode session',
-      )
+      throw formatOpenCodeSdkError(result.error, 'Failed to abort OpenCode session')
     }
   }
 
@@ -316,6 +383,67 @@ export class OpenCodeAdapter implements AgentAdapter {
     }))
   }
 
+  private async enrichSubagentTracesAsync(
+    workspacePath: string,
+    activities: AgentActivityEvent[],
+  ): Promise<AgentActivityEvent[]> {
+    const client = this.requireClient()
+    const result: AgentActivityEvent[] = []
+
+    for (const activity of activities) {
+      if (activity.type !== 'subagent_run') {
+        result.push(activity)
+        continue
+      }
+
+      const childSessionId =
+        typeof activity.metadata?.childSessionId === 'string'
+          ? activity.metadata.childSessionId
+          : undefined
+      if (!childSessionId) {
+        result.push(activity)
+        continue
+      }
+
+      const existing = activity.metadata?.childActivities
+      if (Array.isArray(existing) && existing.length > 0) {
+        result.push(activity)
+        continue
+      }
+
+      const childMessages = await client.session.messages({
+        path: { id: childSessionId },
+        query: { directory: workspacePath },
+      })
+      if (childMessages.error || !childMessages.data) {
+        result.push(activity)
+        continue
+      }
+
+      const childActivities = sessionMessagesToActivities(childMessages.data, {
+        latestTurnOnly: false,
+        timestamp: activity.timestamp,
+      }).filter(
+        (entry) =>
+          entry.type === 'reasoning' ||
+          entry.type === 'tool_call' ||
+          entry.type === 'file_read' ||
+          entry.type === 'file_changed' ||
+          entry.type === 'command',
+      )
+
+      result.push({
+        ...activity,
+        metadata: {
+          ...activity.metadata,
+          childActivities,
+        },
+      })
+    }
+
+    return result
+  }
+
   private requireClient(): ReturnType<typeof createOpenCodeClient> {
     if (!this.client) {
       throw new Error('OpenCode adapter not connected — call connect() first')
@@ -328,13 +456,18 @@ export class OpenCodeAdapter implements AgentAdapter {
     const model = resolveOpenCodeModel(this.options)
     const agent = this.options.agent ?? process.env.CIRCUIT_OPENCODE_AGENT
 
+    const abortError = createSessionAbortedError()
     let rejectRun: ((error: Error) => void) | undefined
+    let aborted = false
     const abortPromise = new Promise<never>((_, reject) => {
-      rejectRun = reject
+      rejectRun = (error = abortError) => {
+        aborted = true
+        reject(error)
+      }
     })
 
     options.onSessionStarted?.(options.sessionId, () => {
-      rejectRun?.(new Error('Session aborted by user'))
+      rejectRun?.(abortError)
     })
 
     if (options.sessionBanner) {
@@ -361,20 +494,24 @@ export class OpenCodeAdapter implements AgentAdapter {
     )
 
     try {
-      const prompt = await client.session.promptAsync({
-        path: { id: options.sessionId },
-        query: { directory: options.workspacePath },
-        body: {
-          parts: [{ type: 'text', text: options.prompt }],
-          ...(model ? { model } : {}),
-          ...(agent ? { agent } : {}),
-        },
-      })
+      const prompt = await Promise.race([
+        client.session.promptAsync({
+          path: { id: options.sessionId },
+          query: { directory: options.workspacePath },
+          body: {
+            parts: [{ type: 'text', text: options.prompt }],
+            ...(model ? { model } : {}),
+            ...(agent ? { agent } : {}),
+          },
+        }),
+        abortPromise,
+      ])
 
       if (prompt.error) {
-        throw new Error(
-          prompt.error instanceof Error ? prompt.error.message : 'OpenCode prompt failed',
-        )
+        if (aborted) {
+          throw abortError
+        }
+        throw formatOpenCodeSdkError(prompt.error, 'OpenCode prompt failed')
       }
 
       await Promise.race([
@@ -387,6 +524,11 @@ export class OpenCodeAdapter implements AgentAdapter {
           )
         }),
       ])
+    } catch (error) {
+      if (aborted || isSessionAbortedError(error)) {
+        throw abortError
+      }
+      throw error
     } finally {
       finished = true
       resolveIdle?.()
@@ -406,18 +548,74 @@ export class OpenCodeAdapter implements AgentAdapter {
   ): Promise<void> {
     const client = this.requireClient()
     const subscription = await client.event.subscribe({ query: { directory } })
+    const childSessionIds = new Set<string>()
+    const childTraceBySession = new Map<string, AgentActivityEvent[]>()
+    const subagentMetaByChildSession = new Map<string, Record<string, unknown>>()
+
+    const belongsToWatchedSession = (event: Event): boolean => {
+      if (eventBelongsToSession(event, sessionId)) return true
+      const eventSessionId = extractEventSessionId(event)
+      return eventSessionId ? childSessionIds.has(eventSessionId) : false
+    }
+
+    const emitSubagentUpdate = (childSessionId: string, status = 'running'): void => {
+      const meta = subagentMetaByChildSession.get(childSessionId)
+      if (!meta) return
+      const childActivities = childTraceBySession.get(childSessionId) ?? []
+      onActivity({
+        type: 'subagent_run',
+        timestamp: new Date().toISOString(),
+        content:
+          typeof meta.description === 'string' ? meta.description : 'Subagent task',
+        metadata: {
+          ...meta,
+          childSessionId,
+          status,
+          childActivities,
+        },
+      })
+    }
 
     try {
       for await (const event of subscription.stream as AsyncIterable<Event>) {
         if (isFinished()) break
-        if (!eventBelongsToSession(event, sessionId)) continue
+        if (!belongsToWatchedSession(event)) continue
 
-        if (event.type === 'session.idle') {
+        if (event.type === 'session.idle' && eventBelongsToSession(event, sessionId)) {
           onSessionIdle()
         }
 
         const activity = mapOpenCodeEventToActivity(event)
-        if (activity) onActivity(activity)
+        if (!activity) continue
+
+        const eventSessionId = extractEventSessionId(event)
+
+        if (activity.type === 'subagent_run') {
+          const childId =
+            typeof activity.metadata?.childSessionId === 'string'
+              ? activity.metadata.childSessionId
+              : undefined
+          if (childId) {
+            childSessionIds.add(childId)
+            subagentMetaByChildSession.set(childId, activity.metadata ?? {})
+            if (!childTraceBySession.has(childId)) {
+              childTraceBySession.set(childId, [])
+            }
+          }
+          onActivity(activity)
+          continue
+        }
+
+        if (eventSessionId && childSessionIds.has(eventSessionId)) {
+          if (activity.type === 'message') continue
+          const trace = childTraceBySession.get(eventSessionId) ?? []
+          upsertTraceActivity(trace, activity)
+          childTraceBySession.set(eventSessionId, trace)
+          emitSubagentUpdate(eventSessionId)
+          continue
+        }
+
+        onActivity(activity)
       }
     } catch {
       if (!isFinished()) throw new Error('OpenCode event stream disconnected')
