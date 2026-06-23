@@ -19,6 +19,7 @@ import {
   diffsFromFeed,
   findDiffForPath,
   inspectorSelectionForTab,
+  isContentPanelOpen,
   navigationForReference,
   resolvePhaseArtifact,
   WORKSPACE_DIFF_ID,
@@ -38,13 +39,7 @@ export interface TaskWorkbenchProps {
 }
 
 function shouldOpenContentPanel(navigation: ContentNavigationState): boolean {
-  const { contentView } = navigation
-  return (
-    contentView.type === 'artifact' ||
-    contentView.type === 'diff' ||
-    contentView.type === 'check' ||
-    contentView.type === 'file'
-  )
+  return isContentPanelOpen(navigation.contentView)
 }
 
 export function TaskWorkbench({
@@ -162,15 +157,23 @@ export function TaskWorkbench({
   }
 
   const handleInspectorTabChange = (tab: InspectorTab): void => {
-    if (tab === 'changes' && allChangedPaths.length > 0) {
-      openAllChanges()
-      return
-    }
+    setNavigation((current) => {
+      const inspector = inspectorSelectionForTab(tab, current.contentView)
 
-    setNavigation((current) => ({
-      ...current,
-      inspector: inspectorSelectionForTab(tab, current.contentView),
-    }))
+      if (
+        tab === 'changes' &&
+        allChangedPaths.length > 0 &&
+        !isContentPanelOpen(current.contentView)
+      ) {
+        setContentVisible(true)
+        return {
+          contentView: { type: 'diff', diffId: WORKSPACE_DIFF_ID },
+          inspector: { tab: 'changes', selectedId: WORKSPACE_DIFF_ID, changesKind: 'diff' },
+        }
+      }
+
+      return { ...current, inspector }
+    })
   }
 
   const openInspector = (): void => {
@@ -283,7 +286,6 @@ export function TaskWorkbench({
                 preview={preview}
                 isRunning={isRunning}
                 onPreviewChange={setPreview}
-                onSelectDiffPath={handleSelectDiffPath}
                 onSelectFile={handleSelectFile}
               />
             </div>

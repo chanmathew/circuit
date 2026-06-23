@@ -6,6 +6,7 @@ import { openReference } from '@circuit/protocol'
 import type { ArtifactDto, PhaseDto, TaskDto } from '../../../../../shared/api.js'
 import {
   inspectorSelectionForTab,
+  isContentPanelOpen,
   resolvePhaseArtifact,
   resolveDiffEntry,
   findDiffForPath,
@@ -153,6 +154,11 @@ describe('file navigation', () => {
   it('keeps file selection when switching to the files tab', () => {
     const selection = inspectorSelectionForTab('files', { type: 'file', path: 'README.md' })
     expect(selection).toEqual({ tab: 'files', selectedId: 'README.md' })
+  })
+
+  it('treats open center content as blocking auto-open of all changes', () => {
+    expect(isContentPanelOpen({ type: 'file', path: 'src/index.ts' })).toBe(true)
+    expect(isContentPanelOpen({ type: 'workflow_overview' })).toBe(false)
   })
 
   it('resolves workspace diff entries for changed files without a diff slice', () => {

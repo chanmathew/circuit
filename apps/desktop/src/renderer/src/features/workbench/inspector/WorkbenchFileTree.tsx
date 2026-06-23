@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { themeToTreeStyles } from '@pierre/trees'
 import { FileTree, useFileTree, useFileTreeSearch } from '@pierre/trees/react'
@@ -9,6 +9,7 @@ import { circuitApi } from '../../../ipc/client.js'
 import { queryKeys } from '../../../ipc/query-keys.js'
 import { useWorkspaceGitStatus } from '../../../hooks/git/useWorkspaceGitStatus.js'
 import { usePierreThemeType } from '../../../lib/pierre/usePierreThemeType.js'
+import { revealFileTreePath } from './reveal-file-tree-path.js'
 
 export interface WorkbenchFileTreeProps {
   workspacePath: string
@@ -40,6 +41,7 @@ function WorkbenchFileTreeInner({
 }): React.ReactElement {
   const onSelectRef = useRef(onSelectPath)
   onSelectRef.current = onSelectPath
+  const suppressSelectionChangeRef = useRef(false)
 
   const filePathSet = useMemo(() => new Set(paths), [paths])
 
@@ -48,6 +50,7 @@ function WorkbenchFileTreeInner({
     search: false,
     initialSelectedPaths: selectedPath ? [selectedPath] : [],
     onSelectionChange: (selectedPaths) => {
+      if (suppressSelectionChangeRef.current) return
       const next = selectedPaths[0]
       if (!next) return
       const normalized = next.replace(/\/$/, '')
@@ -64,7 +67,9 @@ function WorkbenchFileTreeInner({
   }, [search.value])
 
   useEffect(() => {
-    model.openSearch('')
+    if (model.isSearchOpen() && model.getSearchValue().length === 0) {
+      model.closeSearch()
+    }
   }, [model])
 
   const pathsKey = paths.join('\0')
@@ -80,11 +85,32 @@ function WorkbenchFileTreeInner({
     }
   }, [model, gitStatusEntries])
 
-  useEffect(() => {
-    if (selectedPath) {
-      model.scrollToPath(selectedPath, { focus: false })
+  useLayoutEffect(() => {
+    if (!selectedPath) return
+
+    let cancelled = false
+
+    const syncSelection = (): void => {
+      if (cancelled) return
+      suppressSelectionChangeRef.current = true
+      try {
+        revealFileTreePath(model, selectedPath, paths)
+      } finally {
+        suppressSelectionChangeRef.current = false
+      }
     }
-  }, [model, selectedPath])
+
+    // Pierre renders the tree view in Preact after React layout; defer one frame so
+    // selection updates land after the view subscribes to the controller.
+    const frameId = requestAnimationFrame(() => {
+      requestAnimationFrame(syncSelection)
+    })
+
+    return () => {
+      cancelled = true
+      cancelAnimationFrame(frameId)
+    }
+  }, [model, paths, pathsKey, selectedPath, gitStatusEntries])
 
   const treeStyles = useMemo(
     () =>
@@ -115,8 +141,12 @@ function WorkbenchFileTreeInner({
         onChange={(event) => {
           const next = event.target.value
           setSearchValue(next)
+          if (next.length === 0) {
+            search.close()
+            return
+          }
           if (!search.isOpen) search.open('')
-          search.setValue(next.length > 0 ? next : null)
+          search.setValue(next)
         }}
       />
       <FileTree model={model} className="min-h-0 flex-1" style={treeStyles} />

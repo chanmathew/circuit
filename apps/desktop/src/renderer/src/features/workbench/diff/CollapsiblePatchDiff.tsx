@@ -5,7 +5,7 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowDown01Icon } from '@hugeicons/core-free-icons'
 
 import type { GitFileChangeDto } from '../../../../../shared/api.js'
-import { DiffFileHeaderActions } from './lib/diff-header-actions.js'
+import { DiffFileHeaderActions, DIFF_HEADER_ICON_BUTTON_CLASS } from './lib/diff-header-actions.js'
 import { mountPierreDiffHeader, unmountPierreDiffHeader } from './lib/pierre-diff-header.js'
 
 type PierreDiffOptions = NonNullable<PatchDiffProps<undefined>['options']>
@@ -21,16 +21,31 @@ type CollapsiblePatchDiffProps = Pick<PatchDiffProps<undefined>, 'patch' | 'disa
     onDiscardFile?: (path: string) => void
   }
 
-function DiffHeaderChevron({ open }: { open: boolean }): React.ReactElement {
+function DiffHeaderChevron({
+  open,
+  onToggle,
+}: {
+  open: boolean
+  onToggle: () => void
+}): React.ReactElement {
   return (
-    <span className="inline-flex size-5 shrink-0 items-center justify-center text-muted-foreground">
+    <button
+      type="button"
+      className={cn(DIFF_HEADER_ICON_BUTTON_CLASS, 'hover:text-foreground')}
+      aria-expanded={open}
+      aria-label={open ? 'Collapse diff' : 'Expand diff'}
+      onClick={(event) => {
+        event.stopPropagation()
+        onToggle()
+      }}
+    >
       <HugeiconsIcon
         icon={ArrowDown01Icon}
         strokeWidth={2}
         className={cn('size-3 transition-transform', !open && '-rotate-90')}
         aria-hidden
       />
-    </span>
+    </button>
   )
 }
 
@@ -61,9 +76,10 @@ export function CollapsiblePatchDiff({
   const showGitActions = filePath != null && (onToggleStage != null || onDiscardFile != null)
 
   const mergedOptions = useMemo(() => {
+    const baseOnPostRender = options.onPostRender
+
     return {
       ...options,
-      collapsed: !open,
       onPostRender(
         node: HTMLElement,
         instance: Parameters<NonNullable<PierreDiffOptions['onPostRender']>>[1],
@@ -71,20 +87,23 @@ export function CollapsiblePatchDiff({
       ) {
         if (phase === 'unmount') {
           unmountPierreDiffHeader(node)
-          options.onPostRender?.(node, instance, phase)
+          baseOnPostRender?.(node, instance, phase)
           return
         }
 
-        options.onPostRender?.(node, instance, phase)
+        baseOnPostRender?.(node, instance, phase)
         mountPierreDiffHeader(node, {
           markPatchHost: true,
           onToggleCollapse: () => toggleRef.current(),
         })
       },
     }
-  }, [options, open])
+  }, [options])
 
-  const renderHeaderPrefix = useCallback(() => <DiffHeaderChevron open={open} />, [open])
+  const renderHeaderPrefix = useCallback(
+    () => <DiffHeaderChevron open={open} onToggle={toggle} />,
+    [open, toggle],
+  )
 
   const renderHeaderMetadata = useCallback(() => {
     if (!showGitActions || !filePath) return null
@@ -102,7 +121,7 @@ export function CollapsiblePatchDiff({
   return (
     <PatchDiff
       patch={patch}
-      options={mergedOptions}
+      options={{ ...mergedOptions, collapsed: !open }}
       disableWorkerPool={disableWorkerPool}
       className={className}
       style={style}

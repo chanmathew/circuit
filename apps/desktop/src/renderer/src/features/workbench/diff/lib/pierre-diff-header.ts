@@ -93,19 +93,21 @@ export function mountPierreDiffHeader(
     state.onToggleCollapse = behavior.onToggleCollapse
 
     if (!state.collapseHandler) {
-      const header = diffHeaderElement(container)
-      if (!(header instanceof HTMLElement)) return
-
-      header.style.cursor = 'pointer'
+      const root = diffQueryRoot(container)
 
       const handler = (event: Event): void => {
         const target = event.target
         if (!(target instanceof Element)) return
+
+        const header = diffHeaderElement(container)
+        if (!(header instanceof HTMLElement)) return
+        if (!event.composedPath().includes(header)) return
         if (isInteractiveTarget(target)) return
+
         state.onToggleCollapse?.()
       }
 
-      header.addEventListener('click', handler)
+      root.addEventListener('click', handler, true)
       state.collapseHandler = handler
     }
   }
@@ -122,8 +124,7 @@ export function unmountPierreDiffHeader(container: HTMLElement): void {
   }
 
   if (state.collapseHandler) {
-    const header = diffHeaderElement(container)
-    header?.removeEventListener('click', state.collapseHandler)
+    root.removeEventListener('click', state.collapseHandler, true)
   }
 
   headerState.delete(container)

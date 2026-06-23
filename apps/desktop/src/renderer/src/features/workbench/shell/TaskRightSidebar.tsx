@@ -80,7 +80,12 @@ export function TaskRightSidebar({
     activeTab === 'workflow' && selectedId && artifacts.some((a) => a.id === selectedId)
       ? selectedId
       : undefined
-  const selectedFilePath = activeTab === 'files' ? selectedId : undefined
+  const selectedFilePath =
+    activeTab === 'files'
+      ? contentView.type === 'file'
+        ? contentView.path
+        : selectedId
+      : undefined
 
   return (
     <aside className="flex h-full min-h-0 flex-col bg-card/50">

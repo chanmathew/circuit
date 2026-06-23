@@ -1,4 +1,4 @@
-import { Button, cn } from '@circuit/ui'
+import { Checkbox, cn } from '@circuit/ui'
 
 import type { GitFileChangeDto } from '../../../../../shared/api.js'
 import { DiffBadges } from '../../../lib/diff/DiffBadges.js'
@@ -35,27 +35,47 @@ export function ChangeFileRow({
 }: ChangeFileRowProps): React.ReactElement {
   const showStage = change.unstaged && onStage
   const showUnstage = change.staged && onUnstage
-  const showActions = showStage || showUnstage
+  const showStageToggle = showStage || showUnstage
+
+  const stagedChecked = change.staged === true && change.unstaged !== true
+  const stagedIndeterminate = change.staged === true && change.unstaged === true
+  const stageLabel = showStage
+    ? `Stage ${change.path}`
+    : showUnstage
+      ? `Unstage ${change.path}`
+      : ''
+
+  const handleStageToggle = (): void => {
+    if (staging) return
+    if (showStage) onStage(change.path)
+    else if (showUnstage) onUnstage(change.path)
+  }
 
   return (
     <div
       className={cn(
-        'group relative min-w-0 overflow-hidden rounded-md px-1 py-1 font-mono text-xs',
+        'group relative w-full min-w-0 rounded-md',
         selected ? 'bg-accent' : 'hover:bg-accent/40',
       )}
     >
       <button
         type="button"
         className={cn(
-          'flex w-full min-w-0 items-center gap-2 overflow-hidden text-muted-foreground',
+          'flex w-full min-w-0 cursor-pointer items-center gap-2 px-2 py-2 text-left font-mono text-xs text-muted-foreground',
           !selected && 'hover:text-foreground/80',
           selected && 'text-foreground/80',
-          showActions && 'group-hover:pr-[4.25rem]',
         )}
         onClick={() => onSelect(change.path)}
         title={change.path}
       >
-        <span className="w-3 shrink-0 text-amber-600">{gitChangeStatusLetter(change.status)}</span>
+        <span
+          className={cn(
+            'flex size-3 shrink-0 items-center justify-center text-amber-600',
+            showStageToggle && 'group-hover:invisible',
+          )}
+        >
+          {gitChangeStatusLetter(change.status)}
+        </span>
         <span className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden">
           <PathLabel path={change.path} />
           <DiffBadges
@@ -65,34 +85,17 @@ export function ChangeFileRow({
           />
         </span>
       </button>
-
-      {showActions ? (
-        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center gap-0.5 pr-0.5 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100">
-          {showStage ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-6 bg-accent/80 px-1.5 text-[10px] backdrop-blur-sm"
-              disabled={staging}
-              onClick={() => onStage(change.path)}
-            >
-              Stage
-            </Button>
-          ) : null}
-          {showUnstage ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-6 bg-accent/80 px-1.5 text-[10px] backdrop-blur-sm"
-              disabled={staging}
-              onClick={() => onUnstage(change.path)}
-            >
-              Unstage
-            </Button>
-          ) : null}
-        </div>
+      {showStageToggle ? (
+        <span className="pointer-events-none absolute left-2 top-1/2 z-10 flex size-3 -translate-y-1/2 items-center justify-center opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100">
+          <Checkbox
+            className="size-3 cursor-pointer rounded-[3px] after:hidden focus-visible:ring-2"
+            checked={stagedIndeterminate ? 'indeterminate' : stagedChecked}
+            disabled={staging}
+            aria-label={stageLabel}
+            title={stageLabel}
+            onCheckedChange={handleStageToggle}
+          />
+        </span>
       ) : null}
     </div>
   )

@@ -9,7 +9,10 @@ import { DiffBadges } from '../../../lib/diff/DiffBadges.js'
 import type { CheckEntry, DiffEntry } from '../navigation/workbench-content.js'
 import { WORKSPACE_DIFF_ID } from '../navigation/workbench-content.js'
 import { ChangeFileRow } from './ChangeFileRow.js'
-import { ChangesCollapsibleSection } from './ChangesCollapsibleSection.js'
+import {
+  CHANGES_SECTION_LINK_CLASS,
+  ChangesCollapsibleSection,
+} from './ChangesCollapsibleSection.js'
 import { ChangesCommitSection } from './ChangesCommitSection.js'
 
 export interface ChangesPanelProps {
@@ -67,18 +70,8 @@ export function ChangesPanel({
 
   return (
     <div className="box-border min-w-0 max-w-full space-y-4 p-3">
-      <button
-        type="button"
-        className={cn(
-          'flex w-full min-w-0 items-center justify-between gap-2 rounded-md px-1 py-0.5 text-left transition-colors',
-          hasGitChanges && 'hover:bg-accent/30',
-          aggregateSelected && hasGitChanges && 'bg-accent/40',
-        )}
-        onClick={onOpenAllChanges}
-        disabled={!hasGitChanges}
-        title={branchName}
-      >
-        <span className="flex min-w-0 items-center gap-1.5">
+      <div className="flex min-w-0 items-center justify-between gap-2 px-1 py-0.5">
+        <span className="flex min-w-0 items-center gap-1.5" title={branchName}>
           <HugeiconsIcon
             icon={GitBranchIcon}
             strokeWidth={2}
@@ -88,19 +81,31 @@ export function ChangesPanel({
           <span className="truncate font-mono text-[10px] text-foreground">{branchName}</span>
         </span>
         {status && !status.clean ? (
-          <span className="inline-flex shrink-0 items-baseline gap-1 text-[10px] tabular-nums">
-            <span className="text-muted-foreground">
-              {status.summary.files} file{status.summary.files === 1 ? '' : 's'} ·
+          <span className="inline-flex shrink-0 items-baseline gap-2 text-[10px] tabular-nums">
+            <span className="inline-flex items-baseline gap-1">
+              <span className="text-muted-foreground">
+                {status.summary.files} file{status.summary.files === 1 ? '' : 's'} ·
+              </span>
+              <DiffBadges
+                additions={status.summary.insertions}
+                deletions={status.summary.deletions}
+              />
             </span>
-            <DiffBadges
-              additions={status.summary.insertions}
-              deletions={status.summary.deletions}
-            />
+            <button
+              type="button"
+              className={cn(
+                CHANGES_SECTION_LINK_CLASS,
+                aggregateSelected && 'underline',
+              )}
+              onClick={onOpenAllChanges}
+            >
+              All changes
+            </button>
           </span>
         ) : (
           <span className="shrink-0 text-[10px] text-muted-foreground">Working tree clean</span>
         )}
-      </button>
+      </div>
 
       {hasGitChanges ? (
         <ChangesCommitSection
@@ -197,7 +202,7 @@ export function ChangesPanel({
                 No staged changes
               </p>
             ) : (
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 {stagedChanges.map((change) => (
                   <ChangeFileRow
                     key={`staged:${change.path}`}
@@ -227,7 +232,7 @@ export function ChangesPanel({
                 No unstaged changes
               </p>
             ) : (
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 {unstagedChanges.map((change) => (
                   <ChangeFileRow
                     key={`unstaged:${change.path}`}

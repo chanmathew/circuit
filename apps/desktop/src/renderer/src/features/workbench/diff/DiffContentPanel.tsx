@@ -25,7 +25,6 @@ export interface DiffContentPanelProps {
   orderedPaths?: string[]
   /** Scroll this workspace file into view without filtering the diff list. */
   focusPath?: string
-  onSelectPath?: (path: string) => void
   onOpenFile?: (path: string) => void
 }
 
@@ -35,7 +34,6 @@ export function DiffContentPanel({
   selectedPath,
   orderedPaths,
   focusPath,
-  onSelectPath,
   onOpenFile,
 }: DiffContentPanelProps): React.ReactElement {
   const themeType = usePierreThemeType()
@@ -70,10 +68,9 @@ export function DiffContentPanel({
 
   const handleDiffHeaderPathClick = useCallback(
     (path: string) => {
-      if (isWorkspaceDiff) onSelectPath?.(path)
-      else onOpenFile?.(path)
+      onOpenFile?.(path)
     },
-    [isWorkspaceDiff, onOpenFile, onSelectPath],
+    [onOpenFile],
   )
 
   const patchDiffOptions = useMemo(

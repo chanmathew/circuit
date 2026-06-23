@@ -9,7 +9,7 @@ export const DIFF_HEADER_LINK_CLASS =
   'shrink-0 text-[10px] text-primary hover:underline disabled:pointer-events-none disabled:opacity-50'
 
 export const DIFF_HEADER_ICON_BUTTON_CLASS =
-  'inline-flex size-6 shrink-0 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent/40 hover:text-destructive disabled:pointer-events-none disabled:opacity-40'
+  'inline-flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm text-muted-foreground hover:bg-accent/40 hover:text-destructive disabled:pointer-events-none disabled:opacity-40'
 
 /** Fixed-width rail so discard + checkbox align across the summary bar and file headers. */
 export const DIFF_HEADER_ACTIONS_RAIL_CLASS =

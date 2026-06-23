@@ -61,6 +61,16 @@ export function findDiffForPath(diffs: DiffEntry[], path: string): DiffEntry | u
   return [...diffs].reverse().find((entry) => entry.paths.includes(path))
 }
 
+/** Whether the center panel is showing user-opened content (file, diff, artifact, etc.). */
+export function isContentPanelOpen(contentView: ContentView): boolean {
+  return (
+    contentView.type === 'artifact' ||
+    contentView.type === 'diff' ||
+    contentView.type === 'check' ||
+    contentView.type === 'file'
+  )
+}
+
 export interface CheckEntry {
   id: string
   command: string

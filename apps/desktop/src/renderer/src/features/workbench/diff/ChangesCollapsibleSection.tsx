@@ -3,8 +3,8 @@ import { cn } from '@circuit/ui'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowDown01Icon } from '@hugeicons/core-free-icons'
 
-const SECTION_LINK_CLASS =
-  'shrink-0 pr-1 text-[10px] text-primary hover:underline disabled:pointer-events-none disabled:opacity-50'
+export const CHANGES_SECTION_LINK_CLASS =
+  'shrink-0 cursor-pointer pr-1 text-[10px] text-primary hover:underline disabled:pointer-events-none disabled:opacity-50'
 
 const HEADER_ROW_CLASS =
   'top-0 -mx-3 mb-2.5 bg-card/95 px-3 py-1.5 pt-2 backdrop-blur-sm supports-[backdrop-filter]:bg-card/80'
@@ -62,7 +62,7 @@ export function ChangesCollapsibleSection({
           {action ? (
             <button
               type="button"
-              className={SECTION_LINK_CLASS}
+              className={CHANGES_SECTION_LINK_CLASS}
               disabled={action.disabled}
               onClick={action.onClick}
             >

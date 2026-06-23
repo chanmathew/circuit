@@ -31,7 +31,6 @@ export interface ContentViewPanelProps {
   preview: boolean
   isRunning?: boolean
   onPreviewChange: (preview: boolean) => void
-  onSelectDiffPath?: (diffId: string, path: string) => void
   onSelectFile?: (path: string) => void
 }
 
@@ -48,7 +47,6 @@ export function ContentViewPanel({
   preview,
   isRunning = false,
   onPreviewChange,
-  onSelectDiffPath,
   onSelectFile,
 }: ContentViewPanelProps): React.ReactElement {
   return (
@@ -66,7 +64,6 @@ export function ContentViewPanel({
         preview={preview}
         isRunning={isRunning}
         onPreviewChange={onPreviewChange}
-        onSelectDiffPath={onSelectDiffPath}
         onSelectFile={onSelectFile}
       />
     </div>
@@ -86,7 +83,6 @@ function ContentViewBody({
   preview,
   isRunning = false,
   onPreviewChange,
-  onSelectDiffPath,
   onSelectFile,
 }: ContentViewPanelProps): React.ReactElement {
   switch (contentView.type) {
@@ -112,9 +108,6 @@ function ContentViewBody({
           selectedPath={isWorkspaceDiff ? undefined : contentView.path}
           focusPath={isWorkspaceDiff ? contentView.path : undefined}
           orderedPaths={isWorkspaceDiff ? orderedPaths : undefined}
-          onSelectPath={
-            onSelectDiffPath && diff ? (path) => onSelectDiffPath(diff.id, path) : undefined
-          }
           onOpenFile={onSelectFile}
         />
       )
