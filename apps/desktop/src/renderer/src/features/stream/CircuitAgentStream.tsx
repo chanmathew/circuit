@@ -1,4 +1,3 @@
-import { Shimmer } from '@circuit/ui'
 import { useCallback, useMemo, useState } from 'react'
 
 import type { WorkflowType } from '@circuit/workflow'
@@ -383,17 +382,12 @@ export function CircuitAgentStream({
   return (
     <aside className="flex h-full min-h-0 flex-col bg-card/30">
       <div className="mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col">
-        {agentRunning && !hasVisibleLiveStream && (
-          <div className="px-3 py-1 text-xs">
-            <Shimmer duration={1.5}>Agent is thinking…</Shimmer>
-          </div>
-        )}
-
         <StreamList
           items={chatItems}
           workspacePath={workspacePath}
           decisionResolutions={decisionResolutions}
           emptyDescription={needsIntake ? intakePlaceholder : undefined}
+          showThinking={agentRunning && !hasVisibleLiveStream}
           onStreamAction={handleStreamAction}
           onOpenReference={handleOpenReference}
           onOpenChangedFile={onOpenChangedFile}
