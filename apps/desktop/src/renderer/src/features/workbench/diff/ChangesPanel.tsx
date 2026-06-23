@@ -93,10 +93,7 @@ export function ChangesPanel({
             </span>
             <button
               type="button"
-              className={cn(
-                CHANGES_SECTION_LINK_CLASS,
-                aggregateSelected && 'underline',
-              )}
+              className={cn(CHANGES_SECTION_LINK_CLASS, aggregateSelected && 'underline')}
               onClick={onOpenAllChanges}
             >
               All changes

@@ -1,4 +1,4 @@
-import type { FileTree } from '@pierre/trees/react'
+import type { FileTree, FileTreeDirectoryHandle } from '@pierre/trees'
 
 function normalizeFilePath(path: string): string {
   return path.replace(/\/$/, '')
@@ -38,10 +38,10 @@ function expandDirectoryAncestors(model: FileTree, filePath: string): void {
 
     for (const directoryPath of [prefix, `${prefix}/`]) {
       const item = model.getItem(directoryPath)
-      if (item?.isDirectory()) {
-        if (!item.isExpanded()) item.expand()
-        break
-      }
+      if (item == null || !item.isDirectory()) continue
+      const directory = item as FileTreeDirectoryHandle
+      if (!directory.isExpanded()) directory.expand()
+      break
     }
   }
 }
