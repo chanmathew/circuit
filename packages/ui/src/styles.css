@@ -1,7 +1,7 @@
 @import 'tailwindcss';
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+@import '@fontsource-variable/geist';
 
 /* Scan UI package so variant classes (e.g. text-primary-foreground) are emitted in app builds */
 @source "./**/*.{tsx,ts}";
@@ -174,15 +174,36 @@
   scrollbar-color: color-mix(in oklch, var(--foreground) 22%, transparent) transparent;
 }
 
+/* Right inspector + center content — themed scrollbars on nested scroll containers. */
+#workbench-inspector,
+#workbench-inspector *,
+#workbench-content,
+#workbench-content * {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--foreground) 22%, transparent) transparent;
+}
+
+#workbench-inspector ::-webkit-scrollbar,
+#workbench-inspector *::-webkit-scrollbar,
+#workbench-content ::-webkit-scrollbar,
+#workbench-content *::-webkit-scrollbar,
 .panel-scroll::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
+#workbench-inspector ::-webkit-scrollbar-track,
+#workbench-inspector *::-webkit-scrollbar-track,
+#workbench-content ::-webkit-scrollbar-track,
+#workbench-content *::-webkit-scrollbar-track,
 .panel-scroll::-webkit-scrollbar-track {
   background: transparent;
 }
 
+#workbench-inspector ::-webkit-scrollbar-thumb,
+#workbench-inspector *::-webkit-scrollbar-thumb,
+#workbench-content ::-webkit-scrollbar-thumb,
+#workbench-content *::-webkit-scrollbar-thumb,
 .panel-scroll::-webkit-scrollbar-thumb {
   background-color: color-mix(in oklch, var(--foreground) 22%, transparent);
   border: 2px solid transparent;
@@ -190,34 +211,11 @@
   background-clip: content-box;
 }
 
+#workbench-inspector ::-webkit-scrollbar-thumb:hover,
+#workbench-inspector *::-webkit-scrollbar-thumb:hover,
+#workbench-content ::-webkit-scrollbar-thumb:hover,
+#workbench-content *::-webkit-scrollbar-thumb:hover,
 .panel-scroll::-webkit-scrollbar-thumb:hover {
-  background-color: color-mix(in oklch, var(--foreground) 32%, transparent);
-}
-
-/* Right inspector — themed scrollbars on all nested scroll containers (incl. Pierre file tree). */
-#workbench-inspector,
-#workbench-inspector * {
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in oklch, var(--foreground) 22%, transparent) transparent;
-}
-
-#workbench-inspector ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-#workbench-inspector ::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-#workbench-inspector ::-webkit-scrollbar-thumb {
-  background-color: color-mix(in oklch, var(--foreground) 22%, transparent);
-  border: 2px solid transparent;
-  border-radius: 9999px;
-  background-clip: content-box;
-}
-
-#workbench-inspector ::-webkit-scrollbar-thumb:hover {
   background-color: color-mix(in oklch, var(--foreground) 32%, transparent);
 }
 

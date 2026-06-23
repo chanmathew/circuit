@@ -1,8 +1,4 @@
-import {
-  harnessTranscriptToEvents,
-  parseTranscript,
-  type CircuitEvent,
-} from '@circuit/protocol'
+import { harnessTranscriptToEvents, parseTranscript, type CircuitEvent } from '@circuit/protocol'
 
 export function buildFeedEvents(
   taskId: string,

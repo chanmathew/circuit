@@ -42,11 +42,7 @@ export function listDecisionResolutionsForTask(
   db: CircuitDb,
   taskId: string,
 ): DecisionResolutionRow[] {
-  return db
-    .select()
-    .from(decisionResolutions)
-    .where(eq(decisionResolutions.taskId, taskId))
-    .all()
+  return db.select().from(decisionResolutions).where(eq(decisionResolutions.taskId, taskId)).all()
 }
 
 export function listDecisionResolutionsForPhase(
@@ -55,10 +51,7 @@ export function listDecisionResolutionsForPhase(
   phase: string,
   workflowRunId?: string,
 ): DecisionResolutionRow[] {
-  const conditions = [
-    eq(decisionResolutions.taskId, taskId),
-    eq(decisionResolutions.phase, phase),
-  ]
+  const conditions = [eq(decisionResolutions.taskId, taskId), eq(decisionResolutions.phase, phase)]
   if (workflowRunId) {
     conditions.push(eq(decisionResolutions.workflowRunId, workflowRunId))
   }

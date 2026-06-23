@@ -21,10 +21,8 @@ export function SubagentRunItemView({
   const hasRunning = item.status === 'running'
   const defaultOpen = isLive || hasRunning || item.collapsed !== true
   const title = `${item.subagentType} · ${item.description}`
-  const titleContent =
-    isLive && hasRunning ? <Shimmer duration={1.5}>{title}</Shimmer> : title
-  const traceItems =
-    isLive && item.trace ? item.trace.items.slice(-8) : (item.trace?.items ?? [])
+  const titleContent = isLive && hasRunning ? <Shimmer duration={1.5}>{title}</Shimmer> : title
+  const traceItems = isLive && item.trace ? item.trace.items.slice(-8) : (item.trace?.items ?? [])
 
   return (
     <Task defaultOpen={defaultOpen} variant="card" className="py-0">

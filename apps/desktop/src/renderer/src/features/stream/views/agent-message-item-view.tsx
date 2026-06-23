@@ -1,11 +1,5 @@
 import type { AgentMessageItem } from '@circuit/protocol'
-import {
-  cn,
-  Message,
-  MessageActions,
-  MessageContent,
-  MessageResponse,
-} from '@circuit/ui'
+import { cn, Message, MessageActions, MessageContent, MessageResponse } from '@circuit/ui'
 
 import { CopyMessageAction } from './copy-message-action.js'
 import { messageActionsClassName, mutedAssistantMessageClassName } from './shared-styles.js'

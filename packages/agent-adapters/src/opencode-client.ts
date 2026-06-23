@@ -43,7 +43,9 @@ type OpenCodeQuestionAskedEvent = {
   }
 }
 
-function parseQuestionAskedProperties(event: Event): OpenCodeQuestionAskedEvent['properties'] | null {
+function parseQuestionAskedProperties(
+  event: Event,
+): OpenCodeQuestionAskedEvent['properties'] | null {
   const typed = event as unknown as OpenCodeQuestionAskedEvent
   if (typed.type !== 'question.asked' && typed.type !== 'question.v2.asked') {
     return null
@@ -140,9 +142,7 @@ export function createOpenCodeClient(options: OpenCodeClientOptions = {}): Openc
   })
 }
 
-export function extractTextFromParts(
-  parts: Array<{ type: string; text?: string }>,
-): string {
+export function extractTextFromParts(parts: Array<{ type: string; text?: string }>): string {
   return parts
     .filter((part) => part.type === 'text' && typeof part.text === 'string')
     .map((part) => part.text!)
@@ -186,9 +186,7 @@ export function extractArtifactContentFromMessages(
   return prose.match(/^#\s+\S/) ? prose : `# ${phase}\n\n${prose}`
 }
 
-export function formatSessionTranscript(
-  messages: OpenCodeSessionMessage[],
-): string {
+export function formatSessionTranscript(messages: OpenCodeSessionMessage[]): string {
   return messages
     .map((entry) => {
       const role = entry.info.role === 'user' ? 'User' : 'Assistant'

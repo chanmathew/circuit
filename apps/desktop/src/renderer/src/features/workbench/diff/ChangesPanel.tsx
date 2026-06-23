@@ -128,7 +128,10 @@ export function ChangesPanel({
                   <span className="w-full truncate text-xs font-medium" title={diff.title}>
                     {diff.title}
                   </span>
-                  <span className="w-full truncate text-[10px] text-muted-foreground" title={diff.summary}>
+                  <span
+                    className="w-full truncate text-[10px] text-muted-foreground"
+                    title={diff.summary}
+                  >
                     {diff.summary}
                   </span>
                 </Button>

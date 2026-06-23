@@ -10,7 +10,12 @@ import { CheckContentPanel } from '../content/CheckContentPanel.js'
 import { DiffContentPanel } from '../diff/DiffContentPanel.js'
 import { FileContentPanel } from '../content/FileContentPanel.js'
 import type { CheckEntry, DiffEntry } from '../navigation/workbench-content.js'
-import { resolveArtifactRef, resolvePhaseArtifact, resolveDiffEntry, WORKSPACE_DIFF_ID } from '../navigation/workbench-content.js'
+import {
+  resolveArtifactRef,
+  resolvePhaseArtifact,
+  resolveDiffEntry,
+  WORKSPACE_DIFF_ID,
+} from '../navigation/workbench-content.js'
 import { WorkflowOverviewPanel } from '../workflow/WorkflowOverviewPanel.js'
 
 export interface ContentViewPanelProps {
@@ -98,12 +103,7 @@ function ContentViewBody({
         />
       )
     case 'diff': {
-      const diff = resolveDiffEntry(
-        contentView.diffId,
-        diffs,
-        contentView.path,
-        allChangedPaths,
-      )
+      const diff = resolveDiffEntry(contentView.diffId, diffs, contentView.path, allChangedPaths)
       const isWorkspaceDiff = contentView.diffId === WORKSPACE_DIFF_ID
       return (
         <DiffContentPanel
@@ -113,9 +113,7 @@ function ContentViewBody({
           focusPath={isWorkspaceDiff ? contentView.path : undefined}
           orderedPaths={isWorkspaceDiff ? orderedPaths : undefined}
           onSelectPath={
-            onSelectDiffPath && diff
-              ? (path) => onSelectDiffPath(diff.id, path)
-              : undefined
+            onSelectDiffPath && diff ? (path) => onSelectDiffPath(diff.id, path) : undefined
           }
           onOpenFile={onSelectFile}
         />
@@ -129,12 +127,13 @@ function ContentViewBody({
       return (
         <div className="flex flex-1 flex-col items-center justify-center p-8 text-center text-sm text-muted-foreground">
           <p className="font-medium">Implementation board</p>
-          <p className="mt-1">Slice {contentView.sliceId} — board view arrives in a later milestone.</p>
+          <p className="mt-1">
+            Slice {contentView.sliceId} — board view arrives in a later milestone.
+          </p>
         </div>
       )
     case 'final_review': {
-      const reviewArtifact =
-        resolvePhaseArtifact(task, 'review') ?? task.artifacts.at(-1)
+      const reviewArtifact = resolvePhaseArtifact(task, 'review') ?? task.artifacts.at(-1)
       return (
         <div className="flex min-h-0 flex-1 flex-col">
           <div className="shrink-0 border-b border-border px-4 py-3">

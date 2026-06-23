@@ -15,10 +15,7 @@ function summarizeChanges(changes: GitStatusDto['changes']): GitStatusDto['summa
   }
 }
 
-export function applyStageOptimistic(
-  status: GitStatusDto,
-  paths: readonly string[],
-): GitStatusDto {
+export function applyStageOptimistic(status: GitStatusDto, paths: readonly string[]): GitStatusDto {
   const pathSet = new Set(paths)
 
   return {
@@ -72,10 +69,7 @@ export function applyDiscardOptimistic(
   }
 }
 
-export function applyDiscardOptimisticToGitPatch(
-  patch: string,
-  paths: readonly string[],
-): string {
+export function applyDiscardOptimisticToGitPatch(patch: string, paths: readonly string[]): string {
   const pathSet = new Set(paths)
   const remaining = splitGitPatchByFile(patch).filter((filePatch) => {
     const path = pathFromGitPatch(filePatch)

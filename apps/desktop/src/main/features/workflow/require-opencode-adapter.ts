@@ -5,10 +5,7 @@ import { getActiveAgentAdapterName, workflowAdapter } from './adapter.js'
 
 type OpenCodeHarnessAdapter = AgentAdapter &
   Required<
-    Pick<
-      AgentAdapter,
-      'replyPermission' | 'replyQuestion' | 'rejectQuestion' | 'abortSession'
-    >
+    Pick<AgentAdapter, 'replyPermission' | 'replyQuestion' | 'rejectQuestion' | 'abortSession'>
   >
 
 export function requireOpenCodeAdapter(): OpenCodeHarnessAdapter {

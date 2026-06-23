@@ -10,7 +10,7 @@ import {
 import { useMemo, useState } from 'react'
 
 import {
-    Button,
+  Button,
   cn,
   Sidebar,
   SidebarContent,
@@ -85,8 +85,8 @@ export function ProjectSidebar({
 
   const listError =
     reposQuery.isError || tasksQuery.isError
-      ? [reposQuery.error, tasksQuery.error].find((e) => e instanceof Error)?.message ??
-        'Failed to load projects'
+      ? ([reposQuery.error, tasksQuery.error].find((e) => e instanceof Error)?.message ??
+        'Failed to load projects')
       : null
 
   const tasksByRepo = useMemo(() => {
@@ -179,9 +179,7 @@ export function ProjectSidebar({
                   onOpenChange={(nextOpen) =>
                     setExpanded((prev) => ({ ...prev, [repo.id]: nextOpen }))
                   }
-                  onShowAll={() =>
-                    setShowAllTasks((prev) => ({ ...prev, [repo.id]: true }))
-                  }
+                  onShowAll={() => setShowAllTasks((prev) => ({ ...prev, [repo.id]: true }))}
                   onNewTask={() => onNewTask(repo.id)}
                 />
               ))}
@@ -236,8 +234,7 @@ function RepoSection({
   const navigate = useNavigate()
   const visibleTasks = showAll ? tasks : tasks.slice(0, TASKS_PREVIEW_LIMIT)
   const hiddenCount = tasks.length - visibleTasks.length
-  const hasSelectedTask =
-    selectedTaskId != null && tasks.some((task) => task.id === selectedTaskId)
+  const hasSelectedTask = selectedTaskId != null && tasks.some((task) => task.id === selectedTaskId)
   const isProjectHighlighted = composing || hasSelectedTask
 
   return (
@@ -271,89 +268,89 @@ function RepoSection({
       </SidebarMenuAction>
       {open ? (
         <SidebarMenuSub className={TASK_LIST_CLASS}>
-            {composing && (
-              <SidebarMenuSubItem className="w-full">
-                <SidebarMenuSubButton size="sm" isActive className={TASK_ROW_CLASS}>
-                  New task…
-                </SidebarMenuSubButton>
-              </SidebarMenuSubItem>
-            )}
-            {visibleTasks.map((task) => {
-              const subtitle = formatWorkflowSubtitle({
-                workflowStatus: task.workflowStatus,
-                workflowType: task.workflowType,
-                currentPhase: task.currentPhase,
-                phases: [],
-              })
-              const isSelected = task.id === selectedTaskId
+          {composing && (
+            <SidebarMenuSubItem className="w-full">
+              <SidebarMenuSubButton size="sm" isActive className={TASK_ROW_CLASS}>
+                New task…
+              </SidebarMenuSubButton>
+            </SidebarMenuSubItem>
+          )}
+          {visibleTasks.map((task) => {
+            const subtitle = formatWorkflowSubtitle({
+              workflowStatus: task.workflowStatus,
+              workflowType: task.workflowType,
+              currentPhase: task.currentPhase,
+              phases: [],
+            })
+            const isSelected = task.id === selectedTaskId
 
-              return (
-                <SidebarMenuSubItem key={task.id} className="w-full">
-                  <SidebarMenuSubButton
-                    asChild
-                    size="sm"
-                    isActive={isSelected}
-                    className={cn(
-                      TASK_ROW_CLASS,
-                      !isSelected && 'text-muted-foreground hover:text-foreground/80',
-                    )}
+            return (
+              <SidebarMenuSubItem key={task.id} className="w-full">
+                <SidebarMenuSubButton
+                  asChild
+                  size="sm"
+                  isActive={isSelected}
+                  className={cn(
+                    TASK_ROW_CLASS,
+                    !isSelected && 'text-muted-foreground hover:text-foreground/80',
+                  )}
+                >
+                  <button
+                    type="button"
+                    title={subtitle ? `${task.title}\n${subtitle}` : task.title}
+                    onClick={() =>
+                      void navigate({ to: '/tasks/$taskId', params: { taskId: task.id } })
+                    }
                   >
-                    <button
-                      type="button"
-                      title={subtitle ? `${task.title}\n${subtitle}` : task.title}
-                      onClick={() =>
-                        void navigate({ to: '/tasks/$taskId', params: { taskId: task.id } })
-                      }
-                    >
-                      <span className="min-w-0 flex-1 truncate text-left">{task.title}</span>
-                      {isTaskRunning(task) ? (
-                        <HugeiconsIcon
-                          icon={Loading03Icon}
-                          strokeWidth={2}
-                          className={cn(
-                            'size-3 shrink-0 animate-spin',
-                            isSelected ? 'text-primary' : 'text-muted-foreground/70',
-                          )}
-                          aria-hidden
-                        />
-                      ) : (
-                        <span
-                          className={cn(
-                            'shrink-0 text-xs tabular-nums',
-                            isSelected ? 'text-muted-foreground' : 'text-muted-foreground/70',
-                          )}
-                        >
-                          {formatRelativeAge(task.updatedAt)}
-                        </span>
-                      )}
-                    </button>
-                  </SidebarMenuSubButton>
-                </SidebarMenuSubItem>
-              )
-            })}
-            {!showAll && hiddenCount > 0 && (
-              <SidebarMenuSubItem className="w-full">
-                <SidebarMenuSubButton
-                  size="sm"
-                  className={cn(TASK_ROW_CLASS, 'text-muted-foreground')}
-                  onClick={onShowAll}
-                >
-                  Show more
+                    <span className="min-w-0 flex-1 truncate text-left">{task.title}</span>
+                    {isTaskRunning(task) ? (
+                      <HugeiconsIcon
+                        icon={Loading03Icon}
+                        strokeWidth={2}
+                        className={cn(
+                          'size-3 shrink-0 animate-spin',
+                          isSelected ? 'text-primary' : 'text-muted-foreground/70',
+                        )}
+                        aria-hidden
+                      />
+                    ) : (
+                      <span
+                        className={cn(
+                          'shrink-0 text-xs tabular-nums',
+                          isSelected ? 'text-muted-foreground' : 'text-muted-foreground/70',
+                        )}
+                      >
+                        {formatRelativeAge(task.updatedAt)}
+                      </span>
+                    )}
+                  </button>
                 </SidebarMenuSubButton>
               </SidebarMenuSubItem>
-            )}
-            {tasks.length === 0 && !composing && (
-              <SidebarMenuSubItem className="w-full">
-                <SidebarMenuSubButton
-                  size="sm"
-                  className={cn(TASK_ROW_CLASS, 'text-muted-foreground')}
-                  onClick={onNewTask}
-                >
-                  + New task
-                </SidebarMenuSubButton>
-              </SidebarMenuSubItem>
-            )}
-          </SidebarMenuSub>
+            )
+          })}
+          {!showAll && hiddenCount > 0 && (
+            <SidebarMenuSubItem className="w-full">
+              <SidebarMenuSubButton
+                size="sm"
+                className={cn(TASK_ROW_CLASS, 'text-muted-foreground')}
+                onClick={onShowAll}
+              >
+                Show more
+              </SidebarMenuSubButton>
+            </SidebarMenuSubItem>
+          )}
+          {tasks.length === 0 && !composing && (
+            <SidebarMenuSubItem className="w-full">
+              <SidebarMenuSubButton
+                size="sm"
+                className={cn(TASK_ROW_CLASS, 'text-muted-foreground')}
+                onClick={onNewTask}
+              >
+                + New task
+              </SidebarMenuSubButton>
+            </SidebarMenuSubItem>
+          )}
+        </SidebarMenuSub>
       ) : null}
     </SidebarMenuItem>
   )

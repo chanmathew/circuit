@@ -6,7 +6,12 @@ import type {
 } from './blocks.js'
 import type { DecisionRequiredPayload, RevisionInferencePayload } from './decisions.js'
 import type { CircuitEvent } from './events.js'
-import type { WorkflowRevisionRequestedPayload, WorkflowSteeringPayload, WorkflowEnabledPayload, PhaseLifecyclePayload } from './workflow-events.js'
+import type {
+  WorkflowRevisionRequestedPayload,
+  WorkflowSteeringPayload,
+  WorkflowEnabledPayload,
+  PhaseLifecyclePayload,
+} from './workflow-events.js'
 import type {
   ActionCardItem,
   ActivityGroupItem,
@@ -112,9 +117,8 @@ function phaseRunIdsWithTurnActivities(events: CircuitEvent[]): Set<string> {
 }
 
 function phaseRunStartTimestamp(events: CircuitEvent[], phaseRunId: string): string | undefined {
-  return events.find(
-    (entry) => entry.phaseRunId === phaseRunId && entry.type === 'phase:started',
-  )?.timestamp
+  return events.find((entry) => entry.phaseRunId === phaseRunId && entry.type === 'phase:started')
+    ?.timestamp
 }
 
 function appendActivitiesToStream(
@@ -355,18 +359,14 @@ function humanizeSubagentType(value: string): string {
   return labels[value] ?? value.charAt(0).toUpperCase() + value.slice(1)
 }
 
-function childActivitiesFromMetadata(
-  metadata?: Record<string, unknown>,
-): StreamActivityEvent[] {
+function childActivitiesFromMetadata(metadata?: Record<string, unknown>): StreamActivityEvent[] {
   if (!Array.isArray(metadata?.childActivities)) return []
   return metadata.childActivities as StreamActivityEvent[]
 }
 
 function subagentRunToItem(activity: StreamActivityEvent, index: number): SubagentRunItem {
   const subagentType =
-    typeof activity.metadata?.subagentType === 'string'
-      ? activity.metadata.subagentType
-      : 'agent'
+    typeof activity.metadata?.subagentType === 'string' ? activity.metadata.subagentType : 'agent'
   const description =
     typeof activity.metadata?.description === 'string'
       ? activity.metadata.description
@@ -384,9 +384,7 @@ function subagentRunToItem(activity: StreamActivityEvent, index: number): Subage
   const trace = buildActivityGroup(
     childActivities.filter(
       (entry) =>
-        entry.type !== 'message' &&
-        entry.type !== 'subagent_run' &&
-        entry.type !== 'reasoning',
+        entry.type !== 'message' && entry.type !== 'subagent_run' && entry.type !== 'reasoning',
     ),
     `subagent-trace-${callId ?? index}`,
     { live: status === 'running', title: humanizeSubagentType(subagentType) },
@@ -491,8 +489,7 @@ function activityToGroupItem(
   return {
     label: labelFromActivity(activity),
     status: activityStatusFromActivity(activity),
-    detail:
-      typeof activity.metadata?.detail === 'string' ? activity.metadata.detail : undefined,
+    detail: typeof activity.metadata?.detail === 'string' ? activity.metadata.detail : undefined,
     additions: readNumber(activity.metadata?.additions),
     deletions: readNumber(activity.metadata?.deletions),
     ...(fileTarget.filePath ? { filePath: fileTarget.filePath } : {}),
@@ -638,8 +635,7 @@ function phaseCompletedToActionCard(
   const phaseLabel = formatPhaseLabel(payload.phase)
   const artifactTitle =
     options.artifactTitlesByPhase?.[payload.phase] ?? `${phaseLabel.toLowerCase()} artifact`
-  const nextStepLabel =
-    options.nextStepLabelsByPhase?.[payload.phase] ?? `Run ${phaseLabel}`
+  const nextStepLabel = options.nextStepLabelsByPhase?.[payload.phase] ?? `Run ${phaseLabel}`
 
   return {
     kind: 'action_card',
@@ -693,10 +689,7 @@ type HarnessQuestionPendingPayload = {
   questions?: OpenCodeQuestionInfo[]
 }
 
-function harnessPermissionPendingToActionCard(
-  event: CircuitEvent,
-  id: string,
-): ActionCardItem {
+function harnessPermissionPendingToActionCard(event: CircuitEvent, id: string): ActionCardItem {
   const payload = event.payload as HarnessPermissionPendingPayload
   const permissionId = payload.permissionId
   const sessionId = payload.sessionId
@@ -732,10 +725,7 @@ function harnessPermissionPendingToActionCard(
   }
 }
 
-function harnessQuestionPendingToActionCards(
-  event: CircuitEvent,
-  id: string,
-): ActionCardItem[] {
+function harnessQuestionPendingToActionCards(event: CircuitEvent, id: string): ActionCardItem[] {
   const payload = event.payload as HarnessQuestionPendingPayload
   const requestId = payload.requestId
   const sessionId = payload.sessionId
@@ -765,13 +755,12 @@ function harnessQuestionPendingToActionCards(
 
   return questions.map((question, questionIndex) => ({
     kind: 'action_card' as const,
-    id:
-      questions.length > 1
-        ? `${payload.cardId ?? id}-${questionIndex}`
-        : (payload.cardId ?? id),
+    id: questions.length > 1 ? `${payload.cardId ?? id}-${questionIndex}` : (payload.cardId ?? id),
     title:
       question.header ||
-      (questions.length > 1 ? `Question ${questionIndex + 1} of ${questions.length}` : 'Agent question'),
+      (questions.length > 1
+        ? `Question ${questionIndex + 1} of ${questions.length}`
+        : 'Agent question'),
     summary: question.question,
     severity: 'info' as const,
     options: question.options.map((option) => ({
@@ -1016,7 +1005,6 @@ function groupActivityEvents(
   return buildActivityGroup(toolActivities, groupId, { title })
 }
 
-
 /** Merge protocol events, user chat, and live activity into renderer stream items. */
 export function eventsToStreamItems(input: NormalizeStreamInput): StreamItem[] {
   const { events, userMessages = [], activityEvents = [], options = {} } = input
@@ -1221,8 +1209,7 @@ export function mergeLiveActivities(
   const messageTail =
     messageActivities.length > 0
       ? eventsToStreamItems({ events: [], activityEvents: messageActivities, options }).map(
-          (item) =>
-            item.kind === 'agent_message' ? { ...item, isStreaming: true } : item,
+          (item) => (item.kind === 'agent_message' ? { ...item, isStreaming: true } : item),
         )
       : []
 
@@ -1293,7 +1280,10 @@ function buildLiveActivityGroup(toolActivities: StreamActivityEvent[]): Activity
     const entry = activityToGroupItem(activity, index)
     const isLast = index === toolActivities.length - 1
     const running = activity.metadata?.status === 'running' || isLast
-    return { ...entry, status: running ? ('running' as ActivityStatus) : ('success' as ActivityStatus) }
+    return {
+      ...entry,
+      status: running ? ('running' as ActivityStatus) : ('success' as ActivityStatus),
+    }
   })
 
   const group = buildActivityGroup(toolActivities, 'live-activity', { live: true })
@@ -1307,7 +1297,9 @@ function permissionRequestToActionCard(
   index: number,
 ): ActionCardItem {
   const permissionId =
-    typeof activity.metadata?.permissionId === 'string' ? activity.metadata.permissionId : `perm-${index}`
+    typeof activity.metadata?.permissionId === 'string'
+      ? activity.metadata.permissionId
+      : `perm-${index}`
   const sessionId =
     typeof activity.metadata?.sessionId === 'string' ? activity.metadata.sessionId : undefined
 

@@ -1,8 +1,6 @@
 /** Extract the post-image path from a single-file git patch header. */
 export function pathFromGitPatch(patch: string): string | undefined {
-  const header = patch
-    .split('\n')
-    .find((line) => line.startsWith('diff --git '))
+  const header = patch.split('\n').find((line) => line.startsWith('diff --git '))
   if (!header) return undefined
 
   const match = header.match(/^diff --git a\/(.+?) b\/(.+)$/)

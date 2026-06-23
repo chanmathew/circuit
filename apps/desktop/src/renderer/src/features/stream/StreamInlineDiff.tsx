@@ -25,9 +25,7 @@ export function StreamInlineDiff({
 
   if (diffQuery.isError) {
     return (
-      <p className="px-2 py-1.5 text-xs text-destructive">
-        Could not load diff for this file.
-      </p>
+      <p className="px-2 py-1.5 text-xs text-destructive">Could not load diff for this file.</p>
     )
   }
 

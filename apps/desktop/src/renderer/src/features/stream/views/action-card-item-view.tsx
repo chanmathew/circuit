@@ -179,9 +179,7 @@ export function ActionCardItemView({
               </Button>
             ))
         )}
-        {item.footer && (
-          <p className="pt-1 text-[10px] text-muted-foreground">{item.footer}</p>
-        )}
+        {item.footer && <p className="pt-1 text-[10px] text-muted-foreground">{item.footer}</p>}
         {resolution && (
           <p className="pt-1 text-[10px] text-muted-foreground">
             Selected: {resolution.optionLabel}

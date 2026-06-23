@@ -10,9 +10,7 @@ describe('diff-file-path', () => {
 
   it('prefers an exact known workspace path', () => {
     expect(
-      resolveDiffFilePath({ name: 'b/apps/desktop/src/main.ts' }, [
-        'apps/desktop/src/main.ts',
-      ]),
+      resolveDiffFilePath({ name: 'b/apps/desktop/src/main.ts' }, ['apps/desktop/src/main.ts']),
     ).toBe('apps/desktop/src/main.ts')
   })
 
@@ -23,11 +21,9 @@ describe('diff-file-path', () => {
   it('prefers the longest suffix match when known path order changes', () => {
     const knownPaths = ['tasks/task-2/design.md', 'tasks/task-1/design.md']
 
-    expect(resolveDiffFilePath({ name: 'design.md' }, knownPaths)).toBe(
+    expect(resolveDiffFilePath({ name: 'design.md' }, knownPaths)).toBe('tasks/task-1/design.md')
+    expect(resolveDiffFilePath({ name: 'design.md' }, [...knownPaths].reverse())).toBe(
       'tasks/task-1/design.md',
     )
-    expect(
-      resolveDiffFilePath({ name: 'design.md' }, [...knownPaths].reverse()),
-    ).toBe('tasks/task-1/design.md')
   })
 })

@@ -18,11 +18,7 @@ async function diffUntrackedFile(
   return git.raw(['diff', '--no-index', '--', nullDevicePath(), filePath])
 }
 
-async function appendUntrackedDiffs(
-  cwd: string,
-  patch: string,
-  paths?: string[],
-): Promise<string> {
+async function appendUntrackedDiffs(cwd: string, patch: string, paths?: string[]): Promise<string> {
   const status = await getStatus(cwd)
   const pathFilter = paths?.length ? new Set(paths) : null
   const untrackedPaths = status.changes

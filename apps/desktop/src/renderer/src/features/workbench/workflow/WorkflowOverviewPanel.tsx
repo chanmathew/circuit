@@ -15,7 +15,9 @@ export function WorkflowOverviewPanel({
   isRunning = false,
 }: WorkflowOverviewPanelProps): React.ReactElement {
   const startPhase = useStartPhase(task.id)
-  const definition = getWorkflowDefinition(task.workflowType as import('@circuit/workflow').WorkflowType)
+  const definition = getWorkflowDefinition(
+    task.workflowType as import('@circuit/workflow').WorkflowType,
+  )
   const plannedSteps = definition?.phases ?? []
   const firstPhase = task.currentPhase
   const firstPhaseLabel = getPhaseLabel(firstPhase)
@@ -67,11 +69,7 @@ export function WorkflowOverviewPanel({
 
       {awaitingFirstPhase && (
         <div>
-          <Button
-            type="button"
-            disabled={busy}
-            onClick={() => startPhase.mutate(firstPhase)}
-          >
+          <Button type="button" disabled={busy} onClick={() => startPhase.mutate(firstPhase)}>
             Start {firstPhaseLabel}
           </Button>
         </div>

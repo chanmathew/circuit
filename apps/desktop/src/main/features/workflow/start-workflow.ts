@@ -87,10 +87,7 @@ async function abortActiveHarnessRun(taskId: string): Promise<void> {
   }
 }
 
-function resolveWorkspaceStrategy(
-  current: string,
-  selected: WorkspaceStrategy,
-): WorkspaceStrategy {
+function resolveWorkspaceStrategy(current: string, selected: WorkspaceStrategy): WorkspaceStrategy {
   if (current === 'direct' || current === 'current') {
     return selected
   }
@@ -185,7 +182,10 @@ export function bootstrapWorkflowTicket(
     currentPhase: firstPhase,
     interactionMode: 'chat',
     pausedAt: null,
-    workspaceStrategy: resolveWorkspaceStrategy(task.workspaceStrategy, selection.workspaceStrategy),
+    workspaceStrategy: resolveWorkspaceStrategy(
+      task.workspaceStrategy,
+      selection.workspaceStrategy,
+    ),
     updatedAt: now,
   })
 
@@ -252,9 +252,7 @@ export async function enableWorkflow(
     await abortActiveHarnessRun(taskId)
     const released = await waitForPhaseRunLockRelease(taskId)
     if (!released) {
-      throw new ValidationError(
-        'A harness run is in progress. Stop it before enabling a workflow.',
-      )
+      throw new ValidationError('A harness run is in progress. Stop it before enabling a workflow.')
     }
   }
 

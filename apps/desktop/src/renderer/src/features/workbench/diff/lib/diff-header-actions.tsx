@@ -86,24 +86,19 @@ export function DiffFileHeaderActions({
   const canDiscard = change != null
   const stagedChecked = change?.staged === true && change?.unstaged !== true
   const stagedIndeterminate = change?.staged === true && change?.unstaged === true
-  const stageLabel = stagedChecked || stagedIndeterminate
-    ? `Unstage ${change?.path ?? 'file'}`
-    : `Stage ${change?.path ?? 'file'}`
+  const stageLabel =
+    stagedChecked || stagedIndeterminate
+      ? `Unstage ${change?.path ?? 'file'}`
+      : `Stage ${change?.path ?? 'file'}`
 
   return (
     <>
       {change ? (
-        <span
-          data-circuit-diff-counts=""
-          className="inline-flex shrink-0 items-center"
-        >
+        <span data-circuit-diff-counts="" className="inline-flex shrink-0 items-center">
           <DiffBadges additions={change.insertions} deletions={change.deletions} />
         </span>
       ) : null}
-      <span
-        data-circuit-diff-actions=""
-        className="ml-auto inline-flex shrink-0 items-center"
-      >
+      <span data-circuit-diff-actions="" className="ml-auto inline-flex shrink-0 items-center">
         <span className={DIFF_HEADER_ACTIONS_RAIL_CLASS}>
           {onDiscard ? (
             <DiffHeaderDiscardButton

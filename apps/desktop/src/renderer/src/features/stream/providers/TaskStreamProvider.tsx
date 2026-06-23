@@ -77,9 +77,7 @@ export function TaskStreamProvider({
       if (update.type === 'phase_run_failed') {
         setPhaseRunning(false)
         setHarnessSession(null)
-        setLastPhaseRunError(
-          update.error === 'Session aborted by user' ? null : update.error,
-        )
+        setLastPhaseRunError(update.error === 'Session aborted by user' ? null : update.error)
         void (async () => {
           await queryClient.cancelQueries({ queryKey: queryKeys.tasks.detail(taskId) })
           await queryClient.invalidateQueries({ queryKey: queryKeys.tasks.detail(taskId) })

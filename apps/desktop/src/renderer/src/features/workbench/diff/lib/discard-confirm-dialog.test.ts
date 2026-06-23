@@ -3,10 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { GitFileChangeDto } from '../../../../../../shared/api.js'
 import { buildDiscardConfirmCopy } from './discard-confirm-dialog.js'
 
-function change(
-  path: string,
-  status: GitFileChangeDto['status'] = 'modified',
-): GitFileChangeDto {
+function change(path: string, status: GitFileChangeDto['status'] = 'modified'): GitFileChangeDto {
   return {
     path,
     status,

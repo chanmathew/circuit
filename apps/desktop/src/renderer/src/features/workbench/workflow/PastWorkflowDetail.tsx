@@ -85,7 +85,10 @@ export function PastWorkflowDetail({
             <p className="text-sm font-medium leading-snug">{detail.title}</p>
             <p className="text-[10px] text-muted-foreground">{formatRunDate(detail)}</p>
           </div>
-          <Badge variant={detail.status === 'completed' ? 'outline' : 'secondary'} className="shrink-0 text-[9px] capitalize">
+          <Badge
+            variant={detail.status === 'completed' ? 'outline' : 'secondary'}
+            className="shrink-0 text-[9px] capitalize"
+          >
             {detail.status}
           </Badge>
         </div>
@@ -131,11 +134,7 @@ export function PastWorkflowDetail({
           <p className="mb-2 px-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
             Phases
           </p>
-          <PhaseTimeline
-            phases={phases}
-            readOnly
-            onSelectPhase={handleSelectPhase}
-          />
+          <PhaseTimeline phases={phases} readOnly onSelectPhase={handleSelectPhase} />
         </div>
       )}
     </div>

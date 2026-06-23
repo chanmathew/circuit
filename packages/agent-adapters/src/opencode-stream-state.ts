@@ -48,19 +48,12 @@ export function createOpenCodeStreamAccumulator(): OpenCodeStreamAccumulator {
   }
 }
 
-export function partStreamKey(part: {
-  id?: string
-  messageID?: string
-  type?: string
-}): string {
+export function partStreamKey(part: { id?: string; messageID?: string; type?: string }): string {
   if (typeof part.id === 'string' && part.id.length > 0) return part.id
   return `${part.messageID ?? 'unknown'}:${part.type ?? 'unknown'}`
 }
 
-function streamStatus(
-  stream: OpenCodeStreamAccumulator,
-  key: string,
-): 'running' | 'completed' {
+function streamStatus(stream: OpenCodeStreamAccumulator, key: string): 'running' | 'completed' {
   return stream.isComplete(key) ? 'completed' : 'running'
 }
 

@@ -22,8 +22,7 @@ export function resolveDecision(
   const activeRun = getActiveWorkflowRunForTask(db, taskId)
   const phaseRuns = listPhaseRunsForTask(db, taskId).filter(
     (run) =>
-      run.phase === 'chat' ||
-      (activeRun ? run.workflowRunId === activeRun.id : !run.workflowRunId),
+      run.phase === 'chat' || (activeRun ? run.workflowRunId === activeRun.id : !run.workflowRunId),
   )
   const found = findRequiredDecision(taskId, decisionId, phaseRuns)
 

@@ -1,10 +1,5 @@
 import { HugeiconsIcon } from '@hugeicons/react'
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@circuit/ui'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@circuit/ui'
 import { cn } from '@circuit/ui/utils'
 import type React from 'react'
 import type { ContentView, InspectorTab } from '@circuit/protocol'
@@ -17,10 +12,7 @@ import {
 } from '../navigation/inspector-tabs.js'
 import type { CheckEntry, DiffEntry } from '../navigation/workbench-content.js'
 import { resolvePhaseArtifact, WORKSPACE_DIFF_ID } from '../navigation/workbench-content.js'
-import {
-  INSPECTOR_HEADER_ROW_CLASS,
-  InspectorPanelToggle,
-} from '../InspectorPanelToggle.js'
+import { INSPECTOR_HEADER_ROW_CLASS, InspectorPanelToggle } from '../InspectorPanelToggle.js'
 import {
   CHROME_CONTROL_WRAPPER_CLASS,
   CHROME_DRAG_STYLE,
@@ -81,9 +73,7 @@ export function TaskRightSidebar({
   const selectedCheckId =
     activeTab === 'changes' && changesKind === 'check' ? selectedId : undefined
   const selectedWorkspacePath =
-    contentView.type === 'diff' &&
-    contentView.diffId === WORKSPACE_DIFF_ID &&
-    contentView.path
+    contentView.type === 'diff' && contentView.diffId === WORKSPACE_DIFF_ID && contentView.path
       ? contentView.path
       : undefined
   const selectedArtifactId =
@@ -126,9 +116,7 @@ export function TaskRightSidebar({
             ))}
           </TabsList>
           <div className={cn(CHROME_CONTROL_WRAPPER_CLASS, 'gap-0')} style={CHROME_NO_DRAG_STYLE}>
-            {onToggleInspector ? (
-              <InspectorPanelToggle open onToggle={onToggleInspector} />
-            ) : null}
+            {onToggleInspector ? <InspectorPanelToggle open onToggle={onToggleInspector} /> : null}
             {showWindowControls ? <WindowControls /> : null}
           </div>
         </div>

@@ -16,30 +16,30 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
-  main: {
-    envDir: repoRoot,
-    envPrefix: ['CIRCUIT_', 'MAIN_VITE_'],
-    plugins: [copyDbMigrationsPlugin()],
-    build: {
-      externalizeDeps: {
-        exclude: [
-          '@circuit/agent-adapters',
-          '@circuit/db',
-          '@circuit/git',
-          '@circuit/protocol',
-          '@circuit/shared',
-          '@circuit/workflow',
-        ],
-      },
-      rollupOptions: {
-        external: ['better-sqlite3'],
+    main: {
+      envDir: repoRoot,
+      envPrefix: ['CIRCUIT_', 'MAIN_VITE_'],
+      plugins: [copyDbMigrationsPlugin()],
+      build: {
+        externalizeDeps: {
+          exclude: [
+            '@circuit/agent-adapters',
+            '@circuit/db',
+            '@circuit/git',
+            '@circuit/protocol',
+            '@circuit/shared',
+            '@circuit/workflow',
+          ],
+        },
+        rollupOptions: {
+          external: ['better-sqlite3'],
+        },
       },
     },
-  },
-  preload: {},
-  renderer: {
-    root: resolve(__dirname, 'src/renderer'),
-    plugins: [react(), tailwindcss()],
-  },
+    preload: {},
+    renderer: {
+      root: resolve(__dirname, 'src/renderer'),
+      plugins: [react(), tailwindcss()],
+    },
   }
 })

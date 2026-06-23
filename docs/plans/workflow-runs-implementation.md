@@ -2,7 +2,8 @@
 
 **ADR:** [003-workflow-runs-and-history.md](../adr/003-workflow-runs-and-history.md)  
 **Status:** Implemented (MVP — Phases A–E)  
-**Goal:** Introduce `WorkflowRun` entity, Current/Past panel UX, terminal semantics, completion summary, and follow-up workflows — without changing ADR 002 chat-always shell.
+**Goal:** Introduce `WorkflowRun` entity, Current/Past panel UX, terminal semantics, completion
+summary, and follow-up workflows — without changing ADR 002 chat-always shell.
 
 ---
 
@@ -14,11 +15,13 @@
 4. Neither terminal state deletes chat, artifacts, logs, diffs, or stream history.
 5. **Discard draft** when ticket-only; **Cancel workflow** when phases/artifacts exist.
 6. **Follow-up workflow** creates a new run — never mutates a terminal run’s rows.
-7. Post-complete chat does not silently mutate completed runs; offer follow-up card on structured intent.
+7. Post-complete chat does not silently mutate completed runs; offer follow-up card on structured
+   intent.
 8. Task chat (`phase = chat`) remains **task-scoped**, not run-scoped.
 9. `tasks.workflow_status` kept in sync during migration (derived cache).
 
-**MVP deferrals:** reopen completed, resume cancelled, archive/hide runs, rich cancel dialog, worktree cleanup after build-phase cancel.
+**MVP deferrals:** reopen completed, resume cancelled, archive/hide runs, rich cancel dialog,
+worktree cleanup after build-phase cancel.
 
 ---
 
@@ -31,7 +34,9 @@
 ```ts
 export const workflowRuns = sqliteTable('workflow_runs', {
   id: text('id').primaryKey(),
-  taskId: text('task_id').notNull().references(() => tasks.id),
+  taskId: text('task_id')
+    .notNull()
+    .references(() => tasks.id),
   status: text('status').notNull(), // active | completed | cancelled
   workflowType: text('workflow_type').notNull(),
   title: text('title').notNull(),
@@ -44,20 +49,21 @@ export const workflowRuns = sqliteTable('workflow_runs', {
 })
 ```
 
-App-level invariant: only one `status = 'active'` per `taskId` (document in schema comment; enforce in `enableWorkflow` / follow-up).
+App-level invariant: only one `status = 'active'` per `taskId` (document in schema comment; enforce
+in `enableWorkflow` / follow-up).
 
 ### A.2 FK columns on child tables
 
 Add nullable then backfill `workflow_run_id` to:
 
-| Table | Notes |
-|-------|-------|
-| `phases` | Required after backfill for workflow phases |
-| `artifacts` | Required after backfill |
-| `phase_runs` | Required for workflow phase runs; null for `chat` runs |
-| `workflow_events` | Required for run-scoped events |
-| `decision_resolutions` | Optional in MVP; backfill with run |
-| `validation_runs` | Optional in MVP; backfill with run |
+| Table                  | Notes                                                  |
+| ---------------------- | ------------------------------------------------------ |
+| `phases`               | Required after backfill for workflow phases            |
+| `artifacts`            | Required after backfill                                |
+| `phase_runs`           | Required for workflow phase runs; null for `chat` runs |
+| `workflow_events`      | Required for run-scoped events                         |
+| `decision_resolutions` | Optional in MVP; backfill with run                     |
+| `validation_runs`      | Optional in MVP; backfill with run                     |
 
 ### A.3 Backfill script
 
@@ -115,16 +121,17 @@ pastWorkflowRuns?: WorkflowRunDto[]
 
 **File:** `apps/desktop/src/main/features/workflow/start-workflow.ts`
 
-| Function | New behavior |
-|----------|--------------|
+| Function                                     | New behavior                                                                                                   |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | `bootstrapWorkflowTicket` / `enableWorkflow` | Insert `workflow_runs` (`active`); attach new ticket artifact to run id; sync `tasks.workflow_status = active` |
-| Guard | Reject if active run exists (unless explicit cancel-and-start flow) |
+| Guard                                        | Reject if active run exists (unless explicit cancel-and-start flow)                                            |
 
 Remove any remaining “restart clears phases” logic — replaced by new run creation.
 
 ### B.2 Start phase — run-scoped
 
-**Files:** `ensureWorkflowState` in `tasks.ts`, `start-workflow.ts` `startPhase`, `background-phase-runner.ts`
+**Files:** `ensureWorkflowState` in `tasks.ts`, `start-workflow.ts` `startPhase`,
+`background-phase-runner.ts`
 
 - `ensureWorkflowState` creates phases for **active run id**, not task alone.
 - `schedulePhaseRun` passes `workflowRunId` into phase run insert.
@@ -162,7 +169,8 @@ Task remains browsable; no active run until follow-up/enable.
 
 ### B.6 Active-run conflict prompt
 
-**New IPC:** `startWorkflowWithConflictResolution({ taskId, action: 'continue' | 'cancel_and_start', ...input })`
+**New IPC:**
+`startWorkflowWithConflictResolution({ taskId, action: 'continue' | 'cancel_and_start', ...input })`
 
 Or split: client calls `cancelWorkflow` then `enableWorkflow` sequentially after confirmation.
 
@@ -171,13 +179,15 @@ Or split: client calls `cancelWorkflow` then `enableWorkflow` sequentially after
 **File:** `apps/desktop/src/main/services/tasks.ts` `getTaskDetail`
 
 - Load `activeWorkflowRun`, `pastWorkflowRuns`.
-- Filter `phases`, `artifacts` for active run in main task view; past run detail via separate query or `getWorkflowRunDetail(runId)`.
+- Filter `phases`, `artifacts` for active run in main task view; past run detail via separate query
+  or `getWorkflowRunDetail(runId)`.
 
 **New IPC (optional):** `getWorkflowRun({ taskId, runId })` for Past run drill-in.
 
 ### B.8 Workflow events
 
-**File:** `apps/desktop/src/main/services/workflow-events.ts`, `packages/protocol/src/workflow-events.ts`
+**File:** `apps/desktop/src/main/services/workflow-events.ts`,
+`packages/protocol/src/workflow-events.ts`
 
 - Include `workflowRunId` on event payloads.
 - New event types: `workflow:follow_up_started`, `workflow:discarded`.
@@ -217,13 +227,13 @@ no active, has past      → Past primary + Enable workflow
 
 ### C.3 Actions by state
 
-| State | Actions |
-|-------|---------|
+| State               | Actions                                  |
+| ------------------- | ---------------------------------------- |
 | Active, ticket-only | Discard draft, Start first phase, Cancel |
-| Active, in progress | Phase controls, Cancel workflow |
-| Completed (past) | View summary, Start follow-up workflow |
-| Cancelled (past) | View attempt, Start follow-up workflow |
-| No active | Enable workflow |
+| Active, in progress | Phase controls, Cancel workflow          |
+| Completed (past)    | View summary, Start follow-up workflow   |
+| Cancelled (past)    | View attempt, Start follow-up workflow   |
+| No active           | Enable workflow                          |
 
 Remove inline “Start new workflow” that reuses current task phases without new run.
 
@@ -295,12 +305,12 @@ Invoked from `approve-phase.ts` on final approve:
 
 **Files:** `StreamItemRenderer.tsx`, `StreamItemViews.tsx`, `ConversionSuggestionCard.tsx`
 
-| Event | Card |
-|-------|------|
-| `workflow:completed` | Workflow complete — [View summary] [Start follow-up] |
-| `workflow:cancelled` | _(suppressed — panel-only; browse Past workflows)_ |
+| Event                          | Card                                                     |
+| ------------------------------ | -------------------------------------------------------- |
+| `workflow:completed`           | Workflow complete — [View summary] [Start follow-up]     |
+| `workflow:cancelled`           | _(suppressed — panel-only; browse Past workflows)_       |
 | Chat intent after terminal run | Structured follow-up? — [Start follow-up] [Just discuss] |
-| `workflow:follow_up_started` | Follow-up workflow started — [Open overview] |
+| `workflow:follow_up_started`   | Follow-up workflow started — [Open overview]             |
 
 Post-complete chat classifier reuses ADR 002 “no mutation” rule — suggestion only.
 
@@ -313,15 +323,16 @@ Post-complete chat classifier reuses ADR 002 “no mutation” rule — suggesti
 
 ## Suggested PR sequence
 
-| PR | Scope | Risk |
-|----|--------|------|
-| **PR1** | ADR 003 + Phase A schema, backfill, types, DB accessors | Medium — migration |
+| PR      | Scope                                                                   | Risk                |
+| ------- | ----------------------------------------------------------------------- | ------------------- |
+| **PR1** | ADR 003 + Phase A schema, backfill, types, DB accessors                 | Medium — migration  |
 | **PR2** | Phase B backend lifecycle (enable/complete/cancel/discard, task detail) | Medium — core paths |
-| **PR3** | Phase C Workflow panel Current/Past + conflict dialog | Medium — UI |
-| **PR4** | Phase D completion summary generation | Low |
-| **PR5** | Phase E follow-up seeding + stream cards | Medium |
+| **PR3** | Phase C Workflow panel Current/Past + conflict dialog                   | Medium — UI         |
+| **PR4** | Phase D completion summary generation                                   | Low                 |
+| **PR5** | Phase E follow-up seeding + stream cards                                | Medium              |
 
-Each PR should leave the app runnable; PR1 may ship with feature flag or read-only Past list until PR2 completes.
+Each PR should leave the app runnable; PR1 may ship with feature flag or read-only Past list until
+PR2 completes.
 
 ---
 
@@ -383,13 +394,17 @@ Each PR should leave the app runnable; PR1 may ship with feature flag or read-on
 
 1. **Fresh task** → Enable workflow → creates active run; panel shows Current only.
 2. **Ticket-only** → Discard draft → `not_started`; no past entry (or no run row).
-3. **Start phase** → phases scoped to run id; complete all → run moves to Past; task shows no Current.
-4. **Completed run** → View summary opens completion artifact; chat does not change past phase statuses.
+3. **Start phase** → phases scoped to run id; complete all → run moves to Past; task shows no
+   Current.
+4. **Completed run** → View summary opens completion artifact; chat does not change past phase
+   statuses.
 5. **Follow-up** → new run id; new ticket; old run unchanged in Past.
 6. **Cancel mid-run** → run in Past as cancelled; partial phases visible; banner non-authoritative.
-7. **Active conflict** → Enable while active → prompt; cancel-and-start creates new run, old cancelled.
+7. **Active conflict** → Enable while active → prompt; cancel-and-start creates new run, old
+   cancelled.
 8. **Chat after complete** → suggestion card only; no phase mutation without explicit follow-up.
-9. **Backfill** → existing dev DB tasks get single synthetic run; UI matches prior behavior until second run created.
+9. **Backfill** → existing dev DB tasks get single synthetic run; UI matches prior behavior until
+   second run created.
 
 ### Automated
 
@@ -399,7 +414,8 @@ Each PR should leave the app runnable; PR1 may ship with feature flag or read-on
 - [ ] Integration: `enableWorkflow` inserts `workflow_runs` row
 - [ ] Integration: final `approvePhase` sets run completed + creates summary artifact
 - [ ] Integration: `cancelWorkflow` sets run cancelled, preserves artifacts
-- [ ] Integration: `startFollowUpWorkflow` creates new run, links new ticket, leaves prior run terminal
+- [ ] Integration: `startFollowUpWorkflow` creates new run, links new ticket, leaves prior run
+      terminal
 - [ ] Backfill script test on fixture DB snapshot
 
 ---
@@ -419,8 +435,10 @@ Each PR should leave the app runnable; PR1 may ship with feature flag or read-on
 
 ## Open questions (non-blocking)
 
-- Should Past runs show in content view sidebar or only in Workflow panel? (Default: Workflow panel list + content view on select.)
-- Cancellation note artifact for cancelled runs — same template as completion or skip for MVP? (Default: skip; phase tree only.)
+- Should Past runs show in content view sidebar or only in Workflow panel? (Default: Workflow panel
+  list + content view on select.)
+- Cancellation note artifact for cancelled runs — same template as completion or skip for MVP?
+  (Default: skip; phase tree only.)
 - Which past run seeds follow-up when multiple exist? (Default: most recent terminal run.)
 
 ---

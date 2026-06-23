@@ -88,10 +88,7 @@ export interface WorkflowRunDetail {
   artifacts: ArtifactRow[]
 }
 
-function toWorkflowRunDto(
-  run: WorkflowRunRow,
-  artifacts: ArtifactRow[],
-): WorkflowRunDto {
+function toWorkflowRunDto(run: WorkflowRunRow, artifacts: ArtifactRow[]): WorkflowRunDto {
   const summary = artifacts.find(
     (artifact) => artifact.workflowRunId === run.id && artifact.phase === COMPLETION_PHASE,
   )
@@ -292,21 +289,13 @@ function loadTaskDetail(taskId: string): TaskDetail | undefined {
   const pastRunRows = allRuns.filter((run) => run.id !== activeRunRow?.id)
 
   const allArtifacts = listArtifactsForTask(db, task.id)
-  const activeWorkflowRun = activeRunRow
-    ? toWorkflowRunDto(activeRunRow, allArtifacts)
-    : undefined
+  const activeWorkflowRun = activeRunRow ? toWorkflowRunDto(activeRunRow, allArtifacts) : undefined
   const pastWorkflowRuns = pastRunRows.map((run) => toWorkflowRunDto(run, allArtifacts))
 
   const repo = getRepoById(db, task.repoId)
-  const ticket = activeRunRow
-    ? getTicketArtifactForRun(db, activeRunRow.id)
-    : undefined
-  const phases = activeRunRow
-    ? listPhasesForWorkflowRun(db, activeRunRow.id)
-    : []
-  const artifacts = activeRunRow
-    ? listArtifactsForWorkflowRun(db, activeRunRow.id)
-    : []
+  const ticket = activeRunRow ? getTicketArtifactForRun(db, activeRunRow.id) : undefined
+  const phases = activeRunRow ? listPhasesForWorkflowRun(db, activeRunRow.id) : []
+  const artifacts = activeRunRow ? listArtifactsForWorkflowRun(db, activeRunRow.id) : []
   const phaseRuns = listPhaseRunsForTask(db, task.id)
   const decisionResolutionRows = listDecisionResolutionsForTask(db, task.id).filter((row) =>
     activeRunRow ? row.workflowRunId === activeRunRow.id : !row.workflowRunId,

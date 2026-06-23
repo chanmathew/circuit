@@ -5,10 +5,7 @@ import {
   mapOpenCodeToolPartToActivity,
   mapQuestionToolPartToActivity,
 } from './activity-normalizer.js'
-import {
-  createOpenCodeStreamAccumulator,
-  mapOpenCodeStreamEvent,
-} from './opencode-stream-state.js'
+import { createOpenCodeStreamAccumulator, mapOpenCodeStreamEvent } from './opencode-stream-state.js'
 
 const deps = {
   mapToolPart: mapOpenCodeToolPartToActivity,

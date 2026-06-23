@@ -121,8 +121,7 @@ export function parseTranscript(
   return { blocks, events, prose }
 }
 
-const HARNESS_SESSION_META_RE =
-  /^OpenCode (?:chat|session) [a-zA-Z0-9_-]+ · /i
+const HARNESS_SESSION_META_RE = /^OpenCode (?:chat|session) [a-zA-Z0-9_-]+ · /i
 
 /** Session/model status lines from the adapter — not user-visible chat content. */
 export function isHarnessMetaMessage(content: string): boolean {

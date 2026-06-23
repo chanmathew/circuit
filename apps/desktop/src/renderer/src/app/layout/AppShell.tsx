@@ -1,10 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Outlet, useRouterState } from '@tanstack/react-router'
-import {
-  Panel,
-  PanelGroup,
-  type ImperativePanelHandle,
-} from 'react-resizable-panels'
+import { Panel, PanelGroup, type ImperativePanelHandle } from 'react-resizable-panels'
 
 import { SidebarProvider } from '@circuit/ui'
 

@@ -97,7 +97,9 @@ export async function startFollowUpWorkflow(
   const repo = getRepoById(db, task.repoId)
   if (!repo) throw new NotFoundError('Repo', task.repoId)
 
-  const description = (input.description ?? buildFollowUpDescription(taskId, task.description)).trim()
+  const description = (
+    input.description ?? buildFollowUpDescription(taskId, task.description)
+  ).trim()
   if (!description) {
     throw new ValidationError('Follow-up description cannot be empty')
   }

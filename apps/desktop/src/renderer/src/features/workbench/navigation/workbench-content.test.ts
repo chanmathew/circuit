@@ -4,7 +4,13 @@ import { latestArtifactPerPhase, type ArtifactRow } from '@circuit/db'
 import { openReference } from '@circuit/protocol'
 
 import type { ArtifactDto, PhaseDto, TaskDto } from '../../../../../shared/api.js'
-import { inspectorSelectionForTab, resolvePhaseArtifact, resolveDiffEntry, findDiffForPath, WORKSPACE_DIFF_ID } from './workbench-content.js'
+import {
+  inspectorSelectionForTab,
+  resolvePhaseArtifact,
+  resolveDiffEntry,
+  findDiffForPath,
+  WORKSPACE_DIFF_ID,
+} from './workbench-content.js'
 
 function dbArtifact(
   overrides: Partial<ArtifactRow> & Pick<ArtifactRow, 'id' | 'phase'>,
@@ -26,8 +32,18 @@ function dbArtifact(
 describe('latestArtifactPerPhase', () => {
   it('keeps the highest version per phase', () => {
     const rows = latestArtifactPerPhase([
-      dbArtifact({ id: 'design-v1', phase: 'design', version: 1, updatedAt: '2026-01-01T00:00:00.000Z' }),
-      dbArtifact({ id: 'design-v2', phase: 'design', version: 2, updatedAt: '2026-01-02T00:00:00.000Z' }),
+      dbArtifact({
+        id: 'design-v1',
+        phase: 'design',
+        version: 1,
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      }),
+      dbArtifact({
+        id: 'design-v2',
+        phase: 'design',
+        version: 2,
+        updatedAt: '2026-01-02T00:00:00.000Z',
+      }),
       dbArtifact({ id: 'plan-v1', phase: 'plan', version: 1 }),
     ])
 

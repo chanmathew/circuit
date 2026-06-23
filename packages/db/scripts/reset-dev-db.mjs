@@ -10,5 +10,5 @@ for (const suffix of ['', '-wal', '-shm']) {
 }
 
 mkdirSync(path.dirname(dbPath), { recursive: true })
-console.log(`Deleted dev DB at ${dbPath}`)
-console.log('Run pnpm --filter @circuit/db db:migrate to recreate the dev DB')
+console.warn(`Deleted dev DB at ${dbPath}`)
+console.warn('Run pnpm --filter @circuit/db db:migrate to recreate the dev DB')

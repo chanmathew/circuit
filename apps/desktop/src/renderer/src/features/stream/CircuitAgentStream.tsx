@@ -4,7 +4,13 @@ import { useCallback, useMemo, useState } from 'react'
 import type { WorkflowType } from '@circuit/workflow'
 import { getEffectiveTaskMode, isTaskModeEditable, type TaskMode } from '@circuit/workflow'
 import type { ReferenceTarget, StreamAction } from '@circuit/protocol'
-import type { DecisionResolutionDto, FeedEventDto, PermissionReply, PhaseDto, ArtifactDto } from '../../../../shared/api.js'
+import type {
+  DecisionResolutionDto,
+  FeedEventDto,
+  PermissionReply,
+  PhaseDto,
+  ArtifactDto,
+} from '../../../../shared/api.js'
 import { useSubmitTaskIntake } from '../tasks/hooks/useSubmitTaskIntake.js'
 import { useApplySteeringRevision } from '../tasks/hooks/harness/useApplySteeringRevision.js'
 import { useAbortSession } from './hooks/useAbortSession.js'

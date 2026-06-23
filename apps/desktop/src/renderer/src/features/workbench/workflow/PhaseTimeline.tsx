@@ -32,7 +32,11 @@ export interface PhaseTimelineProps {
   onSelectPhase?: (name: string) => void
 }
 
-function effectivePhaseStatus(status: PhaseStatus, phaseName: string, runningPhase?: string): PhaseStatus {
+function effectivePhaseStatus(
+  status: PhaseStatus,
+  phaseName: string,
+  runningPhase?: string,
+): PhaseStatus {
   if (runningPhase === phaseName && status !== 'approved' && status !== 'skipped') {
     return 'running'
   }
@@ -97,8 +101,7 @@ function PhaseTimelineRow({
 }): React.ReactElement {
   const status = effectivePhaseStatus(phase.status as PhaseStatus, phase.name, runningPhase)
   const pending = status === 'locked'
-  const selectable =
-    Boolean(onSelectPhase) && (!pending || (readOnly && phase.hasArtifact))
+  const selectable = Boolean(onSelectPhase) && (!pending || (readOnly && phase.hasArtifact))
   const rowClassName = cn(
     'flex min-w-0 flex-1 items-center justify-between gap-3 rounded-md px-2 text-left',
     activePhaseBadgeClassName(isCurrent),
@@ -139,7 +142,10 @@ function PhaseTimelineRow({
           {labelBlock}
         </button>
       ) : (
-        <div className={cn(rowClassName, 'h-full py-1')} aria-current={isCurrent ? 'step' : undefined}>
+        <div
+          className={cn(rowClassName, 'h-full py-1')}
+          aria-current={isCurrent ? 'step' : undefined}
+        >
           {labelBlock}
         </div>
       )}
@@ -154,9 +160,7 @@ function spineLitEndIndex(phases: PhaseTimelineItem[], currentPhase?: string): n
     -1,
   )
 
-  const currentIndex = currentPhase
-    ? phases.findIndex((phase) => phase.name === currentPhase)
-    : -1
+  const currentIndex = currentPhase ? phases.findIndex((phase) => phase.name === currentPhase) : -1
   const currentUnlocked =
     currentIndex >= 0 && (phases[currentIndex]?.status as PhaseStatus) !== 'locked'
 

@@ -14,8 +14,7 @@ const circuitApi: CircuitApi = {
   addRepo: (path?: string) => ipcRenderer.invoke('circuit:repos:add', path),
   listTasks: (request) => ipcRenderer.invoke('circuit:tasks:list', request),
   createDraftTask: (request) => ipcRenderer.invoke('circuit:tasks:createDraft', request),
-  createTaskFromIntake: (request) =>
-    ipcRenderer.invoke('circuit:tasks:createFromIntake', request),
+  createTaskFromIntake: (request) => ipcRenderer.invoke('circuit:tasks:createFromIntake', request),
   updateTaskMode: (request) => ipcRenderer.invoke('circuit:tasks:updateTaskMode', request),
   submitTaskIntake: (request) => ipcRenderer.invoke('circuit:tasks:submitIntake', request),
   enableWorkflow: (request) => ipcRenderer.invoke('circuit:tasks:enableWorkflow', request),

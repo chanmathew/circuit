@@ -24,7 +24,13 @@ import {
   sessionMessagesToActivities,
   upsertTraceActivity,
 } from './activity-normalizer.js'
-import type { AgentActivityEvent, ChatTurnRequest, ChatTurnResult, PhaseRunRequest, PhaseRunResult } from './types.js'
+import type {
+  AgentActivityEvent,
+  ChatTurnRequest,
+  ChatTurnResult,
+  PhaseRunRequest,
+  PhaseRunResult,
+} from './types.js'
 
 import type { AgentAdapter, HarnessSessionMessage, SendMessageRequest } from './adapter.js'
 import { OPENCODE_CAPABILITIES } from './capabilities.js'
@@ -84,7 +90,9 @@ export class OpenCodeAdapter implements AgentAdapter {
     })
     if (created.error || !created.data) {
       throw new Error(
-        created.error instanceof Error ? created.error.message : 'Failed to create OpenCode session',
+        created.error instanceof Error
+          ? created.error.message
+          : 'Failed to create OpenCode session',
       )
     }
 
@@ -189,7 +197,9 @@ export class OpenCodeAdapter implements AgentAdapter {
       })
       if (created.error || !created.data) {
         throw new Error(
-          created.error instanceof Error ? created.error.message : 'Failed to create OpenCode session',
+          created.error instanceof Error
+            ? created.error.message
+            : 'Failed to create OpenCode session',
         )
       }
       sessionId = created.data.id
@@ -305,7 +315,8 @@ export class OpenCodeAdapter implements AgentAdapter {
   }
 
   async replyQuestion(request: ReplyQuestionRequest): Promise<void> {
-    const baseUrl = this.options.baseUrl ?? process.env.CIRCUIT_OPENCODE_URL ?? 'http://localhost:4096'
+    const baseUrl =
+      this.options.baseUrl ?? process.env.CIRCUIT_OPENCODE_URL ?? 'http://localhost:4096'
     const url = new URL(`/question/${request.requestId}/reply`, baseUrl)
     url.searchParams.set('directory', request.workspacePath)
 
@@ -317,14 +328,13 @@ export class OpenCodeAdapter implements AgentAdapter {
 
     if (!response.ok) {
       const body = await response.text().catch(() => '')
-      throw new Error(
-        body.trim() || `Failed to reply to OpenCode question (${response.status})`,
-      )
+      throw new Error(body.trim() || `Failed to reply to OpenCode question (${response.status})`)
     }
   }
 
   async rejectQuestion(request: RejectQuestionRequest): Promise<void> {
-    const baseUrl = this.options.baseUrl ?? process.env.CIRCUIT_OPENCODE_URL ?? 'http://localhost:4096'
+    const baseUrl =
+      this.options.baseUrl ?? process.env.CIRCUIT_OPENCODE_URL ?? 'http://localhost:4096'
     const url = new URL(`/question/${request.requestId}/reject`, baseUrl)
     url.searchParams.set('directory', request.workspacePath)
 
@@ -332,9 +342,7 @@ export class OpenCodeAdapter implements AgentAdapter {
 
     if (!response.ok) {
       const body = await response.text().catch(() => '')
-      throw new Error(
-        body.trim() || `Failed to reject OpenCode question (${response.status})`,
-      )
+      throw new Error(body.trim() || `Failed to reject OpenCode question (${response.status})`)
     }
   }
 
@@ -565,8 +573,7 @@ export class OpenCodeAdapter implements AgentAdapter {
       onActivity({
         type: 'subagent_run',
         timestamp: new Date().toISOString(),
-        content:
-          typeof meta.description === 'string' ? meta.description : 'Subagent task',
+        content: typeof meta.description === 'string' ? meta.description : 'Subagent task',
         metadata: {
           ...meta,
           childSessionId,

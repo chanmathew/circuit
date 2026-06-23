@@ -304,10 +304,10 @@ export function TaskWorkbench({
               onSelectFile={handleSelectFile}
               onSelectDiff={handleSelectDiff}
               onSelectCheck={handleSelectCheck}
-                onOpenChangedFile={handleOpenChangedFile}
-                onOpenAllChanges={openAllChanges}
-                orderedChanges={gitStatusQuery.orderedChanges}
-                onToggleInspector={toggleInspector}
+              onOpenChangedFile={handleOpenChangedFile}
+              onOpenAllChanges={openAllChanges}
+              orderedChanges={gitStatusQuery.orderedChanges}
+              onToggleInspector={toggleInspector}
               showWindowControls={!isMac && showInspector}
             />
           }

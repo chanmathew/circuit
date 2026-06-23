@@ -10,13 +10,17 @@
 
 1. Composer always sends **chat** (`sendChatMessage`); placeholder always generic.
 2. Workflow enabled only from **Workflow panel** (+ optional stream suggestion card).
-3. **Enable workflow** → `workflow_status = active`, ticket only; **no** phases/artifact files until **Start phase**.
+3. **Enable workflow** → `workflow_status = active`, ticket only; **no** phases/artifact files until
+   **Start phase**.
 4. Workbench **always** tri-pane (+ projects); no `chatOnly` swap.
 5. Workflow status: `not_started | active | completed | cancelled` only.
-6. Workflow mutations via **panel actions** or **confirmed** stream cards — never implicit from chat send.
+6. Workflow mutations via **panel actions** or **confirmed** stream cards — never implicit from chat
+   send.
 7. **Cancel workflow** replaces archive/pause-as-chat for MVP.
 
-**Cancel semantics (deferred UI):** `workflow_status = cancelled`; abort active phase harness run if locked; artifacts remain on disk; chat continues freely; phase rows stay until user starts a new workflow (restart clears phases).
+**Cancel semantics (deferred UI):** `workflow_status = cancelled`; abort active phase harness run if
+locked; artifacts remain on disk; chat continues freely; phase rows stay until user starts a new
+workflow (restart clears phases).
 
 ---
 
@@ -38,7 +42,8 @@
 
 - Stop writing `interaction_mode` except fixed `'chat'`.
 
-**Files:** `packages/db/src/backfill-interaction-mode.ts` → rename/refactor to `backfill-workflow-status.ts`.
+**Files:** `packages/db/src/backfill-interaction-mode.ts` → rename/refactor to
+`backfill-workflow-status.ts`.
 
 ### 1.2 Shared types
 
@@ -56,7 +61,8 @@ export function formatWorkflowSubtitle(task: {
 ```
 
 - Derive running/waiting from current phase status.
-- Deprecate `InteractionMode`, `ComposerMode`, `taskUsesChatOnlyLayout`, `canShowComposerModeToggle`.
+- Deprecate `InteractionMode`, `ComposerMode`, `taskUsesChatOnlyLayout`,
+  `canShowComposerModeToggle`.
 
 ### 1.3 Enable workflow (replaces start-as-mode)
 
@@ -64,11 +70,11 @@ export function formatWorkflowSubtitle(task: {
 
 Rename/export clearly:
 
-| Function | Behavior |
-|----------|----------|
-| `enableWorkflow(taskId, input)` | Ticket + `workflow_type` + `workflow_status = active`; **no** `ensureWorkflowState`; **no** auto phase run |
-| `startPhase(taskId, phaseName?)` | `ensureWorkflowState` if needed + `schedulePhaseRun` |
-| `cancelWorkflow(taskId)` | `workflow_status = cancelled`; stop run if locked; emit event |
+| Function                         | Behavior                                                                                                   |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `enableWorkflow(taskId, input)`  | Ticket + `workflow_type` + `workflow_status = active`; **no** `ensureWorkflowState`; **no** auto phase run |
+| `startPhase(taskId, phaseName?)` | `ensureWorkflowState` if needed + `schedulePhaseRun`                                                       |
+| `cancelWorkflow(taskId)`         | `workflow_status = cancelled`; stop run if locked; emit event                                              |
 
 - Remove auto-run on enable (`autoRunFirstPhase` default false).
 - Keep `synthesizeTaskBrief` for enable-from-chat-history path.
@@ -86,7 +92,8 @@ Rename/export clearly:
 **Files:** `send-chat-message.ts`, `run-chat-message.ts`
 
 - Remove `interaction_mode !== 'chat'` guard (or always pass).
-- Intake first message: always chat send + optional enable suggestion; remove workflow branch in `submit-intake.ts` for mode toggle.
+- Intake first message: always chat send + optional enable suggestion; remove workflow branch in
+  `submit-intake.ts` for mode toggle.
 
 **File:** `submit-intake.ts`
 
@@ -116,7 +123,8 @@ Rename/export clearly:
 
 - Remove `WorkflowLifecycleActions` (Switch to Chat / Resume).
 - Show: title, workflow subtitle chip (`formatWorkflowSubtitle`), adapter badge, task status.
-- Phase rail: render only when `workflow_status === active'` **and** at least one phase run exists (or first phase started).
+- Phase rail: render only when `workflow_status === active'` **and** at least one phase run exists
+  (or first phase started).
 
 ### 2.3 Workflow panel (right inspector)
 
@@ -146,7 +154,8 @@ cancelled    → message + Start new workflow
 
 **File:** `TaskWorkbench.tsx`
 
-- Navigation: overview when no meaningful artifact content; auto-open artifact on phase complete event.
+- Navigation: overview when no meaningful artifact content; auto-open artifact on phase complete
+  event.
 
 ### 2.5 Composer
 
@@ -155,19 +164,20 @@ cancelled    → message + Start new workflow
 - Remove `showModeSelector`, Workflow toggle, `ComposerMode` state.
 - Remove `useStartWorkflow` on send; always `useSendChatMessage`.
 - Keep generic placeholder.
-- Optional: stream **Enable workflow** suggestion card (links/focuses Workflow panel) — no layout change.
+- Optional: stream **Enable workflow** suggestion card (links/focuses Workflow panel) — no layout
+  change.
 
 ### 2.6 Remove / deprecate UI
 
-| File | Action |
-|------|--------|
-| `WorkflowLifecycleActions.tsx` | Delete |
-| `ResumeWorkflowDialog.tsx` | Delete |
-| `ConfirmWorkflowStartBanner.tsx` | Move actions into WorkflowPanel |
-| `ConversionSuggestionCard.tsx` | Repoint to Enable workflow |
-| `PausedChatGuardCard.tsx` | Delete (chat never mutates by default) |
-| `usePauseWorkflow.ts`, `useResumeWorkflow.ts` | Delete |
-| `useStartWorkflow.ts` on composer send | Keep hook for panel Enable only |
+| File                                          | Action                                 |
+| --------------------------------------------- | -------------------------------------- |
+| `WorkflowLifecycleActions.tsx`                | Delete                                 |
+| `ResumeWorkflowDialog.tsx`                    | Delete                                 |
+| `ConfirmWorkflowStartBanner.tsx`              | Move actions into WorkflowPanel        |
+| `ConversionSuggestionCard.tsx`                | Repoint to Enable workflow             |
+| `PausedChatGuardCard.tsx`                     | Delete (chat never mutates by default) |
+| `usePauseWorkflow.ts`, `useResumeWorkflow.ts` | Delete                                 |
+| `useStartWorkflow.ts` on composer send        | Keep hook for panel Enable only        |
 
 ---
 
@@ -195,11 +205,11 @@ cancelWorkflow({ taskId, stopRun?: boolean })
 
 ### 3.3 Hooks
 
-| Hook | Purpose |
-|------|---------|
-| `useEnableWorkflow` | Panel Enable |
-| `useStartPhase` | Panel Start phase |
-| `useCancelWorkflow` | Panel Cancel |
+| Hook                 | Purpose                   |
+| -------------------- | ------------------------- |
+| `useEnableWorkflow`  | Panel Enable              |
+| `useStartPhase`      | Panel Start phase         |
+| `useCancelWorkflow`  | Panel Cancel              |
 | `useSendChatMessage` | Composer (only send path) |
 
 ---
@@ -208,13 +218,13 @@ cancelWorkflow({ taskId, stopRun?: boolean })
 
 ### 4.1 Card types (in stream, not layout changes)
 
-| Event | Card |
-|-------|------|
-| Enable complete | Workflow attached — [Open overview] |
-| Phase run started | Phase running — [Stop] |
-| Phase complete | Artifact ready — [Open] [Approve] [Revise] |
-| Chat intent (optional) | Apply to workflow? — [Apply] [Just discuss] |
-| Background complete while chatting | Workflow update — [Open] [Review in panel] |
+| Event                              | Card                                        |
+| ---------------------------------- | ------------------------------------------- |
+| Enable complete                    | Workflow attached — [Open overview]         |
+| Phase run started                  | Phase running — [Stop]                      |
+| Phase complete                     | Artifact ready — [Open] [Approve] [Revise]  |
+| Chat intent (optional)             | Apply to workflow? — [Apply] [Just discuss] |
+| Background complete while chatting | Workflow update — [Open] [Review in panel]  |
 
 ### 4.2 Apply to workflow
 
@@ -242,13 +252,13 @@ cancelWorkflow({ taskId, stopRun?: boolean })
 
 ## Suggested PR sequence
 
-| PR | Scope | Risk |
-|----|--------|------|
-| **PR1** | ADR 002 + status migration + shared types + `enableWorkflow`/`startPhase`/`cancelWorkflow` backend | Low |
-| **PR2** | Stable shell: remove `chatOnly`, always tri-pane, generic composer | Medium — touches layout |
-| **PR3** | WorkflowPanel + overview content view + header subtitle | Medium |
-| **PR4** | Remove toggle/pause/resume UI; IPC cleanup | Low |
-| **PR5** | Stream cards + Enable suggestion + Apply-to-workflow | Medium |
+| PR      | Scope                                                                                              | Risk                    |
+| ------- | -------------------------------------------------------------------------------------------------- | ----------------------- |
+| **PR1** | ADR 002 + status migration + shared types + `enableWorkflow`/`startPhase`/`cancelWorkflow` backend | Low                     |
+| **PR2** | Stable shell: remove `chatOnly`, always tri-pane, generic composer                                 | Medium — touches layout |
+| **PR3** | WorkflowPanel + overview content view + header subtitle                                            | Medium                  |
+| **PR4** | Remove toggle/pause/resume UI; IPC cleanup                                                         | Low                     |
+| **PR5** | Stream cards + Enable suggestion + Apply-to-workflow                                               | Medium                  |
 
 Each PR should leave the app runnable.
 
@@ -290,16 +300,19 @@ Each PR should leave the app runnable.
 ## Test plan (manual)
 
 1. New task → chat-only intake; send first message → tri-pane; Workflow panel shows Enable.
-2. Enable workflow → status active; overview in content view; **no** empty artifact files on disk; **no** phase rail.
+2. Enable workflow → status active; overview in content view; **no** empty artifact files on disk;
+   **no** phase rail.
 3. Start Questions → phase run; rail appears; artifact fills; chat still works in parallel.
-4. Phase completes → **Artifact ready** card (needs_review only); Workflow panel shows needs_review; chat unaffected.
+4. Phase completes → **Artifact ready** card (needs_review only); Workflow panel shows needs_review;
+   chat unaffected.
 5. Approve → next phase startable from panel only.
 6. Cancel workflow → cancelled; chat continues; Start new workflow works.
 7. Complete all phases → completed; sidebar subtitle correct.
 
 ### Automated
 
-- [x] Unit tests for `formatWorkflowSubtitle` derivation (`apps/desktop/src/shared/workflow-status.test.ts`)
+- [x] Unit tests for `formatWorkflowSubtitle` derivation
+      (`apps/desktop/src/shared/workflow-status.test.ts`)
 - [ ] Integration test: `enableWorkflow` does not call `ensureWorkflowState`
 - [ ] Integration test: `startPhase` creates phases idempotently
 
@@ -318,5 +331,6 @@ Each PR should leave the app runnable.
 
 ## Open questions (none blocking MVP)
 
-- Should **Enable workflow** require a description if ticket is empty? (Default: synthesize from last N chat messages.)
+- Should **Enable workflow** require a description if ticket is empty? (Default: synthesize from
+  last N chat messages.)
 - Should stream suggestion card auto-open Workflow panel on click? (Default: yes, focus panel.)

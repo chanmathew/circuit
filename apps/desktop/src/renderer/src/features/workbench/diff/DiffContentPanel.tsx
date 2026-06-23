@@ -11,10 +11,7 @@ import { findGitChangeForPath } from './lib/find-git-change-for-path.js'
 import { pathFromGitPatch, splitGitPatchByFile } from '@circuit/git'
 import { pierreDiffViewerOptionsWithFileLinks } from './lib/pierre-diff-header.js'
 import { resolveDiffFilePath } from './lib/diff-file-path.js'
-import {
-  DiscardConfirmDialog,
-  type PendingDiscard,
-} from './lib/discard-confirm-dialog.js'
+import { DiscardConfirmDialog, type PendingDiscard } from './lib/discard-confirm-dialog.js'
 import type { DiffEntry } from '../navigation/workbench-content.js'
 import { WORKSPACE_DIFF_ID } from '../navigation/workbench-content.js'
 import { CollapsiblePatchDiff } from './CollapsiblePatchDiff.js'
@@ -81,11 +78,7 @@ export function DiffContentPanel({
 
   const patchDiffOptions = useMemo(
     () =>
-      pierreDiffViewerOptionsWithFileLinks(
-        themeType,
-        diff?.paths ?? [],
-        handleDiffHeaderPathClick,
-      ),
+      pierreDiffViewerOptionsWithFileLinks(themeType, diff?.paths ?? [], handleDiffHeaderPathClick),
     [themeType, diff?.paths, handleDiffHeaderPathClick],
   )
 
@@ -132,10 +125,8 @@ export function DiffContentPanel({
     [scopedChanges],
   )
 
-  const allScopedStaged =
-    scopedChanges.length > 0 && scopedUnstagedPaths.length === 0
-  const someScopedStaged =
-    scopedStagedPaths.length > 0 && scopedUnstagedPaths.length > 0
+  const allScopedStaged = scopedChanges.length > 0 && scopedUnstagedPaths.length === 0
+  const someScopedStaged = scopedStagedPaths.length > 0 && scopedUnstagedPaths.length > 0
 
   const toggleFileStage = useCallback(
     (path: string): void => {
@@ -253,12 +244,8 @@ export function DiffContentPanel({
                     filePath={isWorkspaceDiff ? filePath : undefined}
                     fileChange={fileChange}
                     focusPath={focusPath}
-                    onToggleStage={
-                      isWorkspaceDiff && filePath ? toggleFileStage : undefined
-                    }
-                    onDiscardFile={
-                      isWorkspaceDiff ? (path) => requestDiscard([path]) : undefined
-                    }
+                    onToggleStage={isWorkspaceDiff && filePath ? toggleFileStage : undefined}
+                    onDiscardFile={isWorkspaceDiff ? (path) => requestDiscard([path]) : undefined}
                     discardDisabled={discardBusy}
                     disableWorkerPool
                   />

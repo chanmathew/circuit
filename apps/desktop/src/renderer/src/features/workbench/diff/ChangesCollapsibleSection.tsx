@@ -34,9 +34,7 @@ export function ChangesCollapsibleSection({
         className={cn(
           HEADER_ROW_CLASS,
           'sticky',
-          open
-            ? 'z-10 shadow-[0_6px_10px_-6px] shadow-background/80'
-            : 'z-0 shadow-none',
+          open ? 'z-10 shadow-[0_6px_10px_-6px] shadow-background/80' : 'z-0 shadow-none',
         )}
         style={{ zIndex: stickyStack }}
       >

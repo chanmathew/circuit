@@ -25,7 +25,10 @@ export function deriveTaskWorkflowStatus(runs: WorkflowRunRow[]): string {
   return terminal[0]!.status === 'completed' ? 'completed' : 'cancelled'
 }
 
-export function syncTaskWorkflowStatusFromRuns(taskId: string, now = new Date().toISOString()): void {
+export function syncTaskWorkflowStatusFromRuns(
+  taskId: string,
+  now = new Date().toISOString(),
+): void {
   const db = getDb()
   const runs = listWorkflowRunsForTask(db, taskId)
   const active = getActiveWorkflowRunForTask(db, taskId)

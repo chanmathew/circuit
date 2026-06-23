@@ -143,9 +143,7 @@ export function CircuitInputComposer({
 
   return (
     <div className="shrink-0 border-t border-border p-3">
-      {taskModeError ? (
-        <p className="mb-2 px-1 text-xs text-destructive">{taskModeError}</p>
-      ) : null}
+      {taskModeError ? <p className="mb-2 px-1 text-xs text-destructive">{taskModeError}</p> : null}
       <PromptInput onSubmit={handleSubmit} className="w-full" multiple>
         <ComposerAttachmentHeader />
         <PromptInputBody>
@@ -187,11 +185,7 @@ export function CircuitInputComposer({
 
             <ModelSelector open={modelMenuOpen} onOpenChange={setModelMenuOpen}>
               <ModelSelectorTrigger asChild>
-                <PromptInputButton
-                  type="button"
-                  disabled={toolbarDisabled}
-                  tooltip="Select model"
-                >
+                <PromptInputButton type="button" disabled={toolbarDisabled} tooltip="Select model">
                   <ModelSelectorLogoGroup>
                     <ModelSelectorLogo provider={selectedModelData.provider} />
                   </ModelSelectorLogoGroup>

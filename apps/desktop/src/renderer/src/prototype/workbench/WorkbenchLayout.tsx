@@ -34,9 +34,7 @@ export function WorkbenchLayout({ state, actions }: WorkbenchLayoutProps): React
               label: p.label,
               status: p.status,
             }))}
-            currentPhase={
-              state.artifacts.find((a) => a.id === state.selectedArtifactId)?.phase
-            }
+            currentPhase={state.artifacts.find((a) => a.id === state.selectedArtifactId)?.phase}
             onSelectPhase={actions.selectPhase}
           />
 

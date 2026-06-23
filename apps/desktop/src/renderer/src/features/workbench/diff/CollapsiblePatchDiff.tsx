@@ -10,10 +10,7 @@ import { mountPierreDiffHeader, unmountPierreDiffHeader } from './lib/pierre-dif
 
 type PierreDiffOptions = NonNullable<PatchDiffProps<undefined>['options']>
 
-type CollapsiblePatchDiffProps = Pick<
-  PatchDiffProps<undefined>,
-  'patch' | 'disableWorkerPool'
-> &
+type CollapsiblePatchDiffProps = Pick<PatchDiffProps<undefined>, 'patch' | 'disableWorkerPool'> &
   Partial<Pick<PatchDiffProps<undefined>, 'className' | 'style'>> & {
     options: PierreDiffOptions
     filePath?: string
@@ -61,12 +58,9 @@ export function CollapsiblePatchDiff({
     }
   }, [filePath, focusPath])
 
-  const showGitActions =
-    filePath != null && (onToggleStage != null || onDiscardFile != null)
+  const showGitActions = filePath != null && (onToggleStage != null || onDiscardFile != null)
 
   const mergedOptions = useMemo(() => {
-    const baseOnPostRender = options.onPostRender
-
     return {
       ...options,
       collapsed: !open,
@@ -77,11 +71,11 @@ export function CollapsiblePatchDiff({
       ) {
         if (phase === 'unmount') {
           unmountPierreDiffHeader(node)
-          baseOnPostRender?.(node, instance, phase)
+          options.onPostRender?.(node, instance, phase)
           return
         }
 
-        baseOnPostRender?.(node, instance, phase)
+        options.onPostRender?.(node, instance, phase)
         mountPierreDiffHeader(node, {
           markPatchHost: true,
           onToggleCollapse: () => toggleRef.current(),
@@ -90,10 +84,7 @@ export function CollapsiblePatchDiff({
     }
   }, [options, open])
 
-  const renderHeaderPrefix = useCallback(
-    () => <DiffHeaderChevron open={open} />,
-    [open],
-  )
+  const renderHeaderPrefix = useCallback(() => <DiffHeaderChevron open={open} />, [open])
 
   const renderHeaderMetadata = useCallback(() => {
     if (!showGitActions || !filePath) return null
@@ -102,20 +93,11 @@ export function CollapsiblePatchDiff({
       <DiffFileHeaderActions
         change={fileChange}
         discardDisabled={discardDisabled}
-        onToggleStage={
-          onToggleStage ? () => onToggleStage(filePath) : undefined
-        }
+        onToggleStage={onToggleStage ? () => onToggleStage(filePath) : undefined}
         onDiscard={onDiscardFile ? () => onDiscardFile(filePath) : undefined}
       />
     )
-  }, [
-    discardDisabled,
-    fileChange,
-    filePath,
-    onDiscardFile,
-    onToggleStage,
-    showGitActions,
-  ])
+  }, [discardDisabled, fileChange, filePath, onDiscardFile, onToggleStage, showGitActions])
 
   return (
     <PatchDiff

@@ -1,9 +1,17 @@
 import { describe, expect, it } from 'vitest'
 
-import { openReference, referenceToContentView, referenceToInspectorSelection } from './content-view.js'
+import {
+  openReference,
+  referenceToContentView,
+  referenceToInspectorSelection,
+} from './content-view.js'
 import type { CircuitEvent } from './events.js'
 import { parseHarnessSessionTranscript, parseTranscript } from './parsers.js'
-import { eventsToStreamItems, mergeLiveActivities, revisionInferenceToStreamItem } from './stream-normalizer.js'
+import {
+  eventsToStreamItems,
+  mergeLiveActivities,
+  revisionInferenceToStreamItem,
+} from './stream-normalizer.js'
 
 const TASK_ID = 'task-1'
 const RUN_ID = 'run-1'
@@ -336,8 +344,7 @@ describe('eventsToStreamItems', () => {
   it('interleaves turn activities before the assistant reply on reload', () => {
     const startedAt = '2026-06-20T12:00:00.000Z'
     const completedAt = '2026-06-20T12:00:05.000Z'
-    const reply =
-      'Root cause: task.status was used for composer running state.'
+    const reply = 'Root cause: task.status was used for composer running state.'
     const items = eventsToStreamItems({
       events: [
         {

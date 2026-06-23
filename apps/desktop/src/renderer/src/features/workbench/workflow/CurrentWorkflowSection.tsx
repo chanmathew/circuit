@@ -3,19 +3,13 @@ import type { PhaseStatus, WorkflowType } from '@circuit/workflow'
 import { Button } from '@circuit/ui'
 
 import type { PhaseDto, TaskDto } from '../../../../../shared/api.js'
-import {
-  hasStartedPhase,
-  isAwaitingFirstPhase,
-} from '../../../../../shared/workflow-status.js'
+import { hasStartedPhase, isAwaitingFirstPhase } from '../../../../../shared/workflow-status.js'
 import { canDiscardWorkflowDraft } from '../../../../../shared/workflow-run.js'
 import { useApprovePhase } from '../../tasks/hooks/workflow/useApprovePhase.js'
 import { useCancelWorkflow } from '../../tasks/hooks/workflow/useCancelWorkflow.js'
 import { useDiscardWorkflowDraft } from '../../tasks/hooks/workflow/useDiscardWorkflowDraft.js'
 import { useStartPhase } from '../../tasks/hooks/workflow/useStartPhase.js'
-import {
-  canApprovePhase,
-  getApproveBlockedReason,
-} from '../lib/phase-approval.js'
+import { canApprovePhase, getApproveBlockedReason } from '../lib/phase-approval.js'
 import { PhaseTimeline } from './PhaseTimeline.js'
 import { plannedPhasesFromDefinition } from './PastWorkflowDetail.js'
 
@@ -56,8 +50,7 @@ export function CurrentWorkflowSection({
   const firstPhaseLabel = getPhaseLabel(firstPhase)
   const awaitingFirstPhase = isAwaitingFirstPhase(task.workflowStatus, task.phases)
   const startedPhase = hasStartedPhase(task.phases)
-  const canRunCurrentPhase =
-    currentStatus === 'ready' || currentStatus === 'needs_revision'
+  const canRunCurrentPhase = currentStatus === 'ready' || currentStatus === 'needs_revision'
   const needsReview = currentStatus === 'needs_review'
   const canDiscard = canDiscardWorkflowDraft(task.activeWorkflowRun, task.phases)
   const canCancel = startedPhase

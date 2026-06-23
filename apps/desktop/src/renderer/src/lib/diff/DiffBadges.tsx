@@ -21,12 +21,8 @@ export function DiffBadges({
         className,
       )}
     >
-      {delCount > 0 && (
-        <span className="text-red-500 dark:text-red-400">−{delCount}</span>
-      )}
-      {addCount > 0 && (
-        <span className="text-emerald-600 dark:text-emerald-400">+{addCount}</span>
-      )}
+      {delCount > 0 && <span className="text-red-500 dark:text-red-400">−{delCount}</span>}
+      {addCount > 0 && <span className="text-emerald-600 dark:text-emerald-400">+{addCount}</span>}
     </span>
   )
 }

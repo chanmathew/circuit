@@ -91,7 +91,12 @@ export function generateCompletionSummary(taskId: string, workflowRunId: string)
     }
   }
 
-  lines.push('', '## Suggested follow-ups', '', '- Review outputs and start a follow-up workflow if more work is needed.')
+  lines.push(
+    '',
+    '## Suggested follow-ups',
+    '',
+    '- Review outputs and start a follow-up workflow if more work is needed.',
+  )
 
   const content = lines.join('\n')
   const now = new Date().toISOString()

@@ -17,10 +17,7 @@ export function ComposeTaskPage({ repoId: urlRepoId }: { repoId?: string }): Rea
   const [taskMode, setTaskMode] = useState<TaskMode>(DEFAULT_TASK_MODE)
 
   const repos = reposQuery.data ?? []
-  const resolvedRepoId = useMemo(
-    () => resolveRepoId(repos, urlRepoId),
-    [repos, urlRepoId],
-  )
+  const resolvedRepoId = useMemo(() => resolveRepoId(repos, urlRepoId), [repos, urlRepoId])
 
   useEffect(() => {
     if (!resolvedRepoId || resolvedRepoId === urlRepoId) return

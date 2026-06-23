@@ -44,9 +44,7 @@ export function buildContextPack(input: BuildContextPackInput): ContextPack {
 export function serializeContextPackForPrompt(pack: ContextPack): string {
   if (pack.files.length === 0) return '_No context files._'
 
-  return pack.files
-    .map((file) => `## ${file.path}\n\n${file.content.trim()}`)
-    .join('\n\n---\n\n')
+  return pack.files.map((file) => `## ${file.path}\n\n${file.content.trim()}`).join('\n\n---\n\n')
 }
 
 export function buildPhasePrompt(phase: string, contextSection: string): string {

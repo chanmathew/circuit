@@ -55,7 +55,10 @@ export function getArtifactByTaskAndPhase(
     .get()
 }
 
-export function getTicketArtifactForRun(db: CircuitDb, workflowRunId: string): ArtifactRow | undefined {
+export function getTicketArtifactForRun(
+  db: CircuitDb,
+  workflowRunId: string,
+): ArtifactRow | undefined {
   return db
     .select()
     .from(artifacts)

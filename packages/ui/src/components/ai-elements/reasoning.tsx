@@ -1,42 +1,42 @@
-"use client";
+'use client'
 
-import { Collapsible } from "radix-ui";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { ArrowDown01Icon, Loading03Icon } from "@hugeicons/core-free-icons";
-import { cjk } from "@streamdown/cjk";
-import { code } from "@streamdown/code";
-import { math } from "@streamdown/math";
-import { mermaid } from "@streamdown/mermaid";
-import type { ComponentProps, ReactNode } from "react";
-import { createContext, memo, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { Streamdown } from "streamdown";
+import { Collapsible } from 'radix-ui'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { ArrowDown01Icon, Loading03Icon } from '@hugeicons/core-free-icons'
+import { cjk } from '@streamdown/cjk'
+import { code } from '@streamdown/code'
+import { math } from '@streamdown/math'
+import { mermaid } from '@streamdown/mermaid'
+import type { ComponentProps, ReactNode } from 'react'
+import { createContext, memo, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { Streamdown } from 'streamdown'
 
-import { cn } from "../../lib/utils.js";
-import { Shimmer } from "./shimmer.js";
+import { cn } from '../../lib/utils.js'
+import { Shimmer } from './shimmer.js'
 
 interface ReasoningContextValue {
-  isStreaming: boolean;
-  isOpen: boolean;
-  duration: number | undefined;
+  isStreaming: boolean
+  isOpen: boolean
+  duration: number | undefined
 }
 
-const ReasoningContext = createContext<ReasoningContextValue | null>(null);
+const ReasoningContext = createContext<ReasoningContextValue | null>(null)
 
 function useReasoningContext(): ReasoningContextValue {
-  const context = useContext(ReasoningContext);
+  const context = useContext(ReasoningContext)
   if (!context) {
-    throw new Error("Reasoning components must be used within Reasoning");
+    throw new Error('Reasoning components must be used within Reasoning')
   }
-  return context;
+  return context
 }
 
 export type ReasoningProps = ComponentProps<typeof Collapsible.Root> & {
-  isStreaming?: boolean;
-  defaultOpen?: boolean;
-  duration?: number;
-};
+  isStreaming?: boolean
+  defaultOpen?: boolean
+  duration?: number
+}
 
-const MS_IN_S = 1000;
+const MS_IN_S = 1000
 
 export const Reasoning = memo(function Reasoning({
   className,
@@ -46,34 +46,34 @@ export const Reasoning = memo(function Reasoning({
   children,
   ...props
 }: ReasoningProps) {
-  const [isOpen, setIsOpen] = useState(defaultOpen ?? false);
-  const [duration, setDuration] = useState<number | undefined>(durationProp);
-  const startTimeRef = useRef<number | null>(null);
+  const [isOpen, setIsOpen] = useState(defaultOpen ?? false)
+  const [duration, setDuration] = useState<number | undefined>(durationProp)
+  const startTimeRef = useRef<number | null>(null)
 
   useEffect(() => {
     if (isStreaming) {
       if (startTimeRef.current === null) {
-        startTimeRef.current = Date.now();
+        startTimeRef.current = Date.now()
       }
-      return;
+      return
     }
 
     if (startTimeRef.current !== null) {
-      setDuration(Math.max(1, Math.ceil((Date.now() - startTimeRef.current) / MS_IN_S)));
-      startTimeRef.current = null;
+      setDuration(Math.max(1, Math.ceil((Date.now() - startTimeRef.current) / MS_IN_S)))
+      startTimeRef.current = null
     }
-  }, [isStreaming]);
+  }, [isStreaming])
 
   useEffect(() => {
     if (!isStreaming && durationProp !== undefined) {
-      setDuration(durationProp);
+      setDuration(durationProp)
     }
-  }, [durationProp, isStreaming]);
+  }, [durationProp, isStreaming])
 
   const contextValue = useMemo(
     () => ({ duration, isOpen, isStreaming }),
     [duration, isOpen, isStreaming],
-  );
+  )
 
   return (
     <ReasoningContext.Provider value={contextValue}>
@@ -81,28 +81,28 @@ export const Reasoning = memo(function Reasoning({
         data-slot="reasoning"
         open={isOpen}
         onOpenChange={setIsOpen}
-        className={cn("py-0.5", className)}
+        className={cn('py-0.5', className)}
         {...props}
       >
         {children}
       </Collapsible.Root>
     </ReasoningContext.Provider>
-  );
-});
+  )
+})
 
 export type ReasoningTriggerProps = ComponentProps<typeof Collapsible.Trigger> & {
-  getThinkingMessage?: (isStreaming: boolean, duration?: number) => ReactNode;
-};
+  getThinkingMessage?: (isStreaming: boolean, duration?: number) => ReactNode
+}
 
 const defaultGetThinkingMessage = (isStreaming: boolean, duration?: number): ReactNode => {
   if (isStreaming || duration === 0) {
-    return <Shimmer duration={1.5}>Thinking…</Shimmer>;
+    return <Shimmer duration={1.5}>Thinking…</Shimmer>
   }
   if (duration === undefined) {
-    return "Thought for a few seconds";
+    return 'Thought for a few seconds'
   }
-  return `Thought for ${duration}s`;
-};
+  return `Thought for ${duration}s`
+}
 
 export const ReasoningTrigger = memo(function ReasoningTrigger({
   className,
@@ -110,13 +110,13 @@ export const ReasoningTrigger = memo(function ReasoningTrigger({
   getThinkingMessage = defaultGetThinkingMessage,
   ...props
 }: ReasoningTriggerProps) {
-  const { isStreaming, duration } = useReasoningContext();
+  const { isStreaming, duration } = useReasoningContext()
 
   return (
     <Collapsible.Trigger
       data-slot="reasoning-trigger"
       className={cn(
-        "flex w-full items-center justify-between gap-2 px-0 py-0.5 text-left text-xs font-normal text-muted-foreground hover:text-foreground/80",
+        'flex w-full items-center justify-between gap-2 px-0 py-0.5 text-left text-xs font-normal text-muted-foreground hover:text-foreground/80',
         className,
       )}
       {...props}
@@ -140,14 +140,14 @@ export const ReasoningTrigger = memo(function ReasoningTrigger({
         </>
       )}
     </Collapsible.Trigger>
-  );
-});
+  )
+})
 
 export type ReasoningContentProps = ComponentProps<typeof Collapsible.Content> & {
-  children: string;
-};
+  children: string
+}
 
-const streamdownPlugins = { cjk, code, math, mermaid };
+const streamdownPlugins = { cjk, code, math, mermaid }
 
 export const ReasoningContent = memo(function ReasoningContent({
   className,
@@ -158,12 +158,12 @@ export const ReasoningContent = memo(function ReasoningContent({
     <Collapsible.Content
       data-slot="reasoning-content"
       className={cn(
-        "max-h-48 overflow-y-auto py-1 text-xs leading-relaxed text-muted-foreground",
+        'max-h-48 overflow-y-auto py-1 text-xs leading-relaxed text-muted-foreground',
         className,
       )}
       {...props}
     >
       <Streamdown plugins={streamdownPlugins}>{children}</Streamdown>
     </Collapsible.Content>
-  );
-});
+  )
+})

@@ -42,10 +42,5 @@ export function dedupeHarnessActivities(activities: StreamActivityEvent[]): Stre
     rest.push(activity)
   }
 
-  return [
-    ...rest,
-    ...messageById.values(),
-    ...reasoningById.values(),
-    ...harnessPending.values(),
-  ]
+  return [...rest, ...messageById.values(), ...reasoningById.values(), ...harnessPending.values()]
 }

@@ -16,9 +16,7 @@ function createWorkflowAdapter(): AgentAdapter {
     case 'opencode':
       return new OpenCodeAdapter()
     case 'codex':
-      throw new Error(
-        'CIRCUIT_AGENT_ADAPTER=codex is not implemented yet. Use mock or opencode.',
-      )
+      throw new Error('CIRCUIT_AGENT_ADAPTER=codex is not implemented yet. Use mock or opencode.')
     case 'mock':
       return new MockAgentAdapter()
     default:

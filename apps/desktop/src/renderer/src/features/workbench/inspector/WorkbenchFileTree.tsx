@@ -154,11 +154,7 @@ export function WorkbenchFileTree({
   }
 
   if (!pathsOverride && pathsQuery.isError) {
-    return (
-      <p className="px-2 py-4 text-xs text-destructive">
-        Failed to load workspace files.
-      </p>
-    )
+    return <p className="px-2 py-4 text-xs text-destructive">Failed to load workspace files.</p>
   }
 
   if (paths.length === 0) {

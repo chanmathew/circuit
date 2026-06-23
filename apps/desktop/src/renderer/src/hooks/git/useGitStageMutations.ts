@@ -10,7 +10,10 @@ import {
   applyUnstageOptimistic,
 } from './optimistic-git-status.js'
 
-function refreshGitDiff(queryClient: ReturnType<typeof useQueryClient>, workspacePath: string): void {
+function refreshGitDiff(
+  queryClient: ReturnType<typeof useQueryClient>,
+  workspacePath: string,
+): void {
   void queryClient.invalidateQueries({
     queryKey: ['workspace', workspacePath, 'git-diff'],
   })

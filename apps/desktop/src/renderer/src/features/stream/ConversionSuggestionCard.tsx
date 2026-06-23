@@ -14,7 +14,10 @@ export function ConversionSuggestionCard({
   disabled = false,
 }: ConversionSuggestionCardProps): React.ReactElement {
   return (
-    <Card size="sm" className="mx-auto mb-3 w-full max-w-2xl gap-2 border-primary/30 py-3 shadow-none">
+    <Card
+      size="sm"
+      className="mx-auto mb-3 w-full max-w-2xl gap-2 border-primary/30 py-3 shadow-none"
+    >
       <CardHeader className="gap-1 px-4 py-0">
         <CardTitle className="text-sm">Enable workflow?</CardTitle>
         <CardDescription className="text-xs">

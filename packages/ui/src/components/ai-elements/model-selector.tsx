@@ -1,8 +1,8 @@
-"use client";
+'use client'
 
-import type { ComponentProps, ComponentType, ReactNode, SVGProps } from "react";
+import type { ComponentProps, ComponentType, ReactNode, SVGProps } from 'react'
 
-import { cn } from "../../lib/utils.js";
+import { cn } from '../../lib/utils.js'
 import {
   Command,
   CommandDialog,
@@ -13,106 +13,79 @@ import {
   CommandList,
   CommandSeparator,
   CommandShortcut,
-} from "../command.js";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogTrigger,
-} from "../dialog.js";
+} from '../command.js'
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '../dialog.js'
 
-export type ModelSelectorProps = ComponentProps<typeof Dialog>;
+export type ModelSelectorProps = ComponentProps<typeof Dialog>
 
-export const ModelSelector = (props: ModelSelectorProps) => (
-  <Dialog {...props} />
-);
+export const ModelSelector = (props: ModelSelectorProps) => <Dialog {...props} />
 
-export type ModelSelectorTriggerProps = ComponentProps<typeof DialogTrigger>;
+export type ModelSelectorTriggerProps = ComponentProps<typeof DialogTrigger>
 
 export const ModelSelectorTrigger = (props: ModelSelectorTriggerProps) => (
   <DialogTrigger {...props} />
-);
+)
 
 export type ModelSelectorContentProps = ComponentProps<typeof DialogContent> & {
-  title?: ReactNode;
-};
+  title?: ReactNode
+}
 
 export const ModelSelectorContent = ({
   className,
   children,
-  title = "Model Selector",
+  title = 'Model Selector',
   ...props
 }: ModelSelectorContentProps) => (
   <DialogContent
     aria-describedby={undefined}
     showCloseButton={false}
-    className={cn(
-      "outline-solid! border-none! p-0 outline! outline-border!",
-      className
-    )}
+    className={cn('outline-solid! border-none! p-0 outline! outline-border!', className)}
     {...props}
   >
     <DialogTitle className="sr-only">{title}</DialogTitle>
-    <Command className="**:data-[slot=command-input-wrapper]:h-auto">
-      {children}
-    </Command>
+    <Command className="**:data-[slot=command-input-wrapper]:h-auto">{children}</Command>
   </DialogContent>
-);
+)
 
-export type ModelSelectorDialogProps = ComponentProps<typeof CommandDialog>;
+export type ModelSelectorDialogProps = ComponentProps<typeof CommandDialog>
 
-export const ModelSelectorDialog = (props: ModelSelectorDialogProps) => (
-  <CommandDialog {...props} />
-);
+export const ModelSelectorDialog = (props: ModelSelectorDialogProps) => <CommandDialog {...props} />
 
-export type ModelSelectorInputProps = ComponentProps<typeof CommandInput>;
+export type ModelSelectorInputProps = ComponentProps<typeof CommandInput>
 
-export const ModelSelectorInput = ({
-  className,
-  ...props
-}: ModelSelectorInputProps) => (
+export const ModelSelectorInput = ({ className, ...props }: ModelSelectorInputProps) => (
   <CommandInput className={className} {...props} />
-);
+)
 
-export type ModelSelectorListProps = ComponentProps<typeof CommandList>;
+export type ModelSelectorListProps = ComponentProps<typeof CommandList>
 
-export const ModelSelectorList = (props: ModelSelectorListProps) => (
-  <CommandList {...props} />
-);
+export const ModelSelectorList = (props: ModelSelectorListProps) => <CommandList {...props} />
 
-export type ModelSelectorEmptyProps = ComponentProps<typeof CommandEmpty>;
+export type ModelSelectorEmptyProps = ComponentProps<typeof CommandEmpty>
 
-export const ModelSelectorEmpty = (props: ModelSelectorEmptyProps) => (
-  <CommandEmpty {...props} />
-);
+export const ModelSelectorEmpty = (props: ModelSelectorEmptyProps) => <CommandEmpty {...props} />
 
-export type ModelSelectorGroupProps = ComponentProps<typeof CommandGroup>;
+export type ModelSelectorGroupProps = ComponentProps<typeof CommandGroup>
 
-export const ModelSelectorGroup = (props: ModelSelectorGroupProps) => (
-  <CommandGroup {...props} />
-);
+export const ModelSelectorGroup = (props: ModelSelectorGroupProps) => <CommandGroup {...props} />
 
-export type ModelSelectorItemProps = ComponentProps<typeof CommandItem>;
+export type ModelSelectorItemProps = ComponentProps<typeof CommandItem>
 
-export const ModelSelectorItem = (props: ModelSelectorItemProps) => (
-  <CommandItem {...props} />
-);
+export const ModelSelectorItem = (props: ModelSelectorItemProps) => <CommandItem {...props} />
 
-export type ModelSelectorShortcutProps = ComponentProps<typeof CommandShortcut>;
+export type ModelSelectorShortcutProps = ComponentProps<typeof CommandShortcut>
 
 export const ModelSelectorShortcut = (props: ModelSelectorShortcutProps) => (
   <CommandShortcut {...props} />
-);
+)
 
-export type ModelSelectorSeparatorProps = ComponentProps<
-  typeof CommandSeparator
->;
+export type ModelSelectorSeparatorProps = ComponentProps<typeof CommandSeparator>
 
 export const ModelSelectorSeparator = (props: ModelSelectorSeparatorProps) => (
   <CommandSeparator {...props} />
-);
+)
 
-type ProviderLogoProps = SVGProps<SVGSVGElement>;
+type ProviderLogoProps = SVGProps<SVGSVGElement>
 
 function AnthropicLogo({ className, ...props }: ProviderLogoProps) {
   return (
@@ -120,7 +93,7 @@ function AnthropicLogo({ className, ...props }: ProviderLogoProps) {
       viewBox="0 0 40 40"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden
-      className={cn("size-4 shrink-0", className)}
+      className={cn('size-4 shrink-0', className)}
       {...props}
     >
       <path
@@ -128,7 +101,7 @@ function AnthropicLogo({ className, ...props }: ProviderLogoProps) {
         fill="#D97757"
       />
     </svg>
-  );
+  )
 }
 
 function OpenAiLogo({ className, ...props }: ProviderLogoProps) {
@@ -137,7 +110,7 @@ function OpenAiLogo({ className, ...props }: ProviderLogoProps) {
       viewBox="0 0 40 40"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden
-      className={cn("size-4 shrink-0 text-foreground", className)}
+      className={cn('size-4 shrink-0 text-foreground', className)}
       {...props}
     >
       <path
@@ -145,71 +118,54 @@ function OpenAiLogo({ className, ...props }: ProviderLogoProps) {
         fill="currentColor"
       />
     </svg>
-  );
+  )
 }
 
 const PROVIDER_LOGOS: Record<string, ComponentType<ProviderLogoProps>> = {
   anthropic: AnthropicLogo,
   openai: OpenAiLogo,
-};
+}
 
 export type ModelSelectorLogoProps = SVGProps<SVGSVGElement> & {
-  provider: string;
-};
+  provider: string
+}
 
-export const ModelSelectorLogo = ({
-  provider,
-  className,
-  ...props
-}: ModelSelectorLogoProps) => {
-  const Logo = PROVIDER_LOGOS[provider];
+export const ModelSelectorLogo = ({ provider, className, ...props }: ModelSelectorLogoProps) => {
+  const Logo = PROVIDER_LOGOS[provider]
 
   if (Logo) {
-    return <Logo className={className} {...props} />;
+    return <Logo className={className} {...props} />
   }
 
   return (
     <svg
       viewBox="0 0 40 40"
       aria-hidden
-      className={cn("size-4 shrink-0 text-muted-foreground", className)}
+      className={cn('size-4 shrink-0 text-muted-foreground', className)}
       {...props}
     >
       <circle cx="20" cy="20" r="16" fill="currentColor" opacity="0.2" />
-      <text
-        x="20"
-        y="25"
-        textAnchor="middle"
-        fontSize="14"
-        fontWeight="600"
-        fill="currentColor"
-      >
+      <text x="20" y="25" textAnchor="middle" fontSize="14" fontWeight="600" fill="currentColor">
         {provider.slice(0, 1).toUpperCase()}
       </text>
     </svg>
-  );
-};
+  )
+}
 
-export type ModelSelectorLogoGroupProps = ComponentProps<"div">;
+export type ModelSelectorLogoGroupProps = ComponentProps<'div'>
 
-export const ModelSelectorLogoGroup = ({
-  className,
-  ...props
-}: ModelSelectorLogoGroupProps) => (
+export const ModelSelectorLogoGroup = ({ className, ...props }: ModelSelectorLogoGroupProps) => (
   <div
     className={cn(
-      "flex shrink-0 items-center [&>svg]:rounded-full [&>svg]:bg-background [&>svg]:p-0.5 [&>svg]:ring-1 [&>svg]:ring-border",
-      className
+      'flex shrink-0 items-center [&>svg]:rounded-full [&>svg]:bg-background [&>svg]:p-0.5 [&>svg]:ring-1 [&>svg]:ring-border',
+      className,
     )}
     {...props}
   />
-);
+)
 
-export type ModelSelectorNameProps = ComponentProps<"span">;
+export type ModelSelectorNameProps = ComponentProps<'span'>
 
-export const ModelSelectorName = ({
-  className,
-  ...props
-}: ModelSelectorNameProps) => (
-  <span className={cn("truncate text-left", className)} {...props} />
-);
+export const ModelSelectorName = ({ className, ...props }: ModelSelectorNameProps) => (
+  <span className={cn('truncate text-left', className)} {...props} />
+)

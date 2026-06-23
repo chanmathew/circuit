@@ -44,15 +44,9 @@ export function ComposerProjectSelector({
   return (
     <ModelSelector open={open} onOpenChange={setOpen}>
       <ModelSelectorTrigger asChild>
-        <PromptInputButton
-          type="button"
-          disabled={disabled}
-          tooltip="Select project"
-        >
+        <PromptInputButton type="button" disabled={disabled} tooltip="Select project">
           <HugeiconsIcon icon={Folder01Icon} strokeWidth={2} className="size-4 shrink-0" />
-          <ModelSelectorName>
-            {selectedRepo?.name ?? 'Select project'}
-          </ModelSelectorName>
+          <ModelSelectorName>{selectedRepo?.name ?? 'Select project'}</ModelSelectorName>
         </PromptInputButton>
       </ModelSelectorTrigger>
       <ModelSelectorContent title="Select project">

@@ -1,6 +1,13 @@
 import { dialog, ipcMain, shell } from 'electron'
 
-import { commitStaged, discardFiles, getDiff, getStatus, stageFiles, unstageFiles } from '@circuit/git'
+import {
+  commitStaged,
+  discardFiles,
+  getDiff,
+  getStatus,
+  stageFiles,
+  unstageFiles,
+} from '@circuit/git'
 
 import { CircuitError, ValidationError } from '@circuit/shared'
 import { isValidTaskMode, type TaskMode } from '@circuit/workflow'
@@ -56,7 +63,13 @@ function requireTaskMode(value: string | undefined): TaskMode {
 }
 import { registerRepo, listRegisteredRepos } from '../services/repos.js'
 import { resolveDecision } from '../services/decisions.js'
-import { createDraftTask, getArtifactDetail, getTaskDetail, getWorkflowRunDetail, listAllTasks } from '../services/tasks.js'
+import {
+  createDraftTask,
+  getArtifactDetail,
+  getTaskDetail,
+  getWorkflowRunDetail,
+  listAllTasks,
+} from '../services/tasks.js'
 import { applySteeringRevision } from '../services/workflow-events.js'
 import {
   approvePhase,
@@ -184,7 +197,9 @@ export function registerIpcHandlers(): void {
   })
 
   async function handleEnableWorkflow(request: EnableWorkflowRequest) {
-    const workflowType = request.workflowType as import('@circuit/workflow').WorkflowType | undefined
+    const workflowType = request.workflowType as
+      | import('@circuit/workflow').WorkflowType
+      | undefined
 
     if (request.text?.trim()) {
       return enableWorkflowFromChat(request.taskId, request.text, {
@@ -251,7 +266,9 @@ export function registerIpcHandlers(): void {
         return toTaskDto(
           await startFollowUpWorkflow(request.taskId, {
             description: request.description,
-            workflowType: request.workflowType as import('@circuit/workflow').WorkflowType | undefined,
+            workflowType: request.workflowType as
+              | import('@circuit/workflow').WorkflowType
+              | undefined,
           }),
         )
       } catch (error) {
@@ -326,20 +343,23 @@ export function registerIpcHandlers(): void {
     },
   )
 
-  ipcMain.handle('circuit:tasks:resolveDecision', async (_event, request: ResolveDecisionRequest) => {
-    try {
-      const detail = resolveDecision(
-        request.taskId,
-        request.phase,
-        request.decisionId,
-        request.optionId,
-        request.optionLabel,
-      )
-      return toTaskDto(detail)
-    } catch (error) {
-      throw toIpcError(error)
-    }
-  })
+  ipcMain.handle(
+    'circuit:tasks:resolveDecision',
+    async (_event, request: ResolveDecisionRequest) => {
+      try {
+        const detail = resolveDecision(
+          request.taskId,
+          request.phase,
+          request.decisionId,
+          request.optionId,
+          request.optionLabel,
+        )
+        return toTaskDto(detail)
+      } catch (error) {
+        throw toIpcError(error)
+      }
+    },
+  )
 
   ipcMain.handle(
     'circuit:tasks:applySteeringRevision',
@@ -359,21 +379,24 @@ export function registerIpcHandlers(): void {
     },
   )
 
-  ipcMain.handle('circuit:tasks:replyPermission', async (_event, request: ReplyPermissionRequest) => {
-    try {
-      requireTaskWorkspacePath(request.taskId, request.workspacePath)
-      requireHarnessSessionForTask(request.taskId, request.sessionId)
-      await replyHarnessPermission({
-        taskId: request.taskId,
-        sessionId: request.sessionId,
-        permissionId: request.permissionId,
-        response: request.response,
-        workspacePath: request.workspacePath,
-      })
-    } catch (error) {
-      throw toIpcError(error)
-    }
-  })
+  ipcMain.handle(
+    'circuit:tasks:replyPermission',
+    async (_event, request: ReplyPermissionRequest) => {
+      try {
+        requireTaskWorkspacePath(request.taskId, request.workspacePath)
+        requireHarnessSessionForTask(request.taskId, request.sessionId)
+        await replyHarnessPermission({
+          taskId: request.taskId,
+          sessionId: request.sessionId,
+          permissionId: request.permissionId,
+          response: request.response,
+          workspacePath: request.workspacePath,
+        })
+      } catch (error) {
+        throw toIpcError(error)
+      }
+    },
+  )
 
   ipcMain.handle('circuit:tasks:replyQuestion', async (_event, request: ReplyQuestionRequest) => {
     try {
@@ -504,16 +527,19 @@ export function registerIpcHandlers(): void {
     }
   })
 
-  ipcMain.handle('circuit:shell:openWorkspaceFile', async (_event, request: OpenWorkspaceFileRequest) => {
-    try {
-      const workspacePath = requireRegisteredWorkspacePath(request.workspacePath)
-      const absolutePath = await resolveWorkspaceFileForOpen(workspacePath, request.path)
-      const error = await shell.openPath(absolutePath)
-      if (error) {
-        throw new ValidationError(`Could not open file: ${error}`)
+  ipcMain.handle(
+    'circuit:shell:openWorkspaceFile',
+    async (_event, request: OpenWorkspaceFileRequest) => {
+      try {
+        const workspacePath = requireRegisteredWorkspacePath(request.workspacePath)
+        const absolutePath = await resolveWorkspaceFileForOpen(workspacePath, request.path)
+        const error = await shell.openPath(absolutePath)
+        if (error) {
+          throw new ValidationError(`Could not open file: ${error}`)
+        }
+      } catch (error) {
+        throw toIpcError(error)
       }
-    } catch (error) {
-      throw toIpcError(error)
-    }
-  })
+    },
+  )
 }

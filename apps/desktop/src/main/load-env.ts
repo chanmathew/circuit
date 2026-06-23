@@ -58,7 +58,9 @@ export function loadLocalEnvFiles(): void {
 
 export function describeAgentAdapterEnv(): string {
   const adapter = process.env.CIRCUIT_AGENT_ADAPTER ?? '(unset, defaults to mock)'
-  const opencodeUrl = process.env.CIRCUIT_OPENCODE_URL ?? '(unset, defaults to http://localhost:4096)'
-  const opencodeModel = process.env.CIRCUIT_OPENCODE_MODEL ?? '(unset, uses OpenCode server default)'
+  const opencodeUrl =
+    process.env.CIRCUIT_OPENCODE_URL ?? '(unset, defaults to http://localhost:4096)'
+  const opencodeModel =
+    process.env.CIRCUIT_OPENCODE_MODEL ?? '(unset, uses OpenCode server default)'
   return `CIRCUIT_AGENT_ADAPTER=${adapter}, CIRCUIT_OPENCODE_URL=${opencodeUrl}, CIRCUIT_OPENCODE_MODEL=${opencodeModel}`
 }

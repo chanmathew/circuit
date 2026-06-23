@@ -1,9 +1,5 @@
 import { useEffect, useRef } from 'react'
-import {
-  Panel,
-  PanelGroup,
-  type ImperativePanelHandle,
-} from 'react-resizable-panels'
+import { Panel, PanelGroup, type ImperativePanelHandle } from 'react-resizable-panels'
 
 import type React from 'react'
 
@@ -123,7 +119,8 @@ export function WorkbenchPanelLayout({
   )
 
   const panelGroupKey =
-    layoutKey ?? `${hasContent ? 'content' : 'no-content'}-${hasInspector ? 'inspector' : 'no-inspector'}`
+    layoutKey ??
+    `${hasContent ? 'content' : 'no-content'}-${hasInspector ? 'inspector' : 'no-inspector'}`
 
   if (!hasContent && !hasInspector) {
     return (

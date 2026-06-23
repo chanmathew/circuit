@@ -32,7 +32,7 @@ export function formatToolLabel(input: {
 }): string {
   const tool = input.tool.trim().toLowerCase() || 'tool'
   const title = input.title?.trim()
-  const verb = TOOL_VERBS[tool] ?? (tool.charAt(0).toUpperCase() + tool.slice(1))
+  const verb = TOOL_VERBS[tool] ?? tool.charAt(0).toUpperCase() + tool.slice(1)
 
   if (title) {
     return `${verb} ${title}`
@@ -173,7 +173,8 @@ function matchFileDiff(pathOrTitle: string, diffs: FileDiffEntry[]): FileDiffEnt
 function isEditActivity(activity: AgentActivityEvent): boolean {
   if (activity.type === 'file_changed') return true
   if (activity.type !== 'tool_call') return false
-  const tool = typeof activity.metadata?.tool === 'string' ? activity.metadata.tool.toLowerCase() : ''
+  const tool =
+    typeof activity.metadata?.tool === 'string' ? activity.metadata.tool.toLowerCase() : ''
   return tool === 'edit' || tool === 'write' || tool === 'patch'
 }
 
@@ -343,9 +344,11 @@ type QuestionToolInput = {
   options?: Array<{ label: string; description?: string }>
 }
 
-function normalizeQuestionToolInput(
-  raw: unknown,
-): Array<{ header: string; question: string; options: Array<{ label: string; description?: string }> }> {
+function normalizeQuestionToolInput(raw: unknown): Array<{
+  header: string
+  question: string
+  options: Array<{ label: string; description?: string }>
+}> {
   if (!Array.isArray(raw)) return []
 
   return raw.flatMap((entry) => {
@@ -360,9 +363,8 @@ function normalizeQuestionToolInput(
     if (!text.trim()) return []
 
     const options = Array.isArray(question.options)
-      ? question.options.filter(
-          (option): option is { label: string; description?: string } =>
-            Boolean(option && typeof option.label === 'string' && option.label.trim()),
+      ? question.options.filter((option): option is { label: string; description?: string } =>
+          Boolean(option && typeof option.label === 'string' && option.label.trim()),
         )
       : []
 
@@ -592,8 +594,7 @@ export function normalizeActivityEvent(event: AgentActivityEvent): AgentActivity
   const status = asRunStatus(event.metadata?.status)
 
   if (event.type === 'file_read') {
-    const path =
-      typeof event.metadata?.path === 'string' ? event.metadata.path : event.content
+    const path = typeof event.metadata?.path === 'string' ? event.metadata.path : event.content
     return {
       ...event,
       content: formatFileReadLabel(path),
@@ -602,8 +603,7 @@ export function normalizeActivityEvent(event: AgentActivityEvent): AgentActivity
   }
 
   if (event.type === 'file_changed') {
-    const path =
-      typeof event.metadata?.path === 'string' ? event.metadata.path : event.content
+    const path = typeof event.metadata?.path === 'string' ? event.metadata.path : event.content
     return {
       ...event,
       content: formatFileChangedLabel(path),
@@ -613,8 +613,7 @@ export function normalizeActivityEvent(event: AgentActivityEvent): AgentActivity
 
   if (event.type === 'tool_call') {
     const tool = typeof event.metadata?.tool === 'string' ? event.metadata.tool : 'tool'
-    const title =
-      typeof event.metadata?.title === 'string' ? event.metadata.title : undefined
+    const title = typeof event.metadata?.title === 'string' ? event.metadata.title : undefined
     return {
       ...event,
       content: formatToolLabel({ tool, title, status: status ?? 'completed' }),

@@ -1,11 +1,7 @@
 import { cn } from '@circuit/ui'
 import { PanelResizeHandle } from 'react-resizable-panels'
 
-export function LayoutPanelResizeHandle({
-  className,
-}: {
-  className?: string
-}): React.ReactElement {
+export function LayoutPanelResizeHandle({ className }: { className?: string }): React.ReactElement {
   return (
     <PanelResizeHandle
       className={cn(

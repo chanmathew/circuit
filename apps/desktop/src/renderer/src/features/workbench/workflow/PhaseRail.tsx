@@ -108,9 +108,7 @@ export function PhaseRail({
         return (
           <div key={phase.name} className="flex shrink-0 items-center" role="listitem">
             <PhaseRailBadge phase={phase} isCurrent={isCurrent} onSelectPhase={onSelectPhase} />
-            {i < phases.length - 1 && (
-              <CircuitTrace fromComplete={isPhaseComplete(phase.status)} />
-            )}
+            {i < phases.length - 1 && <CircuitTrace fromComplete={isPhaseComplete(phase.status)} />}
           </div>
         )
       })}

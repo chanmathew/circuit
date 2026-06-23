@@ -6,8 +6,6 @@ export function mergeStablePathOrder(
   const currentSet = new Set(currentPaths)
   const next = stableOrder.filter((path) => currentSet.has(path))
   const known = new Set(next)
-  const added = currentPaths
-    .filter((path) => !known.has(path))
-    .sort((a, b) => a.localeCompare(b))
+  const added = currentPaths.filter((path) => !known.has(path)).sort((a, b) => a.localeCompare(b))
   return [...next, ...added]
 }

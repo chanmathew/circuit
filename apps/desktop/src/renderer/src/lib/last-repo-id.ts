@@ -17,10 +17,7 @@ export function writeLastRepoId(repoId: string): void {
   }
 }
 
-export function resolveRepoId(
-  repos: { id: string }[],
-  urlRepoId?: string,
-): string | undefined {
+export function resolveRepoId(repos: { id: string }[], urlRepoId?: string): string | undefined {
   if (urlRepoId && repos.some((repo) => repo.id === urlRepoId)) {
     return urlRepoId
   }

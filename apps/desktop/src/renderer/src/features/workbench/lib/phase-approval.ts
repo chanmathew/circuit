@@ -1,8 +1,5 @@
 import type { DecisionRequiredPayload } from '@circuit/protocol'
-import {
-  approveBlockedReason,
-  getPhaseRunLabel,
-} from '@circuit/workflow'
+import { approveBlockedReason, getPhaseRunLabel } from '@circuit/workflow'
 import type { WorkflowType } from '@circuit/workflow'
 
 export interface DecisionResolutionLike {

@@ -1,5 +1,11 @@
 import type { AgentAdapterCapabilities } from './capabilities.js'
-import type { AgentActivityEvent, ChatTurnRequest, ChatTurnResult, PhaseRunRequest, PhaseRunResult } from './types.js'
+import type {
+  AgentActivityEvent,
+  ChatTurnRequest,
+  ChatTurnResult,
+  PhaseRunRequest,
+  PhaseRunResult,
+} from './types.js'
 
 export type HarnessMessageRole = 'user' | 'assistant' | 'system'
 

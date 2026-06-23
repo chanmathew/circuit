@@ -35,8 +35,7 @@ export function ActivityGroupItemView({
 
   const display = item.display ?? (item.items.length <= 3 ? 'flat' : 'summary')
   const hasRunning = item.items.some((entry) => entry.status === 'running')
-  const defaultOpen =
-    display === 'flat' ? true : isLive || hasRunning || item.collapsed !== true
+  const defaultOpen = display === 'flat' ? true : isLive || hasRunning || item.collapsed !== true
 
   if (display === 'flat') {
     return (

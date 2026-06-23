@@ -46,10 +46,5 @@ export function useWorkspaceFileGitDiff(
     against?: 'HEAD' | 'index'
   },
 ) {
-  return useWorkspaceGitDiff(
-    workspacePath,
-    path.length > 0 ? [path] : undefined,
-    enabled,
-    options,
-  )
+  return useWorkspaceGitDiff(workspacePath, path.length > 0 ? [path] : undefined, enabled, options)
 }

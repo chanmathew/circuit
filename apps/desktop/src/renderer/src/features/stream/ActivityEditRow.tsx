@@ -32,25 +32,19 @@ export function ActivityEditRow({
   const labelParts = activityRowLabelParts(entry)
   const isRunning = entry.status === 'running'
   const [open, setOpen] = useState(false)
-  const needsDiffStats =
-    open && !isRunning && entry.additions == null && entry.deletions == null
+  const needsDiffStats = open && !isRunning && entry.additions == null && entry.deletions == null
   const diffQuery = useWorkspaceFileGitDiff(workspacePath, filePath, needsDiffStats, {
     against: 'HEAD',
   })
-  const diffStats = needsDiffStats && diffQuery.data
-    ? countUnifiedDiffLines(diffQuery.data)
-    : entry.additions != null || entry.deletions != null
-      ? { additions: entry.additions, deletions: entry.deletions }
-      : undefined
+  const diffStats =
+    needsDiffStats && diffQuery.data
+      ? countUnifiedDiffLines(diffQuery.data)
+      : entry.additions != null || entry.deletions != null
+        ? { additions: entry.additions, deletions: entry.deletions }
+        : undefined
 
   return (
-    <Task
-      open={open}
-      onOpenChange={setOpen}
-      defaultOpen={false}
-      variant="inline"
-      className="py-0"
-    >
+    <Task open={open} onOpenChange={setOpen} defaultOpen={false} variant="inline" className="py-0">
       <TaskTrigger
         variant="inline"
         title={entry.label}

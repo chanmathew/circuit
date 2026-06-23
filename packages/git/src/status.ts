@@ -43,10 +43,7 @@ function isUnstaged(workingDir: string): boolean {
 
 export async function getStatus(cwd: string): Promise<GitStatus> {
   const git = simpleGit(cwd)
-  const [result, numstatOutput] = await Promise.all([
-    git.status(),
-    git.diff(['HEAD', '--numstat']),
-  ])
+  const [result, numstatOutput] = await Promise.all([git.status(), git.diff(['HEAD', '--numstat'])])
 
   const numstat = parseNumStat(numstatOutput)
   const changes: GitFileChange[] = []

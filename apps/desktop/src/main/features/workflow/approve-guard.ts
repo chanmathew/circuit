@@ -14,16 +14,10 @@ export function assertCanApprove(taskId: string, phaseName: string): void {
   const activeRun = getActiveWorkflowRunForTask(db, taskId)
   const phaseRuns = listPhaseRunsForTask(db, taskId).filter(
     (run) =>
-      run.phase === 'chat' ||
-      (activeRun ? run.workflowRunId === activeRun.id : !run.workflowRunId),
+      run.phase === 'chat' || (activeRun ? run.workflowRunId === activeRun.id : !run.workflowRunId),
   )
   const required = requiredDecisionsForPhaseFromRuns(taskId, phaseName, phaseRuns)
-  const resolutions = listDecisionResolutionsForPhase(
-    db,
-    taskId,
-    phaseName,
-    activeRun?.id,
-  )
+  const resolutions = listDecisionResolutionsForPhase(db, taskId, phaseName, activeRun?.id)
   const resolvedIds = new Set(resolutions.map((r) => r.decisionId))
   const reason = approveBlockedReason(required, resolvedIds)
   if (reason) {

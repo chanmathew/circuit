@@ -315,12 +315,12 @@ action_card       — decisions, approvals, blockers, revision prompts
 reference_card    — links to artifacts, diffs, checks, files, reviews
 ```
 
-The stream summarizes and navigates; artifacts, diffs, validation output, and file
-content render in the center content view. Reference cards update content selection
-and the right inspector tab when opened.
+The stream summarizes and navigates; artifacts, diffs, validation output, and file content render in
+the center content view. Reference cards update content selection and the right inspector tab when
+opened.
 
-`ActionCard` variants cover decisions, approvals, blockers, and no-ship gates.
-`ReferenceCard` variants cover artifacts, diffs, checks, files, and reviews.
+`ActionCard` variants cover decisions, approvals, blockers, and no-ship gates. `ReferenceCard`
+variants cover artifacts, diffs, checks, files, and reviews.
 
 Example decision card (rendered as an action card in the stream):
 

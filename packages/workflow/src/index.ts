@@ -4,11 +4,7 @@ export { buildInitialPhases, type InitialPhase } from './phase-init.js'
 export { getPhaseLabel } from './phase-labels.js'
 export { getPhaseRunLabel } from './phase-next-step.js'
 export { isRevisionFeedback } from './revision-feedback.js'
-export {
-  approveBlockedReason,
-  getProceedLabel,
-  getUnresolvedDecisions,
-} from './phase-decisions.js'
+export { approveBlockedReason, getProceedLabel, getUnresolvedDecisions } from './phase-decisions.js'
 export {
   emptyArtifactMarkdown,
   getWorkflowPhaseArtifacts,

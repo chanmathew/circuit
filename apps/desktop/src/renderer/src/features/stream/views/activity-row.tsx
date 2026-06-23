@@ -45,11 +45,7 @@ export function ActivityRow({
   const showFileLink = filePath != null && labelParts.fileName != null
 
   const plainLabel =
-    entry.status === 'running' ? (
-      <Shimmer duration={1.5}>{entry.label}</Shimmer>
-    ) : (
-      entry.label
-    )
+    entry.status === 'running' ? <Shimmer duration={1.5}>{entry.label}</Shimmer> : entry.label
 
   return (
     <div className="flex items-baseline py-px text-xs text-muted-foreground">
@@ -72,9 +68,7 @@ export function ActivityRow({
         ) : (
           <span className="truncate">{plainLabel}</span>
         )}
-        {entry.detail && (
-          <span className="shrink-0 text-muted-foreground/60">{entry.detail}</span>
-        )}
+        {entry.detail && <span className="shrink-0 text-muted-foreground/60">{entry.detail}</span>}
         <DiffBadges
           additions={entry.additions}
           deletions={entry.deletions}

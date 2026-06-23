@@ -10,10 +10,7 @@ import type {
 import { openReference } from '@circuit/protocol'
 
 import type { ArtifactDto, FeedEventDto, TaskDto } from '../../../../../shared/api.js'
-import {
-  isAwaitingFirstPhase,
-  isWorkflowActive,
-} from '../../../../../shared/workflow-status.js'
+import { isAwaitingFirstPhase, isWorkflowActive } from '../../../../../shared/workflow-status.js'
 
 export interface DiffEntry {
   id: string
@@ -143,7 +140,10 @@ export function resolvePhaseArtifact(
   return latest
 }
 
-export function resolveArtifactId(artifacts: ArtifactDto[], target: ReferenceTarget): string | undefined {
+export function resolveArtifactId(
+  artifacts: ArtifactDto[],
+  target: ReferenceTarget,
+): string | undefined {
   if (target.type !== 'artifact') return undefined
   return resolveArtifactRef(artifacts, target.artifactId)?.id
 }
@@ -231,9 +231,7 @@ function primaryArtifactId(task: TaskDto): string {
   const needsReviewPhase = task.phases.find((phase) => phase.status === 'needs_review')
   const activePhase = task.phases.find((phase) => phase.name === task.currentPhase)
   const phaseForArtifact = needsReviewPhase ?? activePhase
-  const fromPhase = phaseForArtifact
-    ? resolvePhaseArtifact(task, phaseForArtifact.name)
-    : undefined
+  const fromPhase = phaseForArtifact ? resolvePhaseArtifact(task, phaseForArtifact.name) : undefined
   return (
     fromPhase?.id ??
     resolvePhaseArtifact(task, task.currentPhase)?.id ??

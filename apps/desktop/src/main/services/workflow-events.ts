@@ -11,10 +11,7 @@ import {
   updatePhase,
   updateTask,
 } from '@circuit/db'
-import type {
-  WorkflowRevisionAppliedPayload,
-  WorkflowSteeringPayload,
-} from '@circuit/protocol'
+import type { WorkflowRevisionAppliedPayload, WorkflowSteeringPayload } from '@circuit/protocol'
 import { createId, NotFoundError, ValidationError } from '@circuit/shared'
 import {
   applyPhaseRevision,
@@ -141,8 +138,7 @@ export function applySteeringRevision(
   if (!phase) throw new NotFoundError('Phase', input.affectedPhase)
 
   const note =
-    input.steeringText?.trim() ||
-    `Steering revision (${input.optionId}) on ${input.affectedPhase}.`
+    input.steeringText?.trim() || `Steering revision (${input.optionId}) on ${input.affectedPhase}.`
 
   if (input.optionId === 'note') {
     const artifact = getArtifactByTaskAndPhase(db, taskId, input.affectedPhase, activeRun.id)

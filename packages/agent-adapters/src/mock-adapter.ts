@@ -4,7 +4,13 @@ import { normalizeActivityEvent } from './activity-normalizer.js'
 import { getMockPhaseOutput } from './mock-fixtures.js'
 import { MOCK_CAPABILITIES } from './capabilities.js'
 import type { AgentAdapter } from './adapter.js'
-import type { AgentActivityEvent, ChatTurnRequest, ChatTurnResult, PhaseRunRequest, PhaseRunResult } from './types.js'
+import type {
+  AgentActivityEvent,
+  ChatTurnRequest,
+  ChatTurnResult,
+  PhaseRunRequest,
+  PhaseRunResult,
+} from './types.js'
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))

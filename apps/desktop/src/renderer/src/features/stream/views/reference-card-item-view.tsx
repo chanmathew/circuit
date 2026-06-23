@@ -1,12 +1,5 @@
 import type { ReferenceCardItem, StreamAction } from '@circuit/protocol'
-import {
-  Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@circuit/ui'
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@circuit/ui'
 
 import type { StreamItemContext } from './stream-item-context.js'
 

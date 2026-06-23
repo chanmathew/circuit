@@ -7,11 +7,7 @@ function basename(path: string): string {
 }
 
 /** Build Pierre `FileContents` with basename-based language detection. */
-export function toPierreFileContents(
-  path: string,
-  content: string,
-  size: number,
-): FileContents {
+export function toPierreFileContents(path: string, content: string, size: number): FileContents {
   const name = basename(path)
   const lang = getFiletypeFromFileName(name)
 

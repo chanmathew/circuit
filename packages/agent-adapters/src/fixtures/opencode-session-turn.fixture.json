@@ -3,7 +3,9 @@
   "messages": [
     {
       "info": { "role": "user", "id": "msg_user_1" },
-      "parts": [{ "type": "text", "text": "Why is chat submit disabled?", "messageID": "msg_user_1" }]
+      "parts": [
+        { "type": "text", "text": "Why is chat submit disabled?", "messageID": "msg_user_1" }
+      ]
     },
     {
       "info": { "role": "assistant", "id": "msg_asst_1" },
