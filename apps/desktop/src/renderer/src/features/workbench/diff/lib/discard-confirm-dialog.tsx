@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from '@circuit/ui'
 
-import type { GitFileChangeDto } from '../../../../../shared/api.js'
+import type { GitFileChangeDto } from '../../../../../../shared/api.js'
 
 export interface PendingDiscard {
   paths: string[]

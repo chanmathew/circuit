@@ -32,6 +32,8 @@ export interface WorktreeOptions {
 
 export { getStatus } from './status.js'
 export { countUnifiedDiffLines } from './patch-stats.js'
+export { pathFromGitPatch } from './path-from-git-patch.js'
+export { splitGitPatchByFile } from './split-git-patch.js'
 export { getDiff, type GetDiffOptions } from './diff.js'
 export { toPierreGitStatusEntries, type PierreGitStatusEntry } from './pierre-git-status.js'
 export { stageFiles, unstageFiles } from './stage.js'

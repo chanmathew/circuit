@@ -1,25 +1,24 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 
-import { useGitStageMutations } from '../../../hooks/useGitStageMutations.js'
-import { useWorkspaceGitDiff } from '../../../hooks/useWorkspaceGitDiff.js'
-import { useWorkspaceGitStatus } from '../../../hooks/useWorkspaceGitStatus.js'
+import { useGitStageMutations } from '../../../hooks/git/useGitStageMutations.js'
+import { useWorkspaceGitDiff } from '../../../hooks/git/useWorkspaceGitDiff.js'
+import { useWorkspaceGitStatus } from '../../../hooks/git/useWorkspaceGitStatus.js'
 import { usePierreThemeType } from '../../../lib/pierre/usePierreThemeType.js'
 import { usePierreGlobalHighlightReady } from '../../../lib/pierre/PierreHighlightProvider.js'
-import { useDiffFilePatches } from '../hooks/useDiffFilePatches.js'
-import { useDiffFocusScroll } from '../hooks/useDiffFocusScroll.js'
-import { findGitChangeForPath } from '../lib/find-git-change-for-path.js'
-import { pathFromGitPatch } from '../lib/path-from-git-patch.js'
-import { pierreDiffViewerOptionsWithFileLinks } from '../lib/pierre-diff-header.js'
-import { resolveDiffFilePath } from '../lib/diff-file-path.js'
+import { useDiffFilePatches } from './hooks/useDiffFilePatches.js'
+import { useDiffFocusScroll } from './hooks/useDiffFocusScroll.js'
+import { findGitChangeForPath } from './lib/find-git-change-for-path.js'
+import { pathFromGitPatch, splitGitPatchByFile } from '@circuit/git'
+import { pierreDiffViewerOptionsWithFileLinks } from './lib/pierre-diff-header.js'
+import { resolveDiffFilePath } from './lib/diff-file-path.js'
 import {
   DiscardConfirmDialog,
   type PendingDiscard,
-} from '../lib/discard-confirm-dialog.js'
-import type { DiffEntry } from '../lib/workbench-content.js'
-import { WORKSPACE_DIFF_ID } from '../lib/workbench-content.js'
+} from './lib/discard-confirm-dialog.js'
+import type { DiffEntry } from '../navigation/workbench-content.js'
+import { WORKSPACE_DIFF_ID } from '../navigation/workbench-content.js'
 import { CollapsiblePatchDiff } from './CollapsiblePatchDiff.js'
 import { DiffWorkspaceSummaryBar } from './DiffWorkspaceSummaryBar.js'
-import { splitGitPatchByFile } from '../lib/split-git-patch.js'
 
 export interface DiffContentPanelProps {
   workspacePath: string

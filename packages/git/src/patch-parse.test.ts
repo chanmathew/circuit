@@ -1,6 +1,26 @@
 import { describe, expect, it } from 'vitest'
 
+import { pathFromGitPatch } from './path-from-git-patch.js'
 import { splitGitPatchByFile } from './split-git-patch.js'
+
+describe('pathFromGitPatch', () => {
+  it('extracts the b-side path from a diff header', () => {
+    const patch = [
+      'diff --git a/src/foo.ts b/src/foo.ts',
+      'index 111..222 100644',
+      '--- a/src/foo.ts',
+      '+++ b/src/foo.ts',
+    ].join('\n')
+
+    expect(pathFromGitPatch(patch)).toBe('src/foo.ts')
+  })
+
+  it('decodes quoted octal git paths', () => {
+    const patch = 'diff --git a/"foo\\040bar.ts" b/"foo\\040bar.ts"'
+
+    expect(pathFromGitPatch(patch)).toBe('foo bar.ts')
+  })
+})
 
 describe('splitGitPatchByFile', () => {
   it('returns empty array for blank patch', () => {

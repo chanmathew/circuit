@@ -1,6 +1,5 @@
-import type { GitStatusDto } from '../../../shared/api.js'
-import { pathFromGitPatch } from '../features/workbench/lib/path-from-git-patch.js'
-import { splitGitPatchByFile } from '../features/workbench/lib/split-git-patch.js'
+import type { GitStatusDto } from '../../../../shared/api.js'
+import { pathFromGitPatch, splitGitPatchByFile } from '@circuit/git'
 
 function summarizeChanges(changes: GitStatusDto['changes']): GitStatusDto['summary'] {
   let insertions = 0

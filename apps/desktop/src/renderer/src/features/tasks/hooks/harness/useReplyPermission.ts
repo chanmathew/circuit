@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query'
 
-import type { PermissionReply } from '../../../../../shared/api.js'
-import { circuitApi } from '../../../ipc/client.js'
+import type { PermissionReply } from '../../../../../../shared/api.js'
+import { circuitApi } from '../../../../ipc/client.js'
 
 export function useReplyPermission(taskId: string, workspacePath: string) {
   return useMutation({

@@ -10,7 +10,7 @@ import {
   SubagentRunItemView,
   UserMessageItemView,
   type StreamItemContext,
-} from './StreamItemViews.js'
+} from './views/index.js'
 
 export interface StreamItemRendererProps {
   item: StreamItem

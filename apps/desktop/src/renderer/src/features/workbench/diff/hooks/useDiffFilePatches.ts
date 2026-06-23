@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
 
-import { mergeStablePathOrder } from '../../../lib/stable-path-order.js'
-import { useStablePathOrder } from '../../../hooks/useStablePathOrder.js'
-import { pathFromGitPatch } from '../lib/path-from-git-patch.js'
+import { mergeStablePathOrder } from '../../../../lib/stable-path-order.js'
+import { useStablePathOrder } from '../../../../hooks/useStablePathOrder.js'
+import { pathFromGitPatch } from '@circuit/git'
 
 const EMPTY_PATHS: string[] = []
 

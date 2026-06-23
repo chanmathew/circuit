@@ -1,8 +1,8 @@
 import { Button, cn } from '@circuit/ui'
 
 import type { GitFileChangeDto } from '../../../../../shared/api.js'
-import { DiffBadges } from '../../stream/DiffBadges.js'
-import { gitChangeStatusLetter } from './git-change-status.js'
+import { DiffBadges } from '../../../lib/diff/DiffBadges.js'
+import { gitChangeStatusLetter } from './lib/git-change-status-letter.js'
 
 export interface ChangeFileRowProps {
   change: GitFileChangeDto

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { GitFileChangeDto } from '../../../../../shared/api.js'
+import type { GitFileChangeDto } from '../../../../../../shared/api.js'
 import { findGitChangeForPath } from './find-git-change-for-path.js'
 
 function change(path: string): GitFileChangeDto {

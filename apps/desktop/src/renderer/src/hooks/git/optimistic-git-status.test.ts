@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { GitStatusDto } from '../../../shared/api.js'
+import type { GitStatusDto } from '../../../../shared/api.js'
 import {
   applyDiscardOptimistic,
   applyDiscardOptimisticToGitPatch,

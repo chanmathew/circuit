@@ -3,7 +3,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 
 import { useAddRepo, useRepos } from '../../repos/hooks/useRepos.js'
-import { CircuitInputComposer } from '../../stream/CircuitInputComposer.js'
+import { CircuitInputComposer } from '../../composer/CircuitInputComposer.js'
 import { StreamList } from '../../stream/StreamList.js'
 import { resolveRepoId, writeLastRepoId } from '../../../lib/last-repo-id.js'
 import { useCreateTaskFromIntake } from '../hooks/useCreateTaskFromIntake.js'

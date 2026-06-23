@@ -5,8 +5,8 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowDown01Icon } from '@hugeicons/core-free-icons'
 
 import type { GitFileChangeDto } from '../../../../../shared/api.js'
-import { DiffFileHeaderActions } from '../lib/diff-header-actions.js'
-import { mountPierreDiffHeader, unmountPierreDiffHeader } from '../lib/pierre-diff-header.js'
+import { DiffFileHeaderActions } from './lib/diff-header-actions.js'
+import { mountPierreDiffHeader, unmountPierreDiffHeader } from './lib/pierre-diff-header.js'
 
 type PierreDiffOptions = NonNullable<PatchDiffProps<undefined>['options']>
 

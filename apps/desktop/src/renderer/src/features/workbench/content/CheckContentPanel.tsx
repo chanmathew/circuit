@@ -1,6 +1,6 @@
 import { Badge, cn } from '@circuit/ui'
 
-import type { CheckEntry } from '../lib/workbench-content.js'
+import type { CheckEntry } from '../navigation/workbench-content.js'
 
 export interface CheckContentPanelProps {
   check: CheckEntry | undefined
@@ -26,7 +26,7 @@ export function CheckContentPanel({ check }: CheckContentPanelProps): React.Reac
           {check.passed ? 'Passed' : 'Failed'}
         </Badge>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+      <div className="panel-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
         <pre
           className={cn(
             'whitespace-pre-wrap p-4 font-mono text-xs leading-relaxed',

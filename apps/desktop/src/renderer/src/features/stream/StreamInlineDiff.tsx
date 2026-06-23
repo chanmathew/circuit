@@ -1,6 +1,6 @@
 import { PatchDiff } from '@pierre/diffs/react'
 
-import { useWorkspaceFileGitDiff } from '../../hooks/useWorkspaceGitDiff.js'
+import { useWorkspaceFileGitDiff } from '../../hooks/git/useWorkspaceGitDiff.js'
 import { usePierreThemeType } from '../../lib/pierre/usePierreThemeType.js'
 import { usePierreGlobalHighlightReady } from '../../lib/pierre/PierreHighlightProvider.js'
 import { pierreDiffViewerOptions } from '../../lib/pierre/pierre-viewer-options.js'

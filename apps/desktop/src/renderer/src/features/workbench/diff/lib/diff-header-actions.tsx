@@ -2,8 +2,8 @@ import { Checkbox, cn } from '@circuit/ui'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Delete02Icon } from '@hugeicons/core-free-icons'
 
-import type { GitFileChangeDto } from '../../../../../shared/api.js'
-import { DiffBadges } from '../../stream/DiffBadges.js'
+import type { GitFileChangeDto } from '../../../../../../shared/api.js'
+import { DiffBadges } from '../../../../lib/diff/DiffBadges.js'
 
 export const DIFF_HEADER_LINK_CLASS =
   'shrink-0 text-[10px] text-primary hover:underline disabled:pointer-events-none disabled:opacity-50'

@@ -1,6 +1,6 @@
 import { Separator } from '@circuit/ui'
 
-import type { WorkflowRunDto } from '../../../../shared/api.js'
+import type { WorkflowRunDto } from '../../../../../shared/api.js'
 import { PastWorkflowRow } from './PastWorkflowRow.js'
 
 export interface PastWorkflowsListProps {

@@ -42,12 +42,12 @@ export function ArtifactPanel({
         </div>
       </div>
       {preview ? (
-        <article className="min-h-0 flex-1 overflow-y-auto p-6 text-sm leading-relaxed">
+        <article className="panel-scroll min-h-0 flex-1 overflow-y-auto p-6 text-sm leading-relaxed">
           <MarkdownPreview content={content} />
         </article>
       ) : (
         <Textarea
-          className="min-h-0 flex-1 resize-none rounded-none border-0 bg-transparent font-mono text-sm focus-visible:ring-0"
+          className="panel-scroll min-h-0 flex-1 resize-none rounded-none border-0 bg-transparent font-mono text-sm focus-visible:ring-0"
           value={content}
           readOnly
         />

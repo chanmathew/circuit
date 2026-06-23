@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { GitFileChangeDto } from '../../../../../shared/api.js'
+import type { GitFileChangeDto } from '../../../../../../shared/api.js'
 import { buildDiscardConfirmCopy } from './discard-confirm-dialog.js'
 
 function change(

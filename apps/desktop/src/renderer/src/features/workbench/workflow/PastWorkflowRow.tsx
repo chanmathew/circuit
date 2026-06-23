@@ -1,6 +1,6 @@
 import { Badge, Button, Card, cn } from '@circuit/ui'
 
-import type { WorkflowRunDto } from '../../../../shared/workflow-run.js'
+import type { WorkflowRunDto } from '../../../../../shared/workflow-run.js'
 
 function formatRunDate(run: WorkflowRunDto): string {
   const date = run.completedAt ?? run.cancelledAt ?? run.startedAt

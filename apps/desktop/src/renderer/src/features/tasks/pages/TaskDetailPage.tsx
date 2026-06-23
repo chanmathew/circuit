@@ -1,6 +1,6 @@
 import { Card, CardContent } from '@circuit/ui'
 
-import { TaskWorkbench } from '../../workbench/TaskWorkbench.js'
+import { TaskWorkbench } from '../../workbench/shell/TaskWorkbench.js'
 import { useTask } from '../hooks/useTask.js'
 import { useTaskWorkflow } from '../hooks/useTaskWorkflow.js'
 import { TaskStreamProvider, useTaskStreamContext } from '../../stream/hooks/useTaskStreamLive.js'

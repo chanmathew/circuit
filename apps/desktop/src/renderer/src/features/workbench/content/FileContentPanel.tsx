@@ -61,7 +61,7 @@ export function FileContentPanel({
         </Button>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+      <div className="panel-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
         {fileQuery.isLoading ? (
           <p className="p-6 text-sm text-muted-foreground">Loading file…</p>
         ) : null}

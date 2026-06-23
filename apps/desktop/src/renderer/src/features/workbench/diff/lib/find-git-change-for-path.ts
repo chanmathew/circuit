@@ -1,4 +1,4 @@
-import type { GitFileChangeDto } from '../../../../../shared/api.js'
+import type { GitFileChangeDto } from '../../../../../../shared/api.js'
 
 import { resolveDiffFilePath } from './diff-file-path.js'
 

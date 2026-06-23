@@ -1,10 +1,10 @@
 import type { GitStatusDto } from '../../../../../shared/api.js'
-import { DiffBadges } from '../../stream/DiffBadges.js'
+import { DiffBadges } from '../../../lib/diff/DiffBadges.js'
 import {
   DIFF_HEADER_ACTIONS_RAIL_CLASS,
   DiffHeaderCheckbox,
   DiffHeaderDiscardButton,
-} from '../lib/diff-header-actions.js'
+} from './lib/diff-header-actions.js'
 
 export function DiffWorkspaceSummaryBar({
   gitStatus,

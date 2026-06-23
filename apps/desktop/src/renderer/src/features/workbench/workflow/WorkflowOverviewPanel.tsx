@@ -1,9 +1,9 @@
 import { getPhaseLabel, getWorkflowDefinition } from '@circuit/workflow'
 import { Badge, Button } from '@circuit/ui'
 
-import type { TaskDto } from '../../../../shared/api.js'
-import { isAwaitingFirstPhase } from '../../../../shared/workflow-status.js'
-import { useStartPhase } from '../stream/hooks/useStartPhase.js'
+import type { TaskDto } from '../../../../../shared/api.js'
+import { isAwaitingFirstPhase } from '../../../../../shared/workflow-status.js'
+import { useStartPhase } from '../../tasks/hooks/workflow/useStartPhase.js'
 
 export interface WorkflowOverviewPanelProps {
   task: TaskDto

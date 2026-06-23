@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
-import type { GitStatusDto } from '../../../shared/api.js'
-import { circuitApi } from '../ipc/client.js'
-import { queryKeys } from '../ipc/query-keys.js'
+import type { GitStatusDto } from '../../../../shared/api.js'
+import { circuitApi } from '../../ipc/client.js'
+import { queryKeys } from '../../ipc/query-keys.js'
 import {
   applyDiscardOptimistic,
   applyDiscardOptimisticToGitPatch,

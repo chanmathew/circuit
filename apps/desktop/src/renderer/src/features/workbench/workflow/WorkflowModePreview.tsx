@@ -1,6 +1,6 @@
 import { getPhaseLabel, resolvePreviewWorkflowType, type TaskMode } from '@circuit/workflow'
 
-import type { TaskDto } from '../../../../shared/api.js'
+import type { TaskDto } from '../../../../../shared/api.js'
 
 export interface WorkflowModePreviewProps {
   task: TaskDto

@@ -2,16 +2,16 @@ import { useQuery } from '@tanstack/react-query'
 
 import type { ContentView } from '@circuit/protocol'
 
-import type { ArtifactDto, TaskDto } from '../../../../shared/api.js'
-import { circuitApi } from '../../ipc/client.js'
-import { queryKeys } from '../../ipc/query-keys.js'
-import { ArtifactPanel } from './ArtifactPanel.js'
-import { CheckContentPanel } from './content/CheckContentPanel.js'
-import { DiffContentPanel } from './content/DiffContentPanel.js'
-import { FileContentPanel } from './content/FileContentPanel.js'
-import type { CheckEntry, DiffEntry } from './lib/workbench-content.js'
-import { resolveArtifactRef, resolvePhaseArtifact, resolveDiffEntry, WORKSPACE_DIFF_ID } from './lib/workbench-content.js'
-import { WorkflowOverviewPanel } from './WorkflowOverviewPanel.js'
+import type { ArtifactDto, TaskDto } from '../../../../../shared/api.js'
+import { circuitApi } from '../../../ipc/client.js'
+import { queryKeys } from '../../../ipc/query-keys.js'
+import { ArtifactPanel } from '../ArtifactPanel.js'
+import { CheckContentPanel } from '../content/CheckContentPanel.js'
+import { DiffContentPanel } from '../diff/DiffContentPanel.js'
+import { FileContentPanel } from '../content/FileContentPanel.js'
+import type { CheckEntry, DiffEntry } from '../navigation/workbench-content.js'
+import { resolveArtifactRef, resolvePhaseArtifact, resolveDiffEntry, WORKSPACE_DIFF_ID } from '../navigation/workbench-content.js'
+import { WorkflowOverviewPanel } from '../workflow/WorkflowOverviewPanel.js'
 
 export interface ContentViewPanelProps {
   contentView: ContentView

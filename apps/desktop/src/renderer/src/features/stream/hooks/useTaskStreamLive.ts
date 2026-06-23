@@ -3,11 +3,11 @@ import { useContext, useEffect, useState } from 'react'
 import type { StreamActivityEvent } from '@circuit/protocol'
 
 import { circuitApi } from '../../../ipc/client.js'
-import { TaskStreamContext, type HarnessSessionState, type TaskStreamLiveState } from './TaskStreamProvider.js'
+import { TaskStreamContext, type HarnessSessionState, type TaskStreamLiveState } from '../providers/TaskStreamProvider.js'
 import { dedupeHarnessActivities } from './task-stream-live-state.js'
 
 export type { HarnessSessionState, TaskStreamLiveState }
-export { TaskStreamProvider, useTaskStreamContext } from './TaskStreamProvider.js'
+export { TaskStreamProvider, useTaskStreamContext } from '../providers/TaskStreamProvider.js'
 
 /** Uses TaskStreamProvider when present; otherwise attaches its own IPC listener. */
 export function useTaskStreamLive(taskId: string): TaskStreamLiveState {

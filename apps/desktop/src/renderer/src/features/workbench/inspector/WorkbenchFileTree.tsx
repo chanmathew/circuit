@@ -7,7 +7,7 @@ import { Input, cn } from '@circuit/ui'
 
 import { circuitApi } from '../../../ipc/client.js'
 import { queryKeys } from '../../../ipc/query-keys.js'
-import { useWorkspaceGitStatus } from '../../../hooks/useWorkspaceGitStatus.js'
+import { useWorkspaceGitStatus } from '../../../hooks/git/useWorkspaceGitStatus.js'
 import { usePierreThemeType } from '../../../lib/pierre/usePierreThemeType.js'
 
 export interface WorkbenchFileTreeProps {
@@ -41,13 +41,18 @@ function WorkbenchFileTreeInner({
   const onSelectRef = useRef(onSelectPath)
   onSelectRef.current = onSelectPath
 
+  const filePathSet = useMemo(() => new Set(paths), [paths])
+
   const { model } = useFileTree({
     paths: [...paths],
     search: false,
     initialSelectedPaths: selectedPath ? [selectedPath] : [],
     onSelectionChange: (selectedPaths) => {
       const next = selectedPaths[0]
-      if (next) onSelectRef.current?.(next)
+      if (!next) return
+      const normalized = next.replace(/\/$/, '')
+      if (!filePathSet.has(normalized)) return
+      onSelectRef.current?.(normalized)
     },
   })
 

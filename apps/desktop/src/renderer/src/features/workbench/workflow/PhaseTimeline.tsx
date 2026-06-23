@@ -8,7 +8,7 @@ import {
   isPhaseComplete,
   phaseNodeClassName,
   phaseStatusLabel,
-} from './lib/phase-styles.js'
+} from '../lib/phase-styles.js'
 
 /** Fixed row height keeps dot centers evenly spaced for the spine math. */
 const ROW_HEIGHT_PX = 32

@@ -7,7 +7,7 @@ import {
 
 import type React from 'react'
 
-import { LayoutPanelResizeHandle } from '../../app/layout/PanelResizeHandle.js'
+import { LayoutPanelResizeHandle } from '../../../app/layout/PanelResizeHandle.js'
 
 /** Default inspector width when expanded. */
 export const INSPECTOR_DEFAULT_EXPANDED_SIZE = 25
@@ -89,6 +89,7 @@ function StreamContentPanels({
       <LayoutPanelResizeHandle />
       <Panel
         ref={contentRef}
+        id="workbench-content"
         collapsible
         collapsedSize={0}
         defaultSize={showContent ? CONTENT_DEFAULT_EXPANDED_SIZE : 0}

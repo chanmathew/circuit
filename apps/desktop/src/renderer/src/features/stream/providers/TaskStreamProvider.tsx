@@ -5,7 +5,7 @@ import type { StreamActivityEvent } from '@circuit/protocol'
 
 import { circuitApi } from '../../../ipc/client.js'
 import { queryKeys } from '../../../ipc/query-keys.js'
-import { dedupeHarnessActivities } from './task-stream-live-state.js'
+import { dedupeHarnessActivities } from '../hooks/task-stream-live-state.js'
 
 export interface HarnessSessionState {
   sessionId: string

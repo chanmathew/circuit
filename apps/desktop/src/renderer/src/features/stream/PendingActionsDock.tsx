@@ -1,7 +1,7 @@
 import type { ActionCardItem, StreamAction, ReferenceTarget } from '@circuit/protocol'
 
 import type { DecisionResolutionDto } from '../../../../shared/api.js'
-import { ActionCardItemView, type StreamItemContext } from './StreamItemViews.js'
+import { ActionCardItemView, type StreamItemContext } from './views/index.js'
 
 export interface PendingActionsDockProps {
   items: ActionCardItem[]

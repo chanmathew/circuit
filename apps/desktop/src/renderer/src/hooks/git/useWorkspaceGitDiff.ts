@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 
-import { circuitApi } from '../ipc/client.js'
-import { queryKeys } from '../ipc/query-keys.js'
+import { circuitApi } from '../../ipc/client.js'
+import { queryKeys } from '../../ipc/query-keys.js'
 
 function normalizePaths(paths: string[] | undefined): string[] | undefined {
   if (!paths?.length) return undefined

@@ -9,29 +9,29 @@ import { cn } from '@circuit/ui/utils'
 import type React from 'react'
 import type { ContentView, InspectorTab } from '@circuit/protocol'
 
-import type { ArtifactDto, GitFileChangeDto, TaskDto } from '../../../../shared/api.js'
+import type { ArtifactDto, GitFileChangeDto, TaskDto } from '../../../../../shared/api.js'
 import {
   INSPECTOR_TAB_TRIGGER_CLASS,
   INSPECTOR_TABS,
   INSPECTOR_TABS_LIST_CLASS,
-} from './lib/inspector-tabs.js'
-import type { CheckEntry, DiffEntry } from './lib/workbench-content.js'
-import { resolvePhaseArtifact, WORKSPACE_DIFF_ID } from './lib/workbench-content.js'
+} from '../navigation/inspector-tabs.js'
+import type { CheckEntry, DiffEntry } from '../navigation/workbench-content.js'
+import { resolvePhaseArtifact, WORKSPACE_DIFF_ID } from '../navigation/workbench-content.js'
 import {
   INSPECTOR_HEADER_ROW_CLASS,
   InspectorPanelToggle,
-} from './InspectorPanelToggle.js'
+} from '../InspectorPanelToggle.js'
 import {
   CHROME_CONTROL_WRAPPER_CLASS,
   CHROME_DRAG_STYLE,
   CHROME_END_INSET,
   CHROME_NO_DRAG_STYLE,
   CHROME_ROW_CLASS,
-} from '../../app/layout/chrome-row.js'
-import { WindowControls } from '../../app/layout/WindowControls.js'
-import { ChangesPanel } from './inspector/ChangesPanel.js'
-import { WorkbenchFileTree } from './inspector/WorkbenchFileTree.js'
-import { WorkflowPanel } from './WorkflowPanel.js'
+} from '../../../app/layout/chrome-row.js'
+import { WindowControls } from '../../../app/layout/WindowControls.js'
+import { ChangesPanel } from '../diff/ChangesPanel.js'
+import { WorkbenchFileTree } from '../inspector/WorkbenchFileTree.js'
+import { WorkflowPanel } from '../workflow/WorkflowPanel.js'
 
 export interface TaskRightSidebarProps {
   task: TaskDto

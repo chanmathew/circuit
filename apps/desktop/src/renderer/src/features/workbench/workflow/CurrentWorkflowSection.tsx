@@ -2,20 +2,20 @@ import { getPhaseLabel, getPhaseRunLabel } from '@circuit/workflow'
 import type { PhaseStatus, WorkflowType } from '@circuit/workflow'
 import { Button } from '@circuit/ui'
 
-import type { PhaseDto, TaskDto } from '../../../../shared/api.js'
+import type { PhaseDto, TaskDto } from '../../../../../shared/api.js'
 import {
   hasStartedPhase,
   isAwaitingFirstPhase,
-} from '../../../../shared/workflow-status.js'
-import { canDiscardWorkflowDraft } from '../../../../shared/workflow-run.js'
-import { useApprovePhase } from '../stream/hooks/useApprovePhase.js'
-import { useCancelWorkflow } from '../stream/hooks/useCancelWorkflow.js'
-import { useDiscardWorkflowDraft } from '../stream/hooks/useDiscardWorkflowDraft.js'
-import { useStartPhase } from '../stream/hooks/useStartPhase.js'
+} from '../../../../../shared/workflow-status.js'
+import { canDiscardWorkflowDraft } from '../../../../../shared/workflow-run.js'
+import { useApprovePhase } from '../../tasks/hooks/workflow/useApprovePhase.js'
+import { useCancelWorkflow } from '../../tasks/hooks/workflow/useCancelWorkflow.js'
+import { useDiscardWorkflowDraft } from '../../tasks/hooks/workflow/useDiscardWorkflowDraft.js'
+import { useStartPhase } from '../../tasks/hooks/workflow/useStartPhase.js'
 import {
   canApprovePhase,
   getApproveBlockedReason,
-} from './lib/phase-approval.js'
+} from '../lib/phase-approval.js'
 import { PhaseTimeline } from './PhaseTimeline.js'
 import { plannedPhasesFromDefinition } from './PastWorkflowDetail.js'
 

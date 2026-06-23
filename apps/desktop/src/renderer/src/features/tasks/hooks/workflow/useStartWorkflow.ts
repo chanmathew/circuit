@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
-import type { EnableWorkflowRequest, StartFollowUpWorkflowRequest } from '../../../../../shared/api.js'
-import { circuitApi } from '../../../ipc/client.js'
-import { queryKeys } from '../../../ipc/query-keys.js'
+import type { EnableWorkflowRequest, StartFollowUpWorkflowRequest } from '../../../../../../shared/api.js'
+import { circuitApi } from '../../../../ipc/client.js'
+import { queryKeys } from '../../../../ipc/query-keys.js'
 
 export interface StartWorkflowInput {
   /** When true, start follow-up from prior runs; otherwise enable fresh workflow. */

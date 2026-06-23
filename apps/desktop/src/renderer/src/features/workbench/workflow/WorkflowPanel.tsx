@@ -2,20 +2,20 @@ import { useState } from 'react'
 
 import { Button } from '@circuit/ui'
 
-import type { TaskDto } from '../../../../shared/api.js'
-import type { WorkflowRunDto } from '../../../../shared/workflow-run.js'
+import type { TaskDto } from '../../../../../shared/api.js'
+import type { WorkflowRunDto } from '../../../../../shared/workflow-run.js'
 import {
   canEnableWorkflow,
   hasPastWorkflowRuns,
   isWorkflowActive,
-} from '../../../../shared/workflow-status.js'
-import { useStartWorkflow } from '../stream/hooks/useStartWorkflow.js'
+} from '../../../../../shared/workflow-status.js'
+import { useStartWorkflow } from '../../tasks/hooks/workflow/useStartWorkflow.js'
 import { WorkflowModePreview } from './WorkflowModePreview.js'
 import { CurrentWorkflowSection } from './CurrentWorkflowSection.js'
 import { PastWorkflowDetail } from './PastWorkflowDetail.js'
 import { PastWorkflowsList } from './PastWorkflowsList.js'
-import { ArtifactTree } from './ArtifactTree.js'
-import type { ArtifactDto } from '../../../../shared/api.js'
+import { ArtifactTree } from '../ArtifactTree.js'
+import type { ArtifactDto } from '../../../../../shared/api.js'
 
 export interface WorkflowPanelProps {
   task: TaskDto

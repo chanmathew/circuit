@@ -5,11 +5,11 @@ import { Badge, Button } from '@circuit/ui'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { ArrowLeft01Icon } from '@hugeicons/core-free-icons'
 
-import type { WorkflowRunDetailDto } from '../../../../shared/workflow-run.js'
-import { circuitApi } from '../../ipc/client.js'
-import { queryKeys } from '../../ipc/query-keys.js'
+import type { WorkflowRunDetailDto } from '../../../../../shared/workflow-run.js'
+import { circuitApi } from '../../../ipc/client.js'
+import { queryKeys } from '../../../ipc/query-keys.js'
 import { PhaseTimeline } from './PhaseTimeline.js'
-import { resolvePhaseArtifact } from './lib/workbench-content.js'
+import { resolvePhaseArtifact } from '../navigation/workbench-content.js'
 
 export interface PastWorkflowDetailProps {
   taskId: string

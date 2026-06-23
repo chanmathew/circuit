@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
 
-import type { GitFileChangeDto } from '../../../shared/api.js'
-import { mergeStablePathOrder } from '../lib/stable-path-order.js'
-import { useStablePathOrder } from './useStablePathOrder.js'
+import type { GitFileChangeDto } from '../../../../shared/api.js'
+import { mergeStablePathOrder } from '../../lib/stable-path-order.js'
+import { useStablePathOrder } from '../useStablePathOrder.js'
 import { useWorkspaceGitStatus } from './useWorkspaceGitStatus.js'
 
 export function orderChangesByPath<T extends { path: string }>(

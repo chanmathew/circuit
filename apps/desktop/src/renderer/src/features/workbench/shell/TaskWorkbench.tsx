@@ -3,14 +3,14 @@ import { useEffect, useMemo, useState } from 'react'
 import type { ContentNavigationState, InspectorTab, ReferenceTarget } from '@circuit/protocol'
 import { cn } from '@circuit/ui'
 
-import type { TaskDto } from '../../../../shared/api.js'
-import { hasStartedPhase } from '../../../../shared/workflow-status.js'
-import { useStableWorkspacePathOrder } from '../../hooks/useStableWorkspacePathOrder.js'
-import { CircuitAgentStream } from '../stream/CircuitAgentStream.js'
-import { TitleBar } from '../../app/layout/TitleBar.js'
-import { useWindowState } from '../../app/layout/useWindowState.js'
+import type { TaskDto } from '../../../../../shared/api.js'
+import { hasStartedPhase } from '../../../../../shared/workflow-status.js'
+import { useStableWorkspacePathOrder } from '../../../hooks/git/useStableWorkspacePathOrder.js'
+import { CircuitAgentStream } from '../../stream/CircuitAgentStream.js'
+import { TitleBar } from '../../../app/layout/TitleBar.js'
+import { useWindowState } from '../../../app/layout/useWindowState.js'
 import { ContentViewPanel } from './ContentViewPanel.js'
-import { PierreHighlightProvider } from '../../lib/pierre/PierreHighlightProvider.js'
+import { PierreHighlightProvider } from '../../../lib/pierre/PierreHighlightProvider.js'
 import { TaskRightSidebar } from './TaskRightSidebar.js'
 import { WorkbenchPanelLayout } from './WorkbenchPanelLayout.js'
 import {
@@ -22,7 +22,7 @@ import {
   navigationForReference,
   resolvePhaseArtifact,
   WORKSPACE_DIFF_ID,
-} from './lib/workbench-content.js'
+} from '../navigation/workbench-content.js'
 
 export interface TaskWorkbenchProps {
   task: TaskDto
@@ -216,7 +216,7 @@ export function TaskWorkbench({
       handleSelectArtifact(artifactId)
       return
     }
-    void import('../../ipc/client.js').then(({ circuitApi }) =>
+    void import('../../../ipc/client.js').then(({ circuitApi }) =>
       circuitApi.getArtifact(artifactId).then((artifact) => {
         handleSelectArtifact(artifact.id)
       }),
