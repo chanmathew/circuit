@@ -14,6 +14,7 @@ export type AgentMessageItem = {
   role: AgentRole
   text: string
   createdAt: string
+  isStreaming?: boolean
 }
 
 export type ActivityStatus = 'running' | 'success' | 'failed' | 'warning' | 'info'

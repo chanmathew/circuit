@@ -1,6 +1,7 @@
 import { Button } from '@circuit/ui'
 import { cn } from '@circuit/ui/utils'
-import { PanelRightClose, PanelRightOpen } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { PanelRightCloseIcon, PanelRightOpenIcon } from '@hugeicons/core-free-icons'
 import type React from 'react'
 
 import { PANEL_TOGGLE_BUTTON_CLASS } from '../../app/layout/chrome-row.js'
@@ -30,9 +31,9 @@ export function InspectorPanelToggle({
       onClick={onToggle}
     >
       {open ? (
-        <PanelRightClose className="size-4" aria-hidden />
+        <HugeiconsIcon icon={PanelRightCloseIcon} strokeWidth={2} className="size-4" aria-hidden />
       ) : (
-        <PanelRightOpen className="size-4" aria-hidden />
+        <HugeiconsIcon icon={PanelRightOpenIcon} strokeWidth={2} className="size-4" aria-hidden />
       )}
     </Button>
   )

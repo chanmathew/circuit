@@ -23,9 +23,6 @@ export function ChangesCommitSection({
 
   return (
     <section className="space-y-2">
-      <p className="px-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-        Commit
-      </p>
       <Textarea
         value={message}
         onChange={(event) => setMessage(event.target.value)}

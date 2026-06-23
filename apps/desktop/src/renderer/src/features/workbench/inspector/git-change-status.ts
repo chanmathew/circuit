@@ -9,7 +9,7 @@ export function gitChangeStatusLetter(status: GitFileChangeDto['status']): strin
     case 'renamed':
       return 'R'
     case 'untracked':
-      return '?'
+      return 'U'
     case 'modified':
     default:
       return 'M'

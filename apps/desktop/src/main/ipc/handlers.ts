@@ -1,8 +1,9 @@
 import { dialog, ipcMain, shell } from 'electron'
 
-import { commitStaged, getDiff, getStatus, stageFiles, unstageFiles } from '@circuit/git'
+import { commitStaged, discardFiles, getDiff, getStatus, stageFiles, unstageFiles } from '@circuit/git'
 
 import { CircuitError, ValidationError } from '@circuit/shared'
+import { isValidTaskMode, type TaskMode } from '@circuit/workflow'
 
 import {
   toArtifactDto,
@@ -20,6 +21,7 @@ import {
   type ApplySteeringRevisionRequest,
   type CreateDraftTaskRequest,
   type CreateTaskFromIntakeRequest,
+  type UpdateTaskModeRequest,
   type ReplyPermissionRequest,
   type ReplyQuestionRequest,
   type RejectQuestionRequest,
@@ -44,6 +46,14 @@ import {
   validateWorkspaceRelativePaths,
 } from '../services/workspace-files.js'
 import { requireRegisteredWorkspacePath } from '../services/require-registered-workspace.js'
+
+function requireTaskMode(value: string | undefined): TaskMode {
+  const taskMode = value ?? 'auto'
+  if (!isValidTaskMode(taskMode)) {
+    throw new ValidationError(`Unsupported task mode: ${taskMode}`)
+  }
+  return taskMode
+}
 import { registerRepo, listRegisteredRepos } from '../services/repos.js'
 import { resolveDecision } from '../services/decisions.js'
 import { createDraftTask, getArtifactDetail, getTaskDetail, getWorkflowRunDetail, listAllTasks } from '../services/tasks.js'
@@ -52,6 +62,7 @@ import {
   approvePhase,
   cancelWorkflow,
   createTaskFromIntake,
+  updateTaskMode,
   discardWorkflowDraft,
   enableWorkflow,
   enableWorkflowFromChat,
@@ -133,7 +144,7 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('circuit:tasks:createDraft', (_event, request: CreateDraftTaskRequest) => {
     try {
-      const task = createDraftTask(request.repoId)
+      const task = createDraftTask(request.repoId, requireTaskMode(request.taskMode))
       return toTaskDto(task)
     } catch (error) {
       throw toIpcError(error)
@@ -144,7 +155,11 @@ export function registerIpcHandlers(): void {
     'circuit:tasks:createFromIntake',
     async (_event, request: CreateTaskFromIntakeRequest) => {
       try {
-        const task = await createTaskFromIntake(request.repoId, request.text)
+        const task = await createTaskFromIntake(
+          request.repoId,
+          request.text,
+          requireTaskMode(request.taskMode),
+        )
         return toTaskDto(task)
       } catch (error) {
         throw toIpcError(error)
@@ -155,6 +170,14 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('circuit:tasks:submitIntake', async (_event, request: SubmitTaskIntakeRequest) => {
     try {
       return toTaskDto(await submitTaskIntake(request.taskId, request.text))
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
+  ipcMain.handle('circuit:tasks:updateTaskMode', (_event, request: UpdateTaskModeRequest) => {
+    try {
+      return toTaskDto(updateTaskMode(request.taskId, requireTaskMode(request.taskMode)))
     } catch (error) {
       throw toIpcError(error)
     }
@@ -454,6 +477,17 @@ export function registerIpcHandlers(): void {
       const workspacePath = requireRegisteredWorkspacePath(request.workspacePath)
       const paths = validateWorkspaceRelativePaths(workspacePath, request.paths)
       await unstageFiles(workspacePath, paths)
+      return getStatus(workspacePath)
+    } catch (error) {
+      throw toIpcError(error)
+    }
+  })
+
+  ipcMain.handle('circuit:git:discard', async (_event, request: GitStageRequest) => {
+    try {
+      const workspacePath = requireRegisteredWorkspacePath(request.workspacePath)
+      const paths = validateWorkspaceRelativePaths(workspacePath, request.paths)
+      await discardFiles(workspacePath, paths)
       return getStatus(workspacePath)
     } catch (error) {
       throw toIpcError(error)

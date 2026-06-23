@@ -10,6 +10,7 @@ import {
   isWorkflowActive,
 } from '../../../../shared/workflow-status.js'
 import { useStartWorkflow } from '../stream/hooks/useStartWorkflow.js'
+import { WorkflowModePreview } from './WorkflowModePreview.js'
 import { CurrentWorkflowSection } from './CurrentWorkflowSection.js'
 import { PastWorkflowDetail } from './PastWorkflowDetail.js'
 import { PastWorkflowsList } from './PastWorkflowsList.js'
@@ -67,8 +68,9 @@ export function WorkflowPanel({
     <div className="flex min-h-0 flex-1 flex-col gap-4 p-3">
       {canStart && (
         <div className="space-y-2">
+          <WorkflowModePreview task={task} />
           <p className="text-xs text-muted-foreground">
-            Run structured phases with artifacts and review gates on this task.
+            Attach structured phases with artifacts and review gates.
             {hasPast ? ' Prior run context will seed the new ticket.' : null}
           </p>
           <Button

@@ -2,6 +2,7 @@ export { cn } from './lib/utils.js'
 export { Badge } from './components/badge.js'
 export { Button, buttonVariants } from './components/button.js'
 export { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './components/card.js'
+export { Checkbox } from './components/checkbox.js'
 export {
   Dialog,
   DialogClose,

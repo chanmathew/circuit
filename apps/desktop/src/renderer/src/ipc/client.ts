@@ -7,6 +7,7 @@ import type {
   StartFollowUpWorkflowRequest,
   CreateDraftTaskRequest,
   CreateTaskFromIntakeRequest,
+  UpdateTaskModeRequest,
   EnableWorkflowRequest,
   ListTasksRequest,
   ReplyPermissionRequest,
@@ -44,12 +45,16 @@ export const circuitApi = {
     if (typeof window.circuit.createTaskFromIntake === 'function') {
       return window.circuit.createTaskFromIntake(request)
     }
-    const draft = await window.circuit.createDraftTask({ repoId: request.repoId })
+    const draft = await window.circuit.createDraftTask({
+      repoId: request.repoId,
+      taskMode: request.taskMode,
+    })
     return window.circuit.submitTaskIntake({
       taskId: draft.id,
       text: request.text,
     })
   },
+  updateTaskMode: (request: UpdateTaskModeRequest) => window.circuit.updateTaskMode(request),
   submitTaskIntake: (request: SubmitTaskIntakeRequest) => window.circuit.submitTaskIntake(request),
   enableWorkflow: (request: EnableWorkflowRequest) => window.circuit.enableWorkflow(request),
   startPhase: (request: StartPhaseRequest) => window.circuit.startPhase(request),
@@ -81,6 +86,7 @@ export const circuitApi = {
   getGitDiff: (request: GitDiffRequest) => window.circuit.getGitDiff(request),
   gitStage: (request: GitStageRequest) => window.circuit.gitStage(request),
   gitUnstage: (request: GitStageRequest) => window.circuit.gitUnstage(request),
+  gitDiscard: (request: GitStageRequest) => window.circuit.gitDiscard(request),
   gitCommit: (request: GitCommitRequest) => window.circuit.gitCommit(request),
   openWorkspaceFile: (request: OpenWorkspaceFileRequest) =>
     window.circuit.openWorkspaceFile(request),

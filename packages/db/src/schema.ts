@@ -24,6 +24,7 @@ export const tasks = sqliteTable('tasks', {
   workspacePath: text('workspace_path').notNull(),
   workspaceStrategy: text('workspace_strategy').notNull(),
   interactionMode: text('interaction_mode').notNull().default('chat'),
+  taskMode: text('task_mode').notNull().default('auto'),
   workflowStatus: text('workflow_status').notNull().default('not_started'),
   pausedAt: text('paused_at'),
   createdAt: text('created_at').notNull(),

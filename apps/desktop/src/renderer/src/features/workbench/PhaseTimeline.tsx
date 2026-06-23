@@ -1,6 +1,7 @@
 import type { PhaseStatus } from '@circuit/workflow'
 import { cn } from '@circuit/ui'
-import { Check, Loader2 } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { Loading03Icon, Tick02Icon } from '@hugeicons/core-free-icons'
 
 import {
   activePhaseBadgeClassName,
@@ -61,9 +62,21 @@ function PhaseStatusText({
       )}
     >
       {running && (
-        <Loader2 className="size-2.5 shrink-0 animate-spin" strokeWidth={2.5} aria-hidden />
+        <HugeiconsIcon
+          icon={Loading03Icon}
+          strokeWidth={2.5}
+          className="size-2.5 shrink-0 animate-spin"
+          aria-hidden
+        />
       )}
-      {complete && <Check className="size-2.5 shrink-0" strokeWidth={2.5} aria-hidden />}
+      {complete && (
+        <HugeiconsIcon
+          icon={Tick02Icon}
+          strokeWidth={2.5}
+          className="size-2.5 shrink-0"
+          aria-hidden
+        />
+      )}
       {phaseStatusLabel(status)}
     </span>
   )

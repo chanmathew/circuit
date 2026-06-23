@@ -1,7 +1,9 @@
 import type { ArtifactRow, PhaseRow, RepoRow, TaskRow } from '@circuit/db'
 import type { CircuitEvent, DecisionRequiredPayload, StreamActivityEvent } from '@circuit/protocol'
-import { getPhaseLabel } from '@circuit/workflow'
+import { getPhaseLabel, type TaskMode } from '@circuit/workflow'
 import type { PhaseStatus } from '@circuit/workflow'
+
+export type { TaskMode } from '@circuit/workflow'
 
 export type { WorkflowRunDetailDto, WorkflowRunDto, WorkflowRunStatus } from './workflow-run.js'
 import type { WorkflowRunDetailDto, WorkflowRunDto } from './workflow-run.js'
@@ -184,6 +186,7 @@ export interface ResolveDecisionRequest {
 
 export interface CreateDraftTaskRequest {
   repoId: string
+  taskMode?: TaskMode
 }
 
 export interface SubmitTaskIntakeRequest {
@@ -194,6 +197,12 @@ export interface SubmitTaskIntakeRequest {
 export interface CreateTaskFromIntakeRequest {
   repoId: string
   text: string
+  taskMode?: TaskMode
+}
+
+export interface UpdateTaskModeRequest {
+  taskId: string
+  taskMode: TaskMode
 }
 
 export interface AbortSessionRequest {
@@ -395,6 +404,7 @@ export interface CircuitApi {
   getGitDiff: (request: GitDiffRequest) => Promise<string>
   gitStage: (request: GitStageRequest) => Promise<GitStatusDto>
   gitUnstage: (request: GitStageRequest) => Promise<GitStatusDto>
+  gitDiscard: (request: GitStageRequest) => Promise<GitStatusDto>
   gitCommit: (request: GitCommitRequest) => Promise<GitStatusDto>
   openWorkspaceFile: (request: OpenWorkspaceFileRequest) => Promise<void>
   listRepos: () => Promise<RepoDto[]>
@@ -402,6 +412,7 @@ export interface CircuitApi {
   listTasks: (request?: ListTasksRequest) => Promise<TaskSummaryDto[]>
   createDraftTask: (request: CreateDraftTaskRequest) => Promise<TaskDto>
   createTaskFromIntake: (request: CreateTaskFromIntakeRequest) => Promise<TaskDto>
+  updateTaskMode: (request: UpdateTaskModeRequest) => Promise<TaskDto>
   submitTaskIntake: (request: SubmitTaskIntakeRequest) => Promise<TaskDto>
   enableWorkflow: (request: EnableWorkflowRequest) => Promise<TaskDto>
   startPhase: (request: StartPhaseRequest) => Promise<TaskDto>

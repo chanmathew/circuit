@@ -225,13 +225,17 @@ function agentMessageFromActivity(
   activity: StreamActivityEvent,
   index: number,
   role: AgentRole,
+  options?: { isStreaming?: boolean },
 ): AgentMessageItem {
+  const messageId =
+    typeof activity.metadata?.messageID === 'string' ? activity.metadata.messageID : undefined
   return {
     kind: 'agent_message',
-    id: `activity-message-${index}`,
+    id: messageId ? `message-${messageId}` : `activity-message-${index}`,
     role,
     text: activity.content,
     createdAt: activity.timestamp,
+    ...(options?.isStreaming ? { isStreaming: true } : {}),
   }
 }
 
@@ -404,12 +408,15 @@ function subagentRunToItem(activity: StreamActivityEvent, index: number): Subage
 }
 
 function reasoningToItem(activity: StreamActivityEvent, index: number): ReasoningItem {
+  const messageId =
+    typeof activity.metadata?.messageID === 'string' ? activity.metadata.messageID : undefined
+  const isRunning = activity.metadata?.status === 'running'
   return {
     kind: 'reasoning',
-    id: `reasoning-${index}-${activity.timestamp}`,
+    id: messageId ? `reasoning-${messageId}` : `reasoning-${index}-${activity.timestamp}`,
     text: activity.content,
-    isStreaming: activity.metadata?.status === 'running',
-    collapsed: activity.metadata?.status !== 'running',
+    isStreaming: isRunning,
+    collapsed: !isRunning,
     createdAt: activity.timestamp,
   }
 }
@@ -1213,20 +1220,32 @@ export function mergeLiveActivities(
 
   const messageTail =
     messageActivities.length > 0
-      ? eventsToStreamItems({ events: [], activityEvents: messageActivities, options })
+      ? eventsToStreamItems({ events: [], activityEvents: messageActivities, options }).map(
+          (item) =>
+            item.kind === 'agent_message' ? { ...item, isStreaming: true } : item,
+        )
       : []
 
   const sorted = sortStreamItems([...baseItems, ...messageTail])
 
-  const liveReasoning = reasoningActivities.map((activity, index) =>
-    reasoningToItem(
-      {
-        ...activity,
-        metadata: { ...activity.metadata, status: 'running' },
-      },
-      index,
-    ),
+  const latestReasoningByKey = new Map<string, StreamActivityEvent>()
+  for (const activity of reasoningActivities) {
+    const key =
+      typeof activity.metadata?.messageID === 'string'
+        ? activity.metadata.messageID
+        : activity.timestamp
+    latestReasoningByKey.set(key, activity)
+  }
+
+  const hasLiveMessageText = messageTail.some(
+    (item) => item.kind === 'agent_message' && item.text.trim().length > 0,
   )
+
+  const liveReasoning = [...latestReasoningByKey.values()].map((activity, index) => {
+    const item = reasoningToItem(activity, index)
+    if (!hasLiveMessageText) return item
+    return { ...item, isStreaming: false, collapsed: true }
+  })
   const liveSubagents = mergeLiveSubagentRuns(subagentActivities)
   const liveGroup = buildLiveActivityGroup(toolActivities)
 

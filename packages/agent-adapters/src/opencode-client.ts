@@ -9,6 +9,17 @@ import {
   normalizeActivityEvent,
   sessionMessagesToActivities,
 } from './activity-normalizer.js'
+import {
+  createOpenCodeStreamAccumulator,
+  mapOpenCodeStreamEvent,
+  partStreamKey,
+} from './opencode-stream-state.js'
+
+export {
+  createOpenCodeStreamAccumulator,
+  mapOpenCodeStreamEvent,
+  partStreamKey,
+} from './opencode-stream-state.js'
 
 type OpenCodeQuestionOption = {
   label: string
@@ -139,138 +150,19 @@ export function extractTextFromParts(
 }
 
 export function mapOpenCodeEventToActivity(event: Event): AgentActivityEvent | null {
-  const timestamp = new Date().toISOString()
+  return mapOpenCodeStreamEvent(event, createOpenCodeStreamAccumulator(), streamEventDeps)
+}
 
-  if (event.type === 'message.part.updated') {
-    const part = event.properties.part
-    if (part.type === 'text' && part.text.trim()) {
-      return normalizeActivityEvent({
-        type: 'message',
-        timestamp,
-        content: part.text,
-        metadata: { sessionID: part.sessionID, messageID: part.messageID },
-      })
-    }
-    if (part.type === 'reasoning' || (part.type as string) === 'thinking') {
-      const text = 'text' in part && typeof part.text === 'string' ? part.text.trim() : ''
-      if (!text) return null
-      return normalizeActivityEvent({
-        type: 'reasoning',
-        timestamp,
-        content: text,
-        metadata: { sessionID: part.sessionID, messageID: part.messageID, status: 'running' },
-      })
-    }
-    if (part.type === 'file') {
-      const path = part.filename ?? part.url
-      return normalizeActivityEvent({
-        type: 'file_read',
-        timestamp,
-        content: path,
-        metadata: { path, status: 'completed' },
-      })
-    }
-    if (part.type === 'tool') {
-      if (part.tool === 'question') {
-        const activity = mapQuestionToolPartToActivity({
-          callId: 'callID' in part && typeof part.callID === 'string' ? part.callID : undefined,
-          sessionID: part.sessionID,
-          messageID: part.messageID,
-          state: part.state ?? {},
-          timestamp,
-        })
-        if (activity) return normalizeActivityEvent(activity)
-      }
-      return normalizeActivityEvent(
-        mapOpenCodeToolPartToActivity({
-          tool: part.tool,
-          state: part.state ?? {},
-          sessionID: part.sessionID,
-          messageID: part.messageID,
-          callId: 'callID' in part && typeof part.callID === 'string' ? part.callID : undefined,
-        }),
-      )
-    }
-    return null
-  }
+/** Per-turn stream mapper — accumulates text/reasoning deltas across SSE events. */
+export function createOpenCodeStreamMapper(): (event: Event) => AgentActivityEvent | null {
+  const stream = createOpenCodeStreamAccumulator()
+  return (event) => mapOpenCodeStreamEvent(event, stream, streamEventDeps)
+}
 
-  if (event.type === 'file.edited') {
-    return normalizeActivityEvent({
-      type: 'file_changed',
-      timestamp,
-      content: event.properties.file,
-      metadata: { path: event.properties.file, status: 'completed' },
-    })
-  }
-
-  if (event.type === 'command.executed') {
-    return normalizeActivityEvent({
-      type: 'command',
-      timestamp,
-      content: `${event.properties.name} ${event.properties.arguments}`.trim(),
-      metadata: { sessionID: event.properties.sessionID, status: 'completed' },
-    })
-  }
-
-  if (event.type === 'permission.updated') {
-    const permission = event.properties
-    return {
-      type: 'permission_request',
-      timestamp,
-      content: permission.title,
-      metadata: {
-        permissionId: permission.id,
-        sessionId: permission.sessionID,
-        permissionType: permission.type,
-        pattern: permission.pattern,
-      },
-    }
-  }
-
-  const questionProperties = parseQuestionAskedProperties(event)
-  if (questionProperties) {
-    const toolMeta =
-      typeof questionProperties.tool === 'object' && questionProperties.tool !== null
-        ? (questionProperties.tool as { callID?: string })
-        : undefined
-    const requestId =
-      typeof questionProperties.id === 'string'
-        ? questionProperties.id
-        : typeof toolMeta?.callID === 'string'
-          ? toolMeta.callID
-          : undefined
-    const sessionId = questionProperties.sessionID
-    const questions = questionProperties.questions
-    const first = questions[0]
-    return {
-      type: 'question_request',
-      timestamp,
-      content: first?.question ?? 'The agent has a question',
-      metadata: {
-        requestId,
-        sessionId,
-        questions,
-      },
-    }
-  }
-
-  if (event.type === 'session.error') {
-    const error = event.properties.error
-    const message =
-      typeof error === 'string'
-        ? error
-        : error && typeof error === 'object' && 'message' in error && typeof error.message === 'string'
-          ? error.message
-          : 'OpenCode session error'
-    return {
-      type: 'message',
-      timestamp,
-      content: message,
-      metadata: { severity: 'error', sessionID: event.properties.sessionID },
-    }
-  }
-
-  return null
+const streamEventDeps = {
+  mapToolPart: mapOpenCodeToolPartToActivity,
+  mapQuestionToolPart: mapQuestionToolPartToActivity,
+  normalize: normalizeActivityEvent,
 }
 
 export { sessionMessagesToActivities } from './activity-normalizer.js'
@@ -358,6 +250,16 @@ export function extractEventSessionId(event: Event): string | undefined {
 
   if (event.type === 'message.part.updated') {
     return event.properties.part.sessionID
+  }
+
+  if ((event.type as string) === 'message.part.delta') {
+    const properties = event.properties as { sessionID?: string }
+    return properties.sessionID
+  }
+
+  if ((event.type as string).startsWith('session.next.')) {
+    const properties = event.properties as { sessionID?: string }
+    return properties.sessionID
   }
 
   if (event.type === 'session.created' || event.type === 'session.updated') {

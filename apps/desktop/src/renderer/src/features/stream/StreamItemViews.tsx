@@ -1,5 +1,11 @@
 import { useState } from 'react'
-import { CheckIcon, ChevronDownIcon, CopyIcon, Loader2 } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import {
+  ArrowDown01Icon,
+  Copy01Icon,
+  Loading03Icon,
+  Tick02Icon,
+} from '@hugeicons/core-free-icons'
 
 import {
   Badge,
@@ -57,6 +63,10 @@ const SEVERITY_BORDER: Record<NonNullable<ActionCardItem['severity']>, string> =
 const messageActionsClassName =
   'w-full justify-start opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100'
 
+const mutedUserMessageClassName = 'group-[.is-user]:text-muted-foreground'
+const mutedAssistantMessageClassName = 'group-[.is-assistant]:text-muted-foreground'
+const mutedTaskTitleClassName = 'text-muted-foreground'
+
 function CopyMessageAction({ text }: { text: string }): React.ReactElement {
   const [copied, setCopied] = useState(false)
 
@@ -73,7 +83,11 @@ function CopyMessageAction({ text }: { text: string }): React.ReactElement {
       label={copied ? 'Copied' : 'Copy'}
       onClick={handleCopy}
     >
-      {copied ? <CheckIcon className="size-3" /> : <CopyIcon className="size-3" />}
+      {copied ? (
+        <HugeiconsIcon icon={Tick02Icon} strokeWidth={2} className="size-3" />
+      ) : (
+        <HugeiconsIcon icon={Copy01Icon} strokeWidth={2} className="size-3" />
+      )}
     </MessageAction>
   )
 }
@@ -102,21 +116,36 @@ function proceedPhaseFromItem(item: ActionCardItem): string | undefined {
   return undefined
 }
 
-export function UserMessageItemView({ item }: { item: UserMessageItem }): React.ReactElement {
+export function UserMessageItemView({
+  item,
+  emphasized = true,
+}: {
+  item: UserMessageItem
+  emphasized?: boolean
+}): React.ReactElement {
   return (
     <Message from="user">
-      <MessageContent>
+      <MessageContent className={cn(!emphasized && mutedUserMessageClassName)}>
         <MessageResponse>{item.text}</MessageResponse>
       </MessageContent>
     </Message>
   )
 }
 
-export function AgentMessageItemView({ item }: { item: AgentMessageItem }): React.ReactElement {
+export function AgentMessageItemView({
+  item,
+  emphasized = true,
+}: {
+  item: AgentMessageItem
+  emphasized?: boolean
+}): React.ReactElement {
   return (
     <Message from="assistant">
-      <MessageContent>
+      <MessageContent className={cn(!emphasized && mutedAssistantMessageClassName)}>
         <MessageResponse>{item.text}</MessageResponse>
+        {item.isStreaming ? (
+          <span className="inline-block w-2 animate-pulse text-primary">▍</span>
+        ) : null}
       </MessageContent>
       <MessageActions className={messageActionsClassName}>
         <CopyMessageAction text={item.text} />
@@ -263,9 +292,11 @@ function LiveActivityPanel({
 export function ActivityGroupItemView({
   item,
   context,
+  emphasized = true,
 }: {
   item: ActivityGroupItem
   context?: StreamItemContext
+  emphasized?: boolean
 }): React.ReactElement {
   const workspacePath = context?.workspacePath
   const onOpenReference = context?.onOpenReference
@@ -311,7 +342,7 @@ export function ActivityGroupItemView({
       <TaskTrigger
         variant="inline"
         title=""
-        className="min-h-0 justify-between gap-2"
+        className={cn('min-h-0 justify-between gap-2', !emphasized && mutedTaskTitleClassName)}
       >
         <span className="flex min-w-0 flex-1 items-baseline gap-1.5">
           <span className="truncate">{titleContent}</span>
@@ -322,9 +353,13 @@ export function ActivityGroupItemView({
           />
         </span>
         {isLive && hasRunning ? (
-          <Loader2 className="size-2.5 shrink-0 animate-spin text-primary" />
+          <HugeiconsIcon
+            icon={Loading03Icon}
+            strokeWidth={2}
+            className="size-2.5 shrink-0 animate-spin text-primary"
+          />
         ) : (
-          <ChevronDownIcon className={taskChevronClassName} />
+          <HugeiconsIcon icon={ArrowDown01Icon} strokeWidth={2} className={taskChevronClassName} />
         )}
       </TaskTrigger>
       <TaskContent variant="inline" className="ml-0 space-y-0 border-0 py-0 pl-0">
@@ -345,9 +380,11 @@ export function ActivityGroupItemView({
 export function SubagentRunItemView({
   item,
   context,
+  emphasized = true,
 }: {
   item: SubagentRunItem
   context?: StreamItemContext
+  emphasized?: boolean
 }): React.ReactElement {
   const isLive = item.live === true
   const hasRunning = item.status === 'running'
@@ -360,7 +397,11 @@ export function SubagentRunItemView({
 
   return (
     <Task defaultOpen={defaultOpen} variant="card" className="py-0">
-      <TaskTrigger variant="card" title="" className="justify-between gap-2">
+      <TaskTrigger
+        variant="card"
+        title=""
+        className={cn('justify-between gap-2', !emphasized && mutedTaskTitleClassName)}
+      >
         <span className="min-w-0 flex-1 truncate">{titleContent}</span>
         <span className="flex shrink-0 items-center gap-1.5">
           {typeof item.stepCount === 'number' && item.stepCount > 0 && (
@@ -369,9 +410,17 @@ export function SubagentRunItemView({
             </span>
           )}
           {isLive && hasRunning ? (
-            <Loader2 className="size-3 shrink-0 animate-spin text-primary" />
+            <HugeiconsIcon
+              icon={Loading03Icon}
+              strokeWidth={2}
+              className="size-3 shrink-0 animate-spin text-primary"
+            />
           ) : (
-            <ChevronDownIcon className="size-3 shrink-0 text-muted-foreground/70 transition-transform [[data-state=closed]_&]:-rotate-90" />
+            <HugeiconsIcon
+              icon={ArrowDown01Icon}
+              strokeWidth={2}
+              className="size-3 shrink-0 text-muted-foreground/70 transition-transform [[data-state=closed]_&]:-rotate-90"
+            />
           )}
         </span>
       </TaskTrigger>

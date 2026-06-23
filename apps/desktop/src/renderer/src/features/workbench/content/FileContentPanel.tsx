@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { File } from '@pierre/diffs/react'
-import { Button, ScrollArea } from '@circuit/ui'
+import { Button } from '@circuit/ui'
 
 import { circuitApi } from '../../../ipc/client.js'
 import { queryKeys } from '../../../ipc/query-keys.js'
@@ -36,7 +36,7 @@ export function FileContentPanel({
   const highlightReady = usePierreFileHighlightReady(pierreFile)
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       <div className="flex shrink-0 items-start justify-between gap-3 border-b border-border px-4 py-3">
         <div className="min-w-0">
           <p className="text-sm font-medium">File</p>
@@ -61,7 +61,7 @@ export function FileContentPanel({
         </Button>
       </div>
 
-      <ScrollArea className="min-h-0 flex-1">
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
         {fileQuery.isLoading ? (
           <p className="p-6 text-sm text-muted-foreground">Loading file…</p>
         ) : null}
@@ -84,7 +84,7 @@ export function FileContentPanel({
             disableWorkerPool
           />
         ) : null}
-      </ScrollArea>
+      </div>
     </div>
   )
 }

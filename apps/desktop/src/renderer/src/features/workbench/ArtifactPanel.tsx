@@ -16,8 +16,8 @@ export function ArtifactPanel({
   onPreviewChange,
 }: ArtifactPanelProps): React.ReactElement {
   return (
-    <div className="flex flex-col">
-      <div className="sticky top-0 z-10 flex shrink-0 items-center justify-between border-b border-border bg-card px-4 py-2">
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex shrink-0 items-center justify-between border-b border-border bg-card px-4 py-2">
         <div className="min-w-0">
           <p className="truncate text-sm font-medium">{title}</p>
           <p className="truncate font-mono text-[10px] text-muted-foreground">{relativePath}</p>
@@ -42,12 +42,12 @@ export function ArtifactPanel({
         </div>
       </div>
       {preview ? (
-        <article className="overflow-auto p-6 text-sm leading-relaxed">
+        <article className="min-h-0 flex-1 overflow-y-auto p-6 text-sm leading-relaxed">
           <MarkdownPreview content={content} />
         </article>
       ) : (
         <Textarea
-          className="min-h-[480px] resize-none rounded-none border-0 bg-transparent font-mono text-sm focus-visible:ring-0"
+          className="min-h-0 flex-1 resize-none rounded-none border-0 bg-transparent font-mono text-sm focus-visible:ring-0"
           value={content}
           readOnly
         />

@@ -17,7 +17,7 @@ export function StreamInlineDiff({
 }: StreamInlineDiffProps): React.ReactElement {
   const themeType = usePierreThemeType()
   const highlightReady = usePierreGlobalHighlightReady()
-  const diffQuery = useWorkspaceFileGitDiff(workspacePath, path)
+  const diffQuery = useWorkspaceFileGitDiff(workspacePath, path, true, { against: 'HEAD' })
 
   if (diffQuery.isLoading || !highlightReady) {
     return <p className="px-2 py-1.5 text-xs text-muted-foreground">Loading diff…</p>

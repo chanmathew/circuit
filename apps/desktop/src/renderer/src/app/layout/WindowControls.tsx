@@ -1,4 +1,5 @@
-import { Copy, Minus, Square, X } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { Cancel01Icon, Copy01Icon, MinusSignIcon, SquareIcon } from '@hugeicons/core-free-icons'
 import { useCallback, useEffect, useState } from 'react'
 
 import { Button } from '@circuit/ui'
@@ -42,7 +43,7 @@ export function WindowControls(): React.ReactElement {
         onClick={handleMinimize}
         aria-label="Minimize"
       >
-        <Minus className="size-3.5" />
+        <HugeiconsIcon icon={MinusSignIcon} strokeWidth={2} className="size-3.5" />
       </Button>
       <Button
         variant="ghost"
@@ -51,7 +52,11 @@ export function WindowControls(): React.ReactElement {
         onClick={handleToggleMaximize}
         aria-label={isMaximized ? 'Restore' : 'Maximize'}
       >
-        {isMaximized ? <Copy className="size-3" /> : <Square className="size-3" />}
+        {isMaximized ? (
+          <HugeiconsIcon icon={Copy01Icon} strokeWidth={2} className="size-3" />
+        ) : (
+          <HugeiconsIcon icon={SquareIcon} strokeWidth={2} className="size-3" />
+        )}
       </Button>
       <Button
         variant="ghost"
@@ -60,7 +65,7 @@ export function WindowControls(): React.ReactElement {
         onClick={handleClose}
         aria-label="Close"
       >
-        <X className="size-3.5" />
+        <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} className="size-3.5" />
       </Button>
     </div>
   )

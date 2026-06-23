@@ -19,4 +19,15 @@ describe('diff-file-path', () => {
   it('falls back to normalized patch name', () => {
     expect(resolveDiffFilePath({ name: 'a/README.md' })).toBe('README.md')
   })
+
+  it('prefers the longest suffix match when known path order changes', () => {
+    const knownPaths = ['tasks/task-2/design.md', 'tasks/task-1/design.md']
+
+    expect(resolveDiffFilePath({ name: 'design.md' }, knownPaths)).toBe(
+      'tasks/task-1/design.md',
+    )
+    expect(
+      resolveDiffFilePath({ name: 'design.md' }, [...knownPaths].reverse()),
+    ).toBe('tasks/task-1/design.md')
+  })
 })

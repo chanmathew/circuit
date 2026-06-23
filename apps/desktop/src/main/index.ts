@@ -40,6 +40,22 @@ function createWindow(): void {
     mainWindow.show()
   })
 
+  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, url) => {
+    console.error('[circuit] Renderer failed to load:', errorCode, errorDescription, url)
+  })
+
+  mainWindow.webContents.on('render-process-gone', (_event, details) => {
+    console.error('[circuit] Renderer process gone:', details.reason, details.exitCode)
+  })
+
+  if (isDev) {
+    mainWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+      if (level >= 2) {
+        console.error(`[circuit][renderer] ${message} (${sourceId}:${line})`)
+      }
+    })
+  }
+
   mainWindow.webContents.setWindowOpenHandler((details) => {
     void shell.openExternal(details.url)
     return { action: 'deny' }

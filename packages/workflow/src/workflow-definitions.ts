@@ -14,7 +14,7 @@ export const QUICK_FIX: WorkflowDefinition = {
 
 export const STRUCTURED_CHANGE: WorkflowDefinition = {
   type: 'structured_change',
-  label: 'Structured Change',
+  label: 'Guided Build',
   phases: ['questions', 'research', 'design', 'structure', 'plan', 'implement', 'review'],
 }
 

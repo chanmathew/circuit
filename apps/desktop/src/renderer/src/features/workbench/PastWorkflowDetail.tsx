@@ -2,7 +2,8 @@ import { useQuery } from '@tanstack/react-query'
 import { getPhaseLabel, getWorkflowDefinition } from '@circuit/workflow'
 import type { WorkflowType } from '@circuit/workflow'
 import { Badge, Button } from '@circuit/ui'
-import { ArrowLeft } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { ArrowLeft01Icon } from '@hugeicons/core-free-icons'
 
 import type { WorkflowRunDetailDto } from '../../../../shared/workflow-run.js'
 import { circuitApi } from '../../ipc/client.js'
@@ -75,7 +76,7 @@ export function PastWorkflowDetail({
           className="h-auto gap-1.5 px-0 py-1 text-xs text-muted-foreground hover:text-foreground"
           onClick={onBack}
         >
-          <ArrowLeft className="size-3.5" aria-hidden />
+          <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={2} className="size-3.5" aria-hidden />
           Past workflows
         </Button>
 

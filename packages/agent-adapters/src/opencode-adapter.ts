@@ -15,7 +15,7 @@ import {
   formatSessionTranscript,
   isSessionAbortedError,
   knownMessageIdsFromSession,
-  mapOpenCodeEventToActivity,
+  createOpenCodeStreamMapper,
   resolveOpenCodeModel,
   type OpenCodeClientOptions,
 } from './opencode-client.js'
@@ -97,8 +97,8 @@ export class OpenCodeAdapter implements AgentAdapter {
       if (event.type === 'message') {
         const messageId =
           typeof event.metadata?.messageID === 'string' ? event.metadata.messageID : undefined
+        // Skip messages that existed before this phase run; allow part.updated replays for new IDs.
         if (messageId && knownMessageIds.has(messageId)) return
-        if (messageId) knownMessageIds.add(messageId)
 
         const trimmedContent = event.content.trim()
         if (
@@ -208,8 +208,8 @@ export class OpenCodeAdapter implements AgentAdapter {
       if (event.type === 'message') {
         const messageId =
           typeof event.metadata?.messageID === 'string' ? event.metadata.messageID : undefined
+        // Skip messages already in the session before this turn; stream part.updated for new IDs.
         if (messageId && knownMessageIds.has(messageId)) return
-        if (messageId) knownMessageIds.add(messageId)
         if (event.content.trim() === request.prompt.trim()) return
       }
       onActivity(event)
@@ -576,6 +576,8 @@ export class OpenCodeAdapter implements AgentAdapter {
       })
     }
 
+    const mapStreamEvent = createOpenCodeStreamMapper()
+
     try {
       for await (const event of subscription.stream as AsyncIterable<Event>) {
         if (isFinished()) break
@@ -585,7 +587,7 @@ export class OpenCodeAdapter implements AgentAdapter {
           onSessionIdle()
         }
 
-        const activity = mapOpenCodeEventToActivity(event)
+        const activity = mapStreamEvent(event)
         if (!activity) continue
 
         const eventSessionId = extractEventSessionId(event)

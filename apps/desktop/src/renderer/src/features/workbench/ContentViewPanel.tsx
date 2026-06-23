@@ -10,7 +10,7 @@ import { CheckContentPanel } from './content/CheckContentPanel.js'
 import { DiffContentPanel } from './content/DiffContentPanel.js'
 import { FileContentPanel } from './content/FileContentPanel.js'
 import type { CheckEntry, DiffEntry } from './lib/workbench-content.js'
-import { resolveArtifactRef, resolvePhaseArtifact, resolveDiffEntry } from './lib/workbench-content.js'
+import { resolveArtifactRef, resolvePhaseArtifact, resolveDiffEntry, WORKSPACE_DIFF_ID } from './lib/workbench-content.js'
 import { WorkflowOverviewPanel } from './WorkflowOverviewPanel.js'
 
 export interface ContentViewPanelProps {
@@ -22,12 +22,12 @@ export interface ContentViewPanelProps {
   diffs: DiffEntry[]
   checks: CheckEntry[]
   allChangedPaths?: string[]
+  orderedPaths?: string[]
   preview: boolean
   isRunning?: boolean
   onPreviewChange: (preview: boolean) => void
   onSelectDiffPath?: (diffId: string, path: string) => void
   onSelectFile?: (path: string) => void
-  onViewAllChanges?: () => void
 }
 
 export function ContentViewPanel({
@@ -39,12 +39,50 @@ export function ContentViewPanel({
   diffs,
   checks,
   allChangedPaths = [],
+  orderedPaths = [],
   preview,
   isRunning = false,
   onPreviewChange,
   onSelectDiffPath,
   onSelectFile,
-  onViewAllChanges,
+}: ContentViewPanelProps): React.ReactElement {
+  return (
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
+      <ContentViewBody
+        contentView={contentView}
+        task={task}
+        artifacts={artifacts}
+        repoPath={repoPath}
+        workspacePath={workspacePath}
+        diffs={diffs}
+        checks={checks}
+        allChangedPaths={allChangedPaths}
+        orderedPaths={orderedPaths}
+        preview={preview}
+        isRunning={isRunning}
+        onPreviewChange={onPreviewChange}
+        onSelectDiffPath={onSelectDiffPath}
+        onSelectFile={onSelectFile}
+      />
+    </div>
+  )
+}
+
+function ContentViewBody({
+  contentView,
+  task,
+  artifacts,
+  repoPath,
+  workspacePath,
+  diffs,
+  checks,
+  allChangedPaths = [],
+  orderedPaths = [],
+  preview,
+  isRunning = false,
+  onPreviewChange,
+  onSelectDiffPath,
+  onSelectFile,
 }: ContentViewPanelProps): React.ReactElement {
   switch (contentView.type) {
     case 'workflow_overview':
@@ -66,18 +104,20 @@ export function ContentViewPanel({
         contentView.path,
         allChangedPaths,
       )
+      const isWorkspaceDiff = contentView.diffId === WORKSPACE_DIFF_ID
       return (
         <DiffContentPanel
           workspacePath={workspacePath}
           diff={diff}
-          selectedPath={contentView.path}
+          selectedPath={isWorkspaceDiff ? undefined : contentView.path}
+          focusPath={isWorkspaceDiff ? contentView.path : undefined}
+          orderedPaths={isWorkspaceDiff ? orderedPaths : undefined}
           onSelectPath={
             onSelectDiffPath && diff
               ? (path) => onSelectDiffPath(diff.id, path)
               : undefined
           }
           onOpenFile={onSelectFile}
-          onViewAllChanges={onViewAllChanges}
         />
       )
     }

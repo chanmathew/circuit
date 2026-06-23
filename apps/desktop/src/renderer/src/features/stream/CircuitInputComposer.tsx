@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import type { TaskMode } from '@circuit/workflow'
 import {
   Badge,
   ModelSelector,
@@ -31,6 +32,7 @@ import {
 } from '@circuit/ui'
 
 import type { RepoDto } from '../../../../shared/api.js'
+import { ComposerModeSelector } from './ComposerModeSelector.js'
 import { ComposerProjectSelector } from './ComposerProjectSelector.js'
 
 /** Scaffold list — wire to harness model discovery later. */
@@ -55,6 +57,10 @@ export interface CircuitInputComposerProps {
   repoId?: string
   onRepoChange?: (repoId: string) => void
   onAddRepo?: () => void
+  taskMode?: TaskMode
+  onTaskModeChange?: (taskMode: TaskMode) => void
+  taskModeDisabled?: boolean
+  taskModeError?: string
   onSend: (text: string) => void
   onStop?: () => void
 }
@@ -97,6 +103,10 @@ export function CircuitInputComposer({
   repoId,
   onRepoChange,
   onAddRepo,
+  taskMode,
+  onTaskModeChange,
+  taskModeDisabled = false,
+  taskModeError,
   onSend,
   onStop,
 }: CircuitInputComposerProps): React.ReactElement {
@@ -128,10 +138,14 @@ export function CircuitInputComposer({
   }
 
   const submitStatus = isRunning ? 'streaming' : disabled ? 'submitted' : 'ready'
-  const canSend = Boolean(repoId) && draft.trim().length > 0
+  const requiresRepo = repos !== undefined
+  const canSend = draft.trim().length > 0 && (!requiresRepo || Boolean(repoId))
 
   return (
     <div className="shrink-0 border-t border-border p-3">
+      {taskModeError ? (
+        <p className="mb-2 px-1 text-xs text-destructive">{taskModeError}</p>
+      ) : null}
       <PromptInput onSubmit={handleSubmit} className="w-full" multiple>
         <ComposerAttachmentHeader />
         <PromptInputBody>
@@ -164,6 +178,12 @@ export function CircuitInputComposer({
                 onAddRepo={onAddRepo}
               />
             ) : null}
+
+            <ComposerModeSelector
+              taskMode={taskMode}
+              disabled={toolbarDisabled || taskModeDisabled}
+              onTaskModeChange={onTaskModeChange}
+            />
 
             <ModelSelector open={modelMenuOpen} onOpenChange={setModelMenuOpen}>
               <ModelSelectorTrigger asChild>

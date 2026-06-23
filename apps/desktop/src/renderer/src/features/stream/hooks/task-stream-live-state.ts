@@ -3,6 +3,7 @@ import type { StreamActivityEvent } from '@circuit/protocol'
 export function dedupeHarnessActivities(activities: StreamActivityEvent[]): StreamActivityEvent[] {
   const harnessPending = new Map<string, StreamActivityEvent>()
   const messageById = new Map<string, StreamActivityEvent>()
+  const reasoningById = new Map<string, StreamActivityEvent>()
   const rest: StreamActivityEvent[] = []
 
   for (const activity of activities) {
@@ -30,8 +31,21 @@ export function dedupeHarnessActivities(activities: StreamActivityEvent[]): Stre
       messageById.set(messageId, activity)
       continue
     }
+    if (activity.type === 'reasoning') {
+      const messageId =
+        typeof activity.metadata?.messageID === 'string'
+          ? activity.metadata.messageID
+          : `${activity.timestamp}:${activity.content}`
+      reasoningById.set(messageId, activity)
+      continue
+    }
     rest.push(activity)
   }
 
-  return [...rest, ...messageById.values(), ...harnessPending.values()]
+  return [
+    ...rest,
+    ...messageById.values(),
+    ...reasoningById.values(),
+    ...harnessPending.values(),
+  ]
 }

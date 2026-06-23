@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import type { ContentNavigationState, InspectorTab, ReferenceTarget } from '@circuit/protocol'
-import { ScrollArea, cn } from '@circuit/ui'
+import { cn } from '@circuit/ui'
 
 import type { TaskDto } from '../../../../shared/api.js'
 import { hasStartedPhase } from '../../../../shared/workflow-status.js'
-import { useWorkspaceGitStatus } from '../../hooks/useWorkspaceGitStatus.js'
+import { useStableWorkspacePathOrder } from '../../hooks/useStableWorkspacePathOrder.js'
 import { CircuitAgentStream } from '../stream/CircuitAgentStream.js'
 import { TitleBar } from '../../app/layout/TitleBar.js'
 import { useWindowState } from '../../app/layout/useWindowState.js'
@@ -92,11 +92,8 @@ export function TaskWorkbench({
 
   const diffs = useMemo(() => diffsFromFeed(task.feedEvents), [task.feedEvents])
   const checks = useMemo(() => checksFromFeed(task.feedEvents), [task.feedEvents])
-  const gitStatusQuery = useWorkspaceGitStatus(task.workspacePath)
-  const allChangedPaths = useMemo(
-    () => gitStatusQuery.data?.changes.map((change) => change.path) ?? [],
-    [gitStatusQuery.data],
-  )
+  const gitStatusQuery = useStableWorkspacePathOrder(task.workspacePath)
+  const allChangedPaths = gitStatusQuery.orderedPaths
 
   const actionPhase = needsReviewPhase ?? activePhase
 
@@ -151,7 +148,10 @@ export function TaskWorkbench({
       return
     }
 
-    handleSelectDiffPath(WORKSPACE_DIFF_ID, path)
+    revealContent({
+      contentView: { type: 'diff', diffId: WORKSPACE_DIFF_ID, path },
+      inspector: { tab: 'changes', selectedId: WORKSPACE_DIFF_ID, changesKind: 'diff' },
+    })
   }
 
   const handleSelectCheck = (checkId: string): void => {
@@ -234,6 +234,8 @@ export function TaskWorkbench({
       needsIntake={needsIntake}
       workflowStatus={task.workflowStatus}
       workflowType={task.workflowType}
+      taskMode={task.taskMode}
+      activeWorkflowType={task.activeWorkflowRun?.workflowType}
       isRunning={isRunning}
       needsReview={Boolean(needsReviewPhase)}
       onFocusWorkflowPanel={openInspector}
@@ -267,7 +269,7 @@ export function TaskWorkbench({
           onInspectorCollapse={() => setInspectorOpen(false)}
           stream={streamPanel}
           content={
-            <ScrollArea className="h-full min-h-0">
+            <div className="flex h-full min-h-0 flex-col overflow-hidden">
               <ContentViewPanel
                 contentView={navigation.contentView}
                 task={task}
@@ -277,14 +279,14 @@ export function TaskWorkbench({
                 diffs={diffs}
                 checks={checks}
                 allChangedPaths={allChangedPaths}
+                orderedPaths={allChangedPaths}
                 preview={preview}
                 isRunning={isRunning}
                 onPreviewChange={setPreview}
                 onSelectDiffPath={handleSelectDiffPath}
                 onSelectFile={handleSelectFile}
-                onViewAllChanges={openAllChanges}
               />
-            </ScrollArea>
+            </div>
           }
           inspector={
             <TaskRightSidebar
@@ -302,9 +304,10 @@ export function TaskWorkbench({
               onSelectFile={handleSelectFile}
               onSelectDiff={handleSelectDiff}
               onSelectCheck={handleSelectCheck}
-              onOpenChangedFile={handleOpenChangedFile}
-              onOpenAllChanges={openAllChanges}
-              onToggleInspector={toggleInspector}
+                onOpenChangedFile={handleOpenChangedFile}
+                onOpenAllChanges={openAllChanges}
+                orderedChanges={gitStatusQuery.orderedChanges}
+                onToggleInspector={toggleInspector}
               showWindowControls={!isMac && showInspector}
             />
           }

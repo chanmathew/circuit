@@ -110,7 +110,7 @@ function toWorkflowRunDto(
 }
 
 /** Composer-first draft — task shell only; workflow enabled from the panel. */
-export function createDraftTask(repoId: string): TaskDetail {
+export function createDraftTask(repoId: string, taskMode = 'auto'): TaskDetail {
   const db = getDb()
   const repo = getRepoById(db, repoId)
   if (!repo) {
@@ -135,6 +135,7 @@ export function createDraftTask(repoId: string): TaskDetail {
     workspacePath: repo.path,
     workspaceStrategy: 'direct',
     interactionMode: 'chat',
+    taskMode,
     workflowStatus: 'not_started',
     pausedAt: null,
     createdAt: now,

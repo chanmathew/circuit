@@ -1,0 +1,1 @@
+ALTER TABLE `tasks` ADD `task_mode` text DEFAULT 'auto' NOT NULL;

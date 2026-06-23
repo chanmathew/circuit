@@ -1,7 +1,13 @@
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 
 import { circuitApi } from '../ipc/client.js'
 import { queryKeys } from '../ipc/query-keys.js'
+
+function normalizePaths(paths: string[] | undefined): string[] | undefined {
+  if (!paths?.length) return undefined
+  return [...paths].sort((a, b) => a.localeCompare(b))
+}
 
 export function useWorkspaceGitDiff(
   workspacePath: string,
@@ -12,7 +18,8 @@ export function useWorkspaceGitDiff(
     against?: 'HEAD' | 'index'
   },
 ) {
-  const pathsKey = paths?.join('\0') ?? ''
+  const sortedPaths = useMemo(() => normalizePaths(paths), [paths])
+  const pathsKey = sortedPaths?.join('\0') ?? ''
   const staged = options?.staged
   const against = options?.against ?? 'index'
 
@@ -21,10 +28,11 @@ export function useWorkspaceGitDiff(
     queryFn: () =>
       circuitApi.getGitDiff({
         workspacePath,
-        paths,
+        paths: sortedPaths,
         staged,
         against,
       }),
+    placeholderData: (previousData) => previousData,
     enabled: enabled && workspacePath.length > 0,
   })
 }

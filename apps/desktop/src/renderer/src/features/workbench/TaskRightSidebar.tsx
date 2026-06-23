@@ -1,5 +1,5 @@
+import { HugeiconsIcon } from '@hugeicons/react'
 import {
-  ScrollArea,
   Tabs,
   TabsContent,
   TabsList,
@@ -9,7 +9,7 @@ import { cn } from '@circuit/ui/utils'
 import type React from 'react'
 import type { ContentView, InspectorTab } from '@circuit/protocol'
 
-import type { ArtifactDto, TaskDto } from '../../../../shared/api.js'
+import type { ArtifactDto, GitFileChangeDto, TaskDto } from '../../../../shared/api.js'
 import {
   INSPECTOR_TAB_TRIGGER_CLASS,
   INSPECTOR_TABS,
@@ -50,6 +50,7 @@ export interface TaskRightSidebarProps {
   onSelectCheck: (id: string) => void
   onOpenChangedFile: (path: string) => void
   onOpenAllChanges: () => void
+  orderedChanges?: GitFileChangeDto[]
   onToggleInspector?: () => void
   /** Win/Linux window controls when the inspector spans the top-right corner. */
   showWindowControls?: boolean
@@ -72,6 +73,7 @@ export function TaskRightSidebar({
   onSelectCheck,
   onOpenChangedFile,
   onOpenAllChanges,
+  orderedChanges,
   onToggleInspector,
   showWindowControls = false,
 }: TaskRightSidebarProps): React.ReactElement {
@@ -111,7 +113,7 @@ export function TaskRightSidebar({
             className={INSPECTOR_TABS_LIST_CLASS}
             style={CHROME_NO_DRAG_STYLE}
           >
-            {INSPECTOR_TABS.map(({ value, label, icon: Icon }) => (
+            {INSPECTOR_TABS.map(({ value, label, icon }) => (
               <TabsTrigger
                 key={value}
                 value={value}
@@ -119,7 +121,7 @@ export function TaskRightSidebar({
                 aria-label={label}
                 title={label}
               >
-                <Icon className="size-4" aria-hidden />
+                <HugeiconsIcon icon={icon} strokeWidth={2} className="size-4" aria-hidden />
               </TabsTrigger>
             ))}
           </TabsList>
@@ -132,7 +134,7 @@ export function TaskRightSidebar({
         </div>
 
         <TabsContent value="workflow" className="mt-0 min-h-0 flex-1 overflow-hidden">
-          <ScrollArea className="h-full">
+          <div className="panel-scroll h-full min-h-0 overflow-y-auto">
             <WorkflowPanel
               task={task}
               artifacts={artifacts}
@@ -144,7 +146,7 @@ export function TaskRightSidebar({
                 if (artifact) onSelectArtifact(artifact.id)
               }}
             />
-          </ScrollArea>
+          </div>
         </TabsContent>
 
         <TabsContent value="files" className="mt-0 min-h-0 flex-1 overflow-hidden">
@@ -152,24 +154,27 @@ export function TaskRightSidebar({
             workspacePath={task.workspacePath}
             selectedPath={selectedFilePath}
             onSelectPath={onSelectFile}
+            className="panel-scroll h-full min-h-0"
           />
         </TabsContent>
 
-        <TabsContent value="changes" className="mt-0 min-h-0 flex-1 overflow-hidden">
-          <ScrollArea className="h-full">
-            <ChangesPanel
-              task={task}
-              diffs={diffs}
-              checks={checks}
-              selectedDiffId={selectedDiffId}
-              selectedCheckId={selectedCheckId}
-              selectedWorkspacePath={selectedWorkspacePath}
-              onSelectDiff={onSelectDiff}
-              onSelectCheck={onSelectCheck}
-              onOpenChangedFile={onOpenChangedFile}
-              onOpenAllChanges={onOpenAllChanges}
-            />
-          </ScrollArea>
+        <TabsContent
+          value="changes"
+          className="panel-scroll mt-0 min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto"
+        >
+          <ChangesPanel
+            task={task}
+            diffs={diffs}
+            checks={checks}
+            selectedDiffId={selectedDiffId}
+            selectedCheckId={selectedCheckId}
+            selectedWorkspacePath={selectedWorkspacePath}
+            orderedChanges={orderedChanges}
+            onSelectDiff={onSelectDiff}
+            onSelectCheck={onSelectCheck}
+            onOpenChangedFile={onOpenChangedFile}
+            onOpenAllChanges={onOpenAllChanges}
+          />
         </TabsContent>
       </Tabs>
     </aside>

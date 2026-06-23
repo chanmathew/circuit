@@ -1,26 +1,47 @@
 import { simpleGit } from 'simple-git'
 
 import type { DiffOptions } from './index.js'
+import { getStatus } from './status.js'
 
 export interface GetDiffOptions extends DiffOptions {
   paths?: string[]
 }
 
-/** Line +/- counts from a unified git diff patch (matches Pierre/git semantics). */
-export function countUnifiedDiffLines(patch: string): {
-  additions: number
-  deletions: number
-} {
-  let additions = 0
-  let deletions = 0
+function nullDevicePath(): string {
+  return typeof process !== 'undefined' && process.platform === 'win32' ? 'NUL' : '/dev/null'
+}
 
-  for (const line of patch.split('\n')) {
-    if (line.startsWith('+++') || line.startsWith('---')) continue
-    if (line.startsWith('+')) additions += 1
-    else if (line.startsWith('-')) deletions += 1
+async function diffUntrackedFile(
+  git: ReturnType<typeof simpleGit>,
+  filePath: string,
+): Promise<string> {
+  return git.raw(['diff', '--no-index', '--', nullDevicePath(), filePath])
+}
+
+async function appendUntrackedDiffs(
+  cwd: string,
+  patch: string,
+  paths?: string[],
+): Promise<string> {
+  const status = await getStatus(cwd)
+  const pathFilter = paths?.length ? new Set(paths) : null
+  const untrackedPaths = status.changes
+    .filter((change) => change.status === 'untracked')
+    .map((change) => change.path)
+    .filter((filePath) => pathFilter == null || pathFilter.has(filePath))
+    .sort((a, b) => a.localeCompare(b))
+
+  if (untrackedPaths.length === 0) return patch
+
+  const git = simpleGit(cwd)
+  const parts = patch.trim().length > 0 ? [patch.trim()] : []
+
+  for (const filePath of untrackedPaths) {
+    const untrackedPatch = (await diffUntrackedFile(git, filePath)).trim()
+    if (untrackedPatch.length > 0) parts.push(untrackedPatch)
   }
 
-  return { additions, deletions }
+  return parts.length > 0 ? `${parts.join('\n\n')}\n` : ''
 }
 
 export async function getDiff(options: GetDiffOptions): Promise<string> {
@@ -40,5 +61,9 @@ export async function getDiff(options: GetDiffOptions): Promise<string> {
     args.push('--', ...options.paths)
   }
 
-  return git.diff(args)
+  const patch = await git.diff(args)
+
+  if (options.staged) return patch
+
+  return appendUntrackedDiffs(options.cwd, patch, options.paths)
 }

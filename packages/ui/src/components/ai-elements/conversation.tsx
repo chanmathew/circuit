@@ -3,7 +3,8 @@
 import { Button } from "../button.js";
 import { cn } from "../../lib/utils.js";
 import type { UIMessage } from "ai";
-import { ArrowDownIcon, DownloadIcon } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ArrowDown01Icon, Download01Icon } from "@hugeicons/core-free-icons";
 import type { ComponentProps } from "react";
 import { useCallback } from "react";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
@@ -14,7 +15,7 @@ export const Conversation = ({ className, ...props }: ConversationProps) => (
   <StickToBottom
     className={cn("relative flex-1 overflow-y-hidden", className)}
     initial="smooth"
-    resize="instant"
+    resize="smooth"
     role="log"
     {...props}
   />
@@ -108,7 +109,7 @@ export const ConversationScrollButton = ({
         variant="outline"
         {...props}
       >
-        <ArrowDownIcon className="size-4" />
+        <HugeiconsIcon icon={ArrowDown01Icon} strokeWidth={2} className="size-4" />
       </Button>
     )
   );
@@ -176,7 +177,7 @@ export const ConversationDownload = ({
       variant="outline"
       {...props}
     >
-      {children ?? <DownloadIcon className="size-4" />}
+      {children ?? <HugeiconsIcon icon={Download01Icon} strokeWidth={2} className="size-4" />}
     </Button>
   );
 };

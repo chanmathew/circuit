@@ -26,7 +26,7 @@ export function autoSelectWorkflow(description: string): WorkflowSelection {
       workflowType: 'structured_change',
       workspaceStrategy: 'git-worktree',
       confidence: 0,
-      reason: 'Empty description; defaulting to Structured Change.',
+      reason: 'Empty description; defaulting to Guided Build.',
     }
   }
 
@@ -52,6 +52,6 @@ export function autoSelectWorkflow(description: string): WorkflowSelection {
     workflowType: 'structured_change',
     workspaceStrategy: 'git-worktree',
     confidence: 0.5,
-    reason: 'Default structured change workflow.',
+    reason: 'Default guided build workflow.',
   }
 }

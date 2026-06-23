@@ -58,7 +58,7 @@ Add invoice inbox triage for AP emails. Classify incoming emails into PDF invoic
 
 ## Workflow
 
-Structured Change
+Guided Build
 
 ## Branch
 
@@ -328,7 +328,7 @@ export function createScenarioState(scenario: ScenarioId): WorkbenchState {
           repoName: 'chorus-client-runtime',
           branchName: 'Circuit/invoice-inbox-triage',
           slug: 'invoice-inbox-triage',
-          workflowLabel: 'Structured Change',
+          workflowLabel: 'Guided Build',
           status: 'needs_review',
           nextAction: 'Approve questions',
         },
@@ -361,7 +361,7 @@ export function createScenarioState(scenario: ScenarioId): WorkbenchState {
           repoName: 'chorus-client-runtime',
           branchName: 'Circuit/invoice-inbox-triage',
           slug: 'invoice-inbox-triage',
-          workflowLabel: 'Structured Change',
+          workflowLabel: 'Guided Build',
           status: 'needs_review',
           nextAction: 'Verify research findings',
         },
@@ -404,7 +404,7 @@ export function createScenarioState(scenario: ScenarioId): WorkbenchState {
           repoName: 'chorus-client-runtime',
           branchName: 'Circuit/invoice-inbox-triage',
           slug: 'invoice-inbox-triage',
-          workflowLabel: 'Structured Change',
+          workflowLabel: 'Guided Build',
           status: 'needs_review',
           nextAction: 'Resolve design decisions',
         },
@@ -455,7 +455,7 @@ export function createScenarioState(scenario: ScenarioId): WorkbenchState {
           repoName: 'chorus-client-runtime',
           branchName: 'Circuit/invoice-inbox-triage',
           slug: 'invoice-inbox-triage',
-          workflowLabel: 'Structured Change',
+          workflowLabel: 'Guided Build',
           status: 'needs_review',
           nextAction: 'Approve structure',
         },
@@ -511,7 +511,7 @@ export function createScenarioState(scenario: ScenarioId): WorkbenchState {
           repoName: 'chorus-client-runtime',
           branchName: 'Circuit/invoice-inbox-triage',
           slug: 'invoice-inbox-triage',
-          workflowLabel: 'Structured Change',
+          workflowLabel: 'Guided Build',
           status: 'needs_review',
           nextAction: 'Unlock implementation',
         },
@@ -574,7 +574,7 @@ export function createScenarioState(scenario: ScenarioId): WorkbenchState {
           repoName: 'chorus-client-runtime',
           branchName: 'Circuit/invoice-inbox-triage',
           slug: 'invoice-inbox-triage',
-          workflowLabel: 'Structured Change',
+          workflowLabel: 'Guided Build',
           status: 'implementing',
           nextAction: 'Review diff for slice 2',
         },
@@ -664,7 +664,7 @@ export function createScenarioState(scenario: ScenarioId): WorkbenchState {
           repoName: 'chorus-client-runtime',
           branchName: 'Circuit/invoice-inbox-triage',
           slug: 'invoice-inbox-triage',
-          workflowLabel: 'Structured Change',
+          workflowLabel: 'Guided Build',
           status: 'diff_ready',
           nextAction: 'Copy PR summary',
         },

@@ -16,6 +16,7 @@ const circuitApi: CircuitApi = {
   createDraftTask: (request) => ipcRenderer.invoke('circuit:tasks:createDraft', request),
   createTaskFromIntake: (request) =>
     ipcRenderer.invoke('circuit:tasks:createFromIntake', request),
+  updateTaskMode: (request) => ipcRenderer.invoke('circuit:tasks:updateTaskMode', request),
   submitTaskIntake: (request) => ipcRenderer.invoke('circuit:tasks:submitIntake', request),
   enableWorkflow: (request) => ipcRenderer.invoke('circuit:tasks:enableWorkflow', request),
   startPhase: (request) => ipcRenderer.invoke('circuit:tasks:startPhase', request),
@@ -44,6 +45,7 @@ const circuitApi: CircuitApi = {
   getGitDiff: (request) => ipcRenderer.invoke('circuit:git:diff', request),
   gitStage: (request) => ipcRenderer.invoke('circuit:git:stage', request),
   gitUnstage: (request) => ipcRenderer.invoke('circuit:git:unstage', request),
+  gitDiscard: (request) => ipcRenderer.invoke('circuit:git:discard', request),
   gitCommit: (request) => ipcRenderer.invoke('circuit:git:commit', request),
   openWorkspaceFile: (request) => ipcRenderer.invoke('circuit:shell:openWorkspaceFile', request),
   onTaskStreamUpdate: (callback) => {

@@ -8,6 +8,7 @@ import { simpleGit } from 'simple-git'
 import {
   commitStaged,
   countUnifiedDiffLines,
+  discardFiles,
   getDiff,
   getStatus,
   stageFiles,
@@ -55,7 +56,21 @@ describe('@circuit/git status and diff', () => {
     expect(patch).toContain('changed')
   })
 
-  it('returns aggregate diff against HEAD', async () => {
+  it('includes untracked files in diff against HEAD before staging', async () => {
+    const patch = await getDiff({ cwd: repoDir, against: 'HEAD' })
+    expect(patch).toContain('README.md')
+    expect(patch).toContain('changed')
+    expect(patch).toContain('new.txt')
+    expect(patch).toContain('hello')
+  })
+
+  it('includes a single untracked path when filtered', async () => {
+    const patch = await getDiff({ cwd: repoDir, against: 'HEAD', paths: ['new.txt'] })
+    expect(patch).toContain('new.txt')
+    expect(patch).not.toContain('README.md')
+  })
+
+  it('returns aggregate diff against HEAD after staging', async () => {
     await stageFiles(repoDir, ['README.md', 'new.txt'])
     const patch = await getDiff({ cwd: repoDir, against: 'HEAD' })
     expect(patch).toContain('README.md')
@@ -78,6 +93,26 @@ describe('@circuit/git status and diff', () => {
     status = await getStatus(repoDir)
     expect(status.clean).toBe(true)
     expect(status.summary.files).toBe(0)
+  })
+
+  it('discards unstaged and untracked changes for selected paths', async () => {
+    await discardFiles(repoDir, ['README.md', 'new.txt'])
+
+    const status = await getStatus(repoDir)
+    expect(status.clean).toBe(true)
+    expect(status.changes).toHaveLength(0)
+  })
+
+  it('discards untracked directories and their contents', async () => {
+    const untrackedDir = path.join(repoDir, 'scratch')
+    await mkdir(untrackedDir, { recursive: true })
+    await writeFile(path.join(untrackedDir, 'inside.txt'), 'temp\n')
+
+    await discardFiles(repoDir, ['scratch'])
+
+    const status = await getStatus(repoDir)
+    expect(status.changes.some((entry) => entry.path.startsWith('scratch'))).toBe(false)
+    expect(status.changes).toHaveLength(2)
   })
 
   it('rejects empty commit messages', async () => {

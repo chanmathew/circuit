@@ -18,6 +18,7 @@ export function updateTask(
       | 'description'
       | 'workflowType'
       | 'interactionMode'
+      | 'taskMode'
       | 'workflowStatus'
       | 'pausedAt'
       | 'workspaceStrategy'

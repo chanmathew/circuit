@@ -51,7 +51,7 @@ describe('renderTicketMarkdown', () => {
     const markdown = renderTicketMarkdown({
       title: 'Invoice inbox triage',
       description: 'Add invoice inbox triage for AP emails.',
-      workflowLabel: 'Structured Change',
+      workflowLabel: 'Guided Build',
       branchName: 'Circuit/invoice-inbox-triage',
       createdAt: '2026-06-18T12:00:00.000Z',
     })
@@ -59,7 +59,7 @@ describe('renderTicketMarkdown', () => {
     expect(markdown).toContain('# Invoice inbox triage')
     expect(markdown).toContain('## Description')
     expect(markdown).toContain('Add invoice inbox triage for AP emails.')
-    expect(markdown).toContain('Structured Change')
+    expect(markdown).toContain('Guided Build')
     expect(markdown).toContain('Circuit/invoice-inbox-triage')
     expect(markdown).toContain('2026-06-18T12:00:00.000Z')
   })

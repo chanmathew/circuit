@@ -12,8 +12,13 @@ import { LayoutPanelResizeHandle } from '../../app/layout/PanelResizeHandle.js'
 /** Default inspector width when expanded. */
 export const INSPECTOR_DEFAULT_EXPANDED_SIZE = 25
 
+/** Default content panel width (diff, file, artifact) when expanded. */
+export const CONTENT_DEFAULT_EXPANDED_SIZE = 58
+
 /** Left workbench area when the inspector is expanded. */
 const WORKBENCH_WITH_INSPECTOR_SIZE = 100 - INSPECTOR_DEFAULT_EXPANDED_SIZE
+
+const STREAM_DEFAULT_SIZE = 100 - CONTENT_DEFAULT_EXPANDED_SIZE
 
 export interface WorkbenchPanelLayoutProps {
   titleBar?: React.ReactNode
@@ -78,7 +83,7 @@ function StreamContentPanels({
 
   return (
     <PanelGroup key={panelGroupKey} direction="horizontal" className="min-h-0 flex-1">
-      <Panel defaultSize={42} minSize={28} className="h-full min-h-0 min-w-0">
+      <Panel defaultSize={STREAM_DEFAULT_SIZE} minSize={28} className="h-full min-h-0 min-w-0">
         {stream}
       </Panel>
       <LayoutPanelResizeHandle />
@@ -86,7 +91,7 @@ function StreamContentPanels({
         ref={contentRef}
         collapsible
         collapsedSize={0}
-        defaultSize={showContent ? 58 : 0}
+        defaultSize={showContent ? CONTENT_DEFAULT_EXPANDED_SIZE : 0}
         minSize={28}
         className="h-full min-h-0 min-w-0"
       >
@@ -109,7 +114,7 @@ export function WorkbenchPanelLayout({
 }: WorkbenchPanelLayoutProps): React.ReactElement {
   const hasContent = Boolean(content)
   const hasInspector = Boolean(inspector)
-  const contentRef = useCollapsedPanel(showContent, hasContent)
+  const contentRef = useCollapsedPanel(showContent, hasContent, CONTENT_DEFAULT_EXPANDED_SIZE)
   const inspectorRef = useCollapsedPanel(
     showInspector,
     hasInspector,

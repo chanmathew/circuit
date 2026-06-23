@@ -1,7 +1,8 @@
 "use client";
 
 import { Collapsible } from "radix-ui";
-import { ChevronDownIcon } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ArrowDown01Icon } from "@hugeicons/core-free-icons";
 import type { ComponentProps, ReactNode } from "react";
 
 import { cn } from "../../lib/utils.js";
@@ -70,7 +71,9 @@ export const TaskTrigger = ({
         {live ? (
           <Spinner className="size-3 shrink-0 text-primary" />
         ) : (
-          <ChevronDownIcon
+          <HugeiconsIcon
+            icon={ArrowDown01Icon}
+            strokeWidth={2}
             className={cn(
               "size-3 shrink-0 text-muted-foreground/70 transition-transform [[data-state=closed]_&]:-rotate-90",
               variant === "inline" && "size-2.5",

@@ -1,16 +1,17 @@
 import type { InspectorTab } from '@circuit/protocol'
-import { Files, GitCompare, Layers, type LucideIcon } from 'lucide-react'
+import type { IconSvgElement } from '@hugeicons/react'
+import { Files01Icon, Route01Icon, WorkflowCircle04Icon } from '@hugeicons/core-free-icons'
 
 export interface InspectorTabConfig {
   value: InspectorTab
   label: string
-  icon: LucideIcon
+  icon: IconSvgElement
 }
 
 export const INSPECTOR_TABS: readonly InspectorTabConfig[] = [
-  { value: 'workflow', label: 'Workflow', icon: Layers },
-  { value: 'files', label: 'Files', icon: Files },
-  { value: 'changes', label: 'Changes', icon: GitCompare },
+  { value: 'workflow', label: 'Workflow', icon: Route01Icon },
+  { value: 'files', label: 'Files', icon: Files01Icon },
+  { value: 'changes', label: 'Changes', icon: WorkflowCircle04Icon },
 ] as const
 
 /** Icon-only line-variant tab triggers — full chrome row height. */

@@ -31,9 +31,11 @@ export interface WorktreeOptions {
 }
 
 export { getStatus } from './status.js'
-export { countUnifiedDiffLines, getDiff, type GetDiffOptions } from './diff.js'
+export { countUnifiedDiffLines } from './patch-stats.js'
+export { getDiff, type GetDiffOptions } from './diff.js'
 export { toPierreGitStatusEntries, type PierreGitStatusEntry } from './pierre-git-status.js'
 export { stageFiles, unstageFiles } from './stage.js'
+export { discardFiles } from './discard.js'
 export { commitStaged } from './commit.js'
 
 export async function createWorktree(_options: WorktreeOptions): Promise<void> {

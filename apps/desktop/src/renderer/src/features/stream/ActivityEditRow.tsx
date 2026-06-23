@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { ChevronDownIcon, Loader2 } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { ArrowDown01Icon, Loading03Icon } from '@hugeicons/core-free-icons'
 
 import { countUnifiedDiffLines } from '@circuit/git'
 import { Shimmer, Task, TaskContent, TaskTrigger } from '@circuit/ui'
@@ -33,7 +34,9 @@ export function ActivityEditRow({
   const [open, setOpen] = useState(false)
   const needsDiffStats =
     open && !isRunning && entry.additions == null && entry.deletions == null
-  const diffQuery = useWorkspaceFileGitDiff(workspacePath, filePath, needsDiffStats)
+  const diffQuery = useWorkspaceFileGitDiff(workspacePath, filePath, needsDiffStats, {
+    against: 'HEAD',
+  })
   const diffStats = needsDiffStats && diffQuery.data
     ? countUnifiedDiffLines(diffQuery.data)
     : entry.additions != null || entry.deletions != null
@@ -51,9 +54,10 @@ export function ActivityEditRow({
       <TaskTrigger
         variant="inline"
         title={entry.label}
-        className="justify-between gap-2 px-0 py-px text-xs font-normal"
+        aria-label={entry.label}
+        className="flex w-full min-h-0 items-center justify-between gap-2 py-px text-xs font-normal text-muted-foreground"
       >
-        <span className="flex min-w-0 flex-1 items-baseline gap-1 text-muted-foreground">
+        <span className="flex min-w-0 flex-1 items-baseline gap-1">
           {isRunning ? (
             <Shimmer duration={1.5}>{labelParts.prefix}</Shimmer>
           ) : (
@@ -62,7 +66,7 @@ export function ActivityEditRow({
           <ActivityFileLink
             filePath={filePath}
             fileName={labelParts.fileName ?? filePath}
-            openAs="diff"
+            openAs="file"
             onOpenReference={onOpenReference}
             onOpenChangedFile={onOpenChangedFile}
           />
@@ -72,9 +76,17 @@ export function ActivityEditRow({
           <DiffBadges additions={diffStats?.additions} deletions={diffStats?.deletions} />
         </span>
         {isRunning ? (
-          <Loader2 className="size-2.5 shrink-0 animate-spin text-primary" />
+          <HugeiconsIcon
+            icon={Loading03Icon}
+            strokeWidth={2}
+            className="size-2.5 shrink-0 animate-spin text-primary"
+          />
         ) : (
-          <ChevronDownIcon className="size-2.5 shrink-0 text-muted-foreground/70 transition-transform [[data-state=closed]_&]:-rotate-90" />
+          <HugeiconsIcon
+            icon={ArrowDown01Icon}
+            strokeWidth={2}
+            className="size-2.5 shrink-0 text-muted-foreground/70 transition-transform [[data-state=closed]_&]:-rotate-90"
+          />
         )}
       </TaskTrigger>
       <TaskContent variant="inline" className="ml-0 max-h-72 border-0 py-0 pl-0">

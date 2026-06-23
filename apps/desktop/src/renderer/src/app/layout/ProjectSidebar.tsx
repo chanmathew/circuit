@@ -1,13 +1,16 @@
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
+import { HugeiconsIcon } from '@hugeicons/react'
 import {
-  FolderClosed,
-  FolderOpen,
-  Plus,
+  Add01Icon,
+  Folder01Icon,
+  Folder02Icon,
+  Loading03Icon,
   SquarePen,
-} from 'lucide-react'
+} from '@hugeicons/core-free-icons'
 import { useMemo, useState } from 'react'
 
 import {
+    Button,
   cn,
   Sidebar,
   SidebarContent,
@@ -34,12 +37,16 @@ import { ThemeToggle } from './ThemeToggle.js'
 
 const TASKS_PREVIEW_LIMIT = 5
 
-/** Full-width task rows; timestamp column aligns with the project + action (right-1, w-5). */
+/** Full-width task rows; label truncates, timestamp (or spinner) stays visible on the right. */
 const TASK_ROW_CLASS =
-  'w-full -translate-x-0 justify-between gap-2 pr-1 [&>span:last-child]:truncate-none'
+  'w-full min-w-0 cursor-pointer justify-between gap-2 pr-1 [&>span:last-child]:shrink-0 [&>span:last-child]:truncate-none'
 
 const TASK_LIST_CLASS =
   'ml-3.5 mr-0 w-[calc(100%-0.875rem)] translate-x-px border-l border-sidebar-border py-0.5 pl-2.5 pr-0 gap-0'
+
+function isTaskRunning(task: TaskSummaryDto): boolean {
+  return task.status === 'running'
+}
 
 /** Placeholder drafts abandoned before first message — hide from sidebar. */
 function isVisibleInSidebar(task: TaskSummaryDto): boolean {
@@ -119,7 +126,7 @@ export function ProjectSidebar({
                   isActive={pathname === '/compose' && composingRepoId == null}
                   onClick={() => onNewTask()}
                 >
-                  <SquarePen />
+                  <HugeiconsIcon icon={SquarePen} strokeWidth={2} />
                   <span>New task</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -135,7 +142,7 @@ export function ProjectSidebar({
             disabled={addRepoMutation.isPending}
             onClick={() => addRepoMutation.mutate()}
           >
-            <Plus />
+            <HugeiconsIcon icon={Add01Icon} strokeWidth={2} />
           </SidebarGroupAction>
           <SidebarGroupContent>
             {listError && (
@@ -147,14 +154,15 @@ export function ProjectSidebar({
             {repos.length === 0 && !reposQuery.isLoading && !listError && (
               <div className="mx-2 rounded-md border border-dashed border-border px-3 py-4 text-center">
                 <p className="text-xs text-muted-foreground">No repos yet</p>
-                <button
-                  type="button"
-                  className="mt-2 text-xs text-primary hover:underline disabled:opacity-50"
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-2 h-7"
                   disabled={addRepoMutation.isPending}
                   onClick={() => addRepoMutation.mutate()}
                 >
                   Add repo
-                </button>
+                </Button>
               </div>
             )}
 
@@ -228,6 +236,9 @@ function RepoSection({
   const navigate = useNavigate()
   const visibleTasks = showAll ? tasks : tasks.slice(0, TASKS_PREVIEW_LIMIT)
   const hiddenCount = tasks.length - visibleTasks.length
+  const hasSelectedTask =
+    selectedTaskId != null && tasks.some((task) => task.id === selectedTaskId)
+  const isProjectHighlighted = composing || hasSelectedTask
 
   return (
     <SidebarMenuItem>
@@ -235,10 +246,17 @@ function RepoSection({
         size="sm"
         tooltip={repo.path}
         isActive={composing}
-        className="group/repo"
+        className={cn(
+          'group/repo',
+          !isProjectHighlighted && 'text-muted-foreground hover:text-foreground/80',
+        )}
         onClick={() => onOpenChange(!open)}
       >
-        {open ? <FolderOpen /> : <FolderClosed />}
+        {open ? (
+          <HugeiconsIcon icon={Folder02Icon} strokeWidth={2} />
+        ) : (
+          <HugeiconsIcon icon={Folder01Icon} strokeWidth={2} />
+        )}
         <span className="truncate">{repo.name}</span>
       </SidebarMenuButton>
       <SidebarMenuAction
@@ -249,7 +267,7 @@ function RepoSection({
           onNewTask()
         }}
       >
-        <Plus />
+        <HugeiconsIcon icon={Add01Icon} strokeWidth={2} />
       </SidebarMenuAction>
       {open ? (
         <SidebarMenuSub className={TASK_LIST_CLASS}>
@@ -267,22 +285,48 @@ function RepoSection({
                 currentPhase: task.currentPhase,
                 phases: [],
               })
+              const isSelected = task.id === selectedTaskId
 
               return (
                 <SidebarMenuSubItem key={task.id} className="w-full">
                   <SidebarMenuSubButton
+                    asChild
                     size="sm"
-                    isActive={task.id === selectedTaskId}
-                    title={subtitle ? `${task.title}\n${subtitle}` : task.title}
-                    className={TASK_ROW_CLASS}
-                    onClick={() =>
-                      void navigate({ to: '/tasks/$taskId', params: { taskId: task.id } })
-                    }
+                    isActive={isSelected}
+                    className={cn(
+                      TASK_ROW_CLASS,
+                      !isSelected && 'text-muted-foreground hover:text-foreground/80',
+                    )}
                   >
-                    <span className="min-w-0 flex-1 truncate">{task.title}</span>
-                    <span className="w-5 shrink-0 text-center text-xs text-muted-foreground tabular-nums">
-                      {formatRelativeAge(task.updatedAt)}
-                    </span>
+                    <button
+                      type="button"
+                      title={subtitle ? `${task.title}\n${subtitle}` : task.title}
+                      onClick={() =>
+                        void navigate({ to: '/tasks/$taskId', params: { taskId: task.id } })
+                      }
+                    >
+                      <span className="min-w-0 flex-1 truncate text-left">{task.title}</span>
+                      {isTaskRunning(task) ? (
+                        <HugeiconsIcon
+                          icon={Loading03Icon}
+                          strokeWidth={2}
+                          className={cn(
+                            'size-3 shrink-0 animate-spin',
+                            isSelected ? 'text-primary' : 'text-muted-foreground/70',
+                          )}
+                          aria-hidden
+                        />
+                      ) : (
+                        <span
+                          className={cn(
+                            'shrink-0 text-xs tabular-nums',
+                            isSelected ? 'text-muted-foreground' : 'text-muted-foreground/70',
+                          )}
+                        >
+                          {formatRelativeAge(task.updatedAt)}
+                        </span>
+                      )}
+                    </button>
                   </SidebarMenuSubButton>
                 </SidebarMenuSubItem>
               )

@@ -1,4 +1,4 @@
-import { Badge, ScrollArea, cn } from '@circuit/ui'
+import { Badge, cn } from '@circuit/ui'
 
 import type { CheckEntry } from '../lib/workbench-content.js'
 
@@ -16,7 +16,7 @@ export function CheckContentPanel({ check }: CheckContentPanelProps): React.Reac
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-3">
         <div className="min-w-0">
           <p className="truncate font-mono text-sm font-medium">{check.command}</p>
@@ -26,7 +26,7 @@ export function CheckContentPanel({ check }: CheckContentPanelProps): React.Reac
           {check.passed ? 'Passed' : 'Failed'}
         </Badge>
       </div>
-      <ScrollArea className="min-h-0 flex-1">
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
         <pre
           className={cn(
             'whitespace-pre-wrap p-4 font-mono text-xs leading-relaxed',
@@ -38,7 +38,7 @@ export function CheckContentPanel({ check }: CheckContentPanelProps): React.Reac
               ? 'All checks passed. Full command output will appear here when available.'
               : 'Check failed. Full command output will appear here when available.')}
         </pre>
-      </ScrollArea>
+      </div>
     </div>
   )
 }

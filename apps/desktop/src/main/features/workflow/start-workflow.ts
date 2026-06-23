@@ -27,6 +27,8 @@ import {
 import {
   autoSelectWorkflow,
   getWorkflowDefinition,
+  resolveWorkflowSelectionFromTask,
+  type TaskMode,
   type WorkflowType,
   type WorkspaceStrategy,
 } from '@circuit/workflow'
@@ -132,7 +134,11 @@ export function bootstrapWorkflowTicket(
         confidence: 1,
         reason: 'Explicit workflow type',
       }
-    : autoSelectWorkflow(description)
+    : resolveWorkflowSelectionFromTask({
+        taskMode: (task.taskMode ?? 'auto') as TaskMode,
+        description,
+        workspaceStrategy: input.workspaceStrategy,
+      })
 
   const workflow = getWorkflowDefinition(selection.workflowType)
   if (!workflow) {

@@ -15,5 +15,6 @@ export function pierreDiffViewerOptions(themeType: ThemeTypes) {
     theme: DEFAULT_THEMES,
     diffStyle: 'unified' as const,
     overflow: 'wrap' as const,
+    stickyHeader: true,
   }
 }

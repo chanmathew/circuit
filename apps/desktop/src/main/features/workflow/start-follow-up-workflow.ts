@@ -24,6 +24,8 @@ import {
 import {
   autoSelectWorkflow,
   getWorkflowDefinition,
+  resolveWorkflowSelectionFromTask,
+  type TaskMode,
   type WorkflowType,
   type WorkspaceStrategy,
 } from '@circuit/workflow'
@@ -106,7 +108,11 @@ export async function startFollowUpWorkflow(
         workspaceStrategy:
           input.workspaceStrategy ?? autoSelectWorkflow(description).workspaceStrategy,
       }
-    : autoSelectWorkflow(description)
+    : resolveWorkflowSelectionFromTask({
+        taskMode: (task.taskMode ?? 'auto') as TaskMode,
+        description,
+        workspaceStrategy: input.workspaceStrategy,
+      })
 
   const workflow = getWorkflowDefinition(selection.workflowType as WorkflowType)
   if (!workflow) {

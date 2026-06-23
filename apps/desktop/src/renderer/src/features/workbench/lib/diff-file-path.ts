@@ -15,16 +15,21 @@ export function resolveDiffFilePath(
     .map(normalizeDiffFilePath)
 
   if (knownPaths?.length) {
+    const sortedKnownPaths = [...knownPaths].sort((a, b) => a.localeCompare(b))
+
     for (const candidate of candidates) {
-      const exact = knownPaths.find((path) => path === candidate)
+      const exact = sortedKnownPaths.find((path) => path === candidate)
       if (exact) return exact
     }
 
     for (const candidate of candidates) {
-      const suffixMatch = knownPaths.find(
+      const suffixMatches = sortedKnownPaths.filter(
         (path) => path.endsWith(`/${candidate}`) || path.endsWith(candidate),
       )
-      if (suffixMatch) return suffixMatch
+      if (suffixMatches.length === 0) continue
+
+      suffixMatches.sort((a, b) => b.length - a.length || a.localeCompare(b))
+      return suffixMatches[0]
     }
   }
 

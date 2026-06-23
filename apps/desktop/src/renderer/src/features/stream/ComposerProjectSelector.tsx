@@ -1,4 +1,5 @@
-import { Folder, Plus } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { Add01Icon, Folder01Icon } from '@hugeicons/core-free-icons'
 import { useState } from 'react'
 
 import {
@@ -48,7 +49,7 @@ export function ComposerProjectSelector({
           disabled={disabled}
           tooltip="Select project"
         >
-          <Folder className="size-4 shrink-0" />
+          <HugeiconsIcon icon={Folder01Icon} strokeWidth={2} className="size-4 shrink-0" />
           <ModelSelectorName>
             {selectedRepo?.name ?? 'Select project'}
           </ModelSelectorName>
@@ -65,7 +66,11 @@ export function ComposerProjectSelector({
                 value={repo.name}
                 onSelect={() => handleSelect(repo.id)}
               >
-                <Folder className="size-4 shrink-0 text-muted-foreground" />
+                <HugeiconsIcon
+                  icon={Folder01Icon}
+                  strokeWidth={2}
+                  className="size-4 shrink-0 text-muted-foreground"
+                />
                 <ModelSelectorName>{repo.name}</ModelSelectorName>
               </ModelSelectorItem>
             ))}
@@ -75,7 +80,7 @@ export function ComposerProjectSelector({
               <ModelSelectorSeparator />
               <ModelSelectorGroup>
                 <ModelSelectorItem value="Add project" onSelect={onAddRepo}>
-                  <Plus className="size-4 shrink-0" />
+                  <HugeiconsIcon icon={Add01Icon} strokeWidth={2} className="size-4 shrink-0" />
                   <ModelSelectorName>Add project…</ModelSelectorName>
                 </ModelSelectorItem>
               </ModelSelectorGroup>

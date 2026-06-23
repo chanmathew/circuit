@@ -1,7 +1,8 @@
 "use client";
 
 import { Collapsible } from "radix-ui";
-import { ChevronDownIcon, Loader2 } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { ArrowDown01Icon, Loading03Icon } from "@hugeicons/core-free-icons";
 import { cjk } from "@streamdown/cjk";
 import { code } from "@streamdown/code";
 import { math } from "@streamdown/math";
@@ -124,9 +125,17 @@ export const ReasoningTrigger = memo(function ReasoningTrigger({
         <>
           <span className="min-w-0 flex-1">{getThinkingMessage(isStreaming, duration)}</span>
           {isStreaming ? (
-            <Loader2 className="size-2.5 shrink-0 animate-spin text-primary" />
+            <HugeiconsIcon
+              icon={Loading03Icon}
+              strokeWidth={2}
+              className="size-2.5 shrink-0 animate-spin text-primary"
+            />
           ) : (
-            <ChevronDownIcon className="size-2.5 shrink-0 text-muted-foreground/70 transition-transform [[data-state=closed]_&]:-rotate-90" />
+            <HugeiconsIcon
+              icon={ArrowDown01Icon}
+              strokeWidth={2}
+              className="size-2.5 shrink-0 text-muted-foreground/70 transition-transform [[data-state=closed]_&]:-rotate-90"
+            />
           )}
         </>
       )}

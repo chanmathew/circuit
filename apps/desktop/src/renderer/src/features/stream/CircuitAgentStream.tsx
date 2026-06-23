@@ -2,6 +2,7 @@ import { Shimmer } from '@circuit/ui'
 import { useCallback, useMemo, useState } from 'react'
 
 import type { WorkflowType } from '@circuit/workflow'
+import { getEffectiveTaskMode, isTaskModeEditable, type TaskMode } from '@circuit/workflow'
 import type { ReferenceTarget, StreamAction } from '@circuit/protocol'
 import type { DecisionResolutionDto, FeedEventDto, PermissionReply, PhaseDto, ArtifactDto } from '../../../../shared/api.js'
 import { useSubmitTaskIntake } from '../tasks/hooks/useSubmitTaskIntake.js'
@@ -12,6 +13,7 @@ import { useReplyPermission } from './hooks/useReplyPermission.js'
 import { useReplyQuestion } from './hooks/useReplyQuestion.js'
 import { useRejectQuestion } from './hooks/useRejectQuestion.js'
 import { useSendChatMessage } from './hooks/useSendChatMessage.js'
+import { useUpdateTaskMode } from './hooks/useUpdateTaskMode.js'
 import { useTaskStreamItems, type LocalUserMessage } from './hooks/useTaskStreamItems.js'
 import { useTaskStreamLive } from './hooks/useTaskStreamLive.js'
 import { splitStreamItems } from './lib/split-stream-items.js'
@@ -29,6 +31,8 @@ export interface CircuitAgentStreamProps {
   needsIntake?: boolean
   workflowStatus?: string
   workflowType?: string
+  taskMode?: string
+  activeWorkflowType?: string
   isRunning?: boolean
   needsReview?: boolean
   onResolveDecision?: (
@@ -84,7 +88,10 @@ export function CircuitAgentStream({
   artifacts = [],
   decisionResolutions = [],
   needsIntake = false,
+  workflowStatus = 'not_started',
   workflowType,
+  taskMode: taskModeProp = 'auto',
+  activeWorkflowType,
   isRunning: taskRunning = false,
   needsReview = false,
   onResolveDecision,
@@ -99,6 +106,22 @@ export function CircuitAgentStream({
   const { liveActivities, phaseRunning, harnessSession } = useTaskStreamLive(taskId)
   const approvePhase = useApprovePhase(taskId)
   const sendChatMessage = useSendChatMessage(taskId)
+  const updateTaskMode = useUpdateTaskMode(taskId)
+  const effectiveTaskMode = getEffectiveTaskMode({
+    taskMode: taskModeProp,
+    workflowStatus,
+    workflowType: workflowType ?? 'freeform',
+    activeWorkflowType,
+  })
+  const taskModeEditable = isTaskModeEditable(workflowStatus)
+
+  const handleTaskModeChange = useCallback(
+    (nextMode: TaskMode) => {
+      if (!taskModeEditable || updateTaskMode.isPending) return
+      updateTaskMode.mutate(nextMode)
+    },
+    [taskModeEditable, updateTaskMode],
+  )
   const submitIntake = useSubmitTaskIntake(taskId)
   const applySteeringRevision = useApplySteeringRevision(taskId)
   const replyPermission = useReplyPermission(taskId, workspacePath)
@@ -131,7 +154,8 @@ export function CircuitAgentStream({
         (item) =>
           (item.kind === 'activity_group' && item.live === true) ||
           (item.kind === 'reasoning' && item.isStreaming) ||
-          (item.kind === 'subagent_run' && item.live === true),
+          (item.kind === 'subagent_run' && item.live === true) ||
+          (item.kind === 'agent_message' && item.isStreaming),
       ),
     [chatItems],
   )
@@ -383,6 +407,16 @@ export function CircuitAgentStream({
           placeholder={
             needsIntake ? intakePlaceholder : needsReview ? reviewPlaceholder : chatPlaceholder
           }
+          taskMode={effectiveTaskMode}
+          taskModeDisabled={!taskModeEditable}
+          taskModeError={
+            updateTaskMode.isError
+              ? updateTaskMode.error instanceof Error
+                ? updateTaskMode.error.message
+                : 'Failed to update task mode'
+              : undefined
+          }
+          onTaskModeChange={handleTaskModeChange}
           onSend={handleSend}
           onStop={harnessSession ? handleStop : undefined}
         />

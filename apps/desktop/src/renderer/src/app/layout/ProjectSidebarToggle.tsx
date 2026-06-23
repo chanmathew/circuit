@@ -1,6 +1,7 @@
 import { Button } from '@circuit/ui'
 import { cn } from '@circuit/ui/utils'
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { HugeiconsIcon } from '@hugeicons/react'
+import { PanelLeftCloseIcon, PanelLeftOpenIcon } from '@hugeicons/core-free-icons'
 import type React from 'react'
 
 import { PANEL_TOGGLE_BUTTON_CLASS } from './chrome-row.js'
@@ -27,9 +28,9 @@ export function ProjectSidebarToggle({
       onClick={onToggle}
     >
       {open ? (
-        <PanelLeftClose className="size-4" aria-hidden />
+        <HugeiconsIcon icon={PanelLeftCloseIcon} strokeWidth={2} className="size-4" aria-hidden />
       ) : (
-        <PanelLeftOpen className="size-4" aria-hidden />
+        <HugeiconsIcon icon={PanelLeftOpenIcon} strokeWidth={2} className="size-4" aria-hidden />
       )}
     </Button>
   )

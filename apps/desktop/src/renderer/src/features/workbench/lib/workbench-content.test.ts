@@ -80,6 +80,7 @@ function task(phases: PhaseDto[], artifacts: ArtifactDto[]): TaskDto {
     workspacePath: '/repo',
     workspaceStrategy: 'direct',
     interactionMode: 'chat',
+    taskMode: 'auto',
     workflowStatus: 'active',
     pausedAt: null,
     createdAt: '2026-01-01T00:00:00.000Z',
@@ -139,6 +140,12 @@ describe('file navigation', () => {
   })
 
   it('resolves workspace diff entries for changed files without a diff slice', () => {
+    const diff = resolveDiffEntry(WORKSPACE_DIFF_ID, [], 'src/index.ts', ['a.ts', 'src/index.ts'])
+    expect(diff?.title).toBe('All changes')
+    expect(diff?.paths).toEqual(['a.ts', 'src/index.ts'])
+  })
+
+  it('falls back to a single path when git status paths are unavailable', () => {
     const diff = resolveDiffEntry(WORKSPACE_DIFF_ID, [], 'src/index.ts')
     expect(diff?.paths).toEqual(['src/index.ts'])
   })

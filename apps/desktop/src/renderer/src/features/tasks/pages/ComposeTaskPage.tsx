@@ -1,3 +1,4 @@
+import { DEFAULT_TASK_MODE, type TaskMode } from '@circuit/workflow'
 import { useNavigate } from '@tanstack/react-router'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -13,6 +14,7 @@ export function ComposeTaskPage({ repoId: urlRepoId }: { repoId?: string }): Rea
   const addRepoMutation = useAddRepo()
   const createMutation = useCreateTaskFromIntake()
   const [pendingText, setPendingText] = useState<string | null>(null)
+  const [taskMode, setTaskMode] = useState<TaskMode>(DEFAULT_TASK_MODE)
 
   const repos = reposQuery.data ?? []
   const resolvedRepoId = useMemo(
@@ -38,7 +40,7 @@ export function ComposeTaskPage({ repoId: urlRepoId }: { repoId?: string }): Rea
 
     setPendingText(trimmed)
     createMutation.mutate(
-      { repoId: resolvedRepoId, text: trimmed },
+      { repoId: resolvedRepoId, text: trimmed, taskMode },
       {
         onSuccess: (task) => {
           setPendingText(null)
@@ -74,6 +76,8 @@ export function ComposeTaskPage({ repoId: urlRepoId }: { repoId?: string }): Rea
             repoId={resolvedRepoId}
             onRepoChange={handleRepoChange}
             onAddRepo={() => addRepoMutation.mutate()}
+            taskMode={taskMode}
+            onTaskModeChange={setTaskMode}
             onSend={handleSend}
           />
         </div>

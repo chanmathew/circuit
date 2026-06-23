@@ -40,15 +40,16 @@ import {
   TooltipTrigger,
 } from "../tooltip.js";
 import { cn } from "../../lib/utils.js";
-import type { ChatStatus, FileUIPart, SourceDocumentUIPart } from "ai";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  Add01Icon,
+  Cancel01Icon,
+  ComputerIcon,
   CornerDownLeftIcon,
-  ImageIcon,
-  Monitor,
-  PlusIcon,
-  SquareIcon,
-  XIcon,
-} from "lucide-react";
+  Image01Icon,
+  StopIcon,
+} from "@hugeicons/core-free-icons";
+import type { ChatStatus, FileUIPart, SourceDocumentUIPart } from "ai";
 import { nanoid } from "nanoid";
 import type {
   ChangeEvent,
@@ -435,7 +436,7 @@ export const PromptInputActionAddAttachments = ({
       className={cn("whitespace-nowrap", className)}
       onSelect={handleSelect}
     >
-      <ImageIcon className="size-4 shrink-0" />
+      <HugeiconsIcon icon={Image01Icon} strokeWidth={2} className="size-4 shrink-0" />
       <span>{label}</span>
     </DropdownMenuItem>
   );
@@ -486,7 +487,7 @@ export const PromptInputActionAddScreenshot = ({
       className={cn("whitespace-nowrap", className)}
       onSelect={handleSelect}
     >
-      <Monitor className="size-4 shrink-0" />
+      <HugeiconsIcon icon={ComputerIcon} strokeWidth={2} className="size-4 shrink-0" />
       <span>{label}</span>
     </DropdownMenuItem>
   );
@@ -1198,7 +1199,7 @@ export const PromptInputActionMenuTrigger = ({
 }: PromptInputActionMenuTriggerProps) => (
   <DropdownMenuTrigger asChild>
     <PromptInputButton className={className} size={size} {...props}>
-      {children ?? <PlusIcon className="size-4" />}
+      {children ?? <HugeiconsIcon icon={Add01Icon} strokeWidth={2} className="size-4" />}
     </PromptInputButton>
   </DropdownMenuTrigger>
 );
@@ -1247,14 +1248,16 @@ export const PromptInputSubmit = ({
 }: PromptInputSubmitProps) => {
   const isGenerating = status === "submitted" || status === "streaming";
 
-  let Icon = <CornerDownLeftIcon className="size-4" />;
+  let Icon = (
+    <HugeiconsIcon icon={CornerDownLeftIcon} strokeWidth={2} className="size-4" />
+  );
 
   if (status === "submitted") {
     Icon = <Spinner />;
   } else if (status === "streaming") {
-    Icon = <SquareIcon className="size-4" />;
+    Icon = <HugeiconsIcon icon={StopIcon} strokeWidth={2} className="size-4" />;
   } else if (status === "error") {
-    Icon = <XIcon className="size-4" />;
+    Icon = <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} className="size-4" />;
   }
 
   const handleClick = useCallback(
