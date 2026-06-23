@@ -15,6 +15,7 @@ export const DIFF_HEADER_CSS = `
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  cursor: pointer;
 }
 [data-diffs-header=default] [data-header-content] {
   flex: 0 1 auto;
